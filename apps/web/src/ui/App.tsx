@@ -1,3 +1,4 @@
+import { ActionPanel } from './ActionPanel';
 import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
 import { TopBar } from './TopBar';
@@ -12,6 +13,7 @@ export function App() {
         </section>
         <aside className="sidebar">
           <MapPanel />
+          <ActionPanel />
         </aside>
       </main>
     </div>

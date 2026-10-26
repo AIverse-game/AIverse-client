@@ -23,6 +23,7 @@ const EDGE_COLOR = 0xe2d3a8;
 const EARTH_LIT = 0x5c4331;
 const EARTH_SHADED = 0x433022;
 const SKIN = 0xf4ead2;
+const SELECTION_COLOR = 0xfdf8ee;
 const LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#c9b99a' };
 const NAME_STYLE = { fontFamily: FONT, fontSize: '13px', color: '#fdf8ee', stroke: '#1d1a16', strokeThickness: 3 };
 /** How far outside the map edge the tick labels sit, as a fraction of the map side. */
@@ -37,6 +38,8 @@ const RESIDENT_SCALE = 1.25;
 
 interface Resident {
   root: Phaser.GameObjects.Container;
+  /** Ring on the ground marking the selected resident. */
+  ring: Phaser.GameObjects.Graphics;
   figure: Phaser.GameObjects.Graphics;
   label: Phaser.GameObjects.Text;
   color: string;
@@ -54,7 +57,10 @@ interface Resident {
 const RESIDENT_DEPTH = 1;
 const CURSOR_DEPTH = 10;
 
-/** Draws the map as a tilted ground slab and its residents from the latest snapshot in the store. */
+/**
+ * Draws the map as a tilted ground slab and its residents from the latest snapshot in the store.
+ * Clicking a resident selects it; clicking the ground then asks the server to move it there.
+ */
 export class MapScene extends Phaser.Scene {
   private readonly residents = new Map<ResidentId, Resident>();
   private ground: Phaser.GameObjects.Graphics | null = null;
@@ -73,6 +79,10 @@ export class MapScene extends Phaser.Scene {
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
     this.input.on(Phaser.Input.Events.GAME_OUT, () => this.cursor?.setText(''));
+    this.input.on(
+      Phaser.Input.Events.POINTER_DOWN,
+      (pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]) => this.click(pointer, over),
+    );
 
     const unsubscribe = this.store.subscribe(() => this.sync());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribe);
@@ -81,11 +91,27 @@ export class MapScene extends Phaser.Scene {
   }
 
   private sync(): void {
-    const { world } = this.store.getState();
+    const { world, selected } = this.store.getState();
     if (!world) return;
     const resized = world.map.size !== this.drawnSize;
     if (resized) this.drawMap(world.map.size);
     this.syncResidents(world.residents, resized);
+    for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
+  }
+
+  /** Input only expresses intent: selection stays local, a move goes to the server as a primitive. */
+  private click(pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
+    // Primary button only; touches count as the primary button too.
+    if (!pointer.leftButtonDown()) return;
+    for (const [id, resident] of this.residents) {
+      if (over.includes(resident.root)) {
+        this.store.select(id);
+        return;
+      }
+    }
+    const { selected } = this.store.getState();
+    const target = this.projection?.toMap(pointer.x, pointer.y);
+    if (selected && target) this.store.act({ type: 'move_to', residentId: selected, target });
   }
 
   private drawMap(size: number): void {
@@ -222,11 +248,20 @@ export class MapScene extends Phaser.Scene {
   }
 
   private createResident(view: ResidentView): Resident {
+    const ring = this.add.graphics().setVisible(false);
+    ring.lineStyle(2, SELECTION_COLOR, 0.9);
+    ring.strokeEllipse(0, 0, 38, 16);
     const figure = this.add.graphics();
     drawFigure(figure, view.color);
     const label = this.add.text(0, -FIGURE_HEIGHT - 4, view.name, NAME_STYLE).setOrigin(0.5, 1);
-    const root = this.add.container(0, 0, [figure, label]);
-    return { root, figure, label, color: view.color, position: view.position, shown: { ...view.position } };
+    const root = this.add.container(0, 0, [ring, figure, label]);
+    // The container has no size, so this rectangle is in figure units around the feet.
+    root.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-14, -FIGURE_HEIGHT - 2, 28, FIGURE_HEIGHT + 8),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true,
+    });
+    return { root, ring, figure, label, color: view.color, position: view.position, shown: { ...view.position } };
   }
 
   /** Stands the resident's feet on its shown position, sized and layered by distance. */

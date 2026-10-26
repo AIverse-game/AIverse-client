@@ -1,9 +1,10 @@
 import { formatCoordinate } from '../render/layout';
-import { useGameState } from '../state/react';
+import { useGameState, useStore } from '../state/react';
 
-/** Map facts and resident coordinates as text, to cross-check the drawing. */
+/** Map facts and resident coordinates as text, to cross-check the drawing; picks who to operate. */
 export function MapPanel() {
-  const { world } = useGameState();
+  const store = useStore();
+  const { world, selected } = useGameState();
   if (!world) return null;
   const size = formatCoordinate(world.map.size);
 
@@ -20,11 +21,17 @@ export function MapPanel() {
         <ul className="residents">
           {world.residents.map((resident) => (
             <li key={resident.id}>
-              <span className="swatch" style={{ background: resident.color }} />
-              <span className="name">{resident.name}</span>
-              <span className="coords">
-                ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
-              </span>
+              <button
+                type="button"
+                aria-pressed={resident.id === selected}
+                onClick={() => store.select(resident.id === selected ? null : resident.id)}
+              >
+                <span className="swatch" style={{ background: resident.color }} />
+                <span className="name">{resident.name}</span>
+                <span className="coords">
+                  ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
+                </span>
+              </button>
             </li>
           ))}
         </ul>

@@ -36,10 +36,10 @@ describe('GameStore', () => {
   it('greets the server, becomes ready on welcome and keeps the latest world', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    expect(sent).toEqual([{ type: 'hello', protocolVersion: 2 }]);
-    deliver({ type: 'welcome', protocolVersion: 2 });
+    expect(sent).toEqual([{ type: 'hello', protocolVersion: 3 }]);
+    deliver({ type: 'welcome', protocolVersion: 3 });
     deliver({ type: 'state', world });
-    expect(store.getState()).toEqual({ connection: 'ready', world, error: null });
+    expect(store.getState()).toEqual({ connection: 'ready', world, error: null, selected: null, lastAction: null });
   });
 
   it('marks the connection failed when the authority cannot be reached', () => {
@@ -51,7 +51,7 @@ describe('GameStore', () => {
 
   it.each([
     ['the server rejects our version', { type: 'error', code: 'protocol_mismatch', message: 'server speaks protocol 3' }],
-    ['the server speaks another version', { type: 'welcome', protocolVersion: 3 }],
+    ['the server speaks another version', { type: 'welcome', protocolVersion: 2 }],
   ] as const)('fails and closes the connection when %s', (_, message) => {
     const { connection, deliver } = fakeConnection();
     let closed = false;
@@ -71,5 +71,47 @@ describe('GameStore', () => {
     deliver({ type: 'error', code: 'bad_message', message: 'type: invalid' });
     expect(calls).toBe(1);
     expect(store.getState()).toMatchObject({ connection: 'connecting', error: 'bad_message: type: invalid' });
+  });
+
+  it('sends primitives only once connected and tracks their outcome', () => {
+    const { connection, sent, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    const move = { type: 'move_to', residentId: 'a', target: { x: 30, y: 40 } } as const;
+    store.act(move);
+    expect(sent).toHaveLength(1);
+    expect(store.getState().lastAction).toBeNull();
+
+    deliver({ type: 'welcome', protocolVersion: 3 });
+    store.act(move);
+    expect(sent.at(-1)).toEqual({ type: 'action', action: move });
+    expect(store.getState().lastAction).toEqual({ status: 'pending' });
+    deliver({ type: 'action_result', ok: true });
+    expect(store.getState().lastAction).toEqual({ status: 'accepted' });
+    deliver({ type: 'action_result', ok: false, code: 'out_of_bounds', message: 'outside' });
+    expect(store.getState().lastAction).toEqual({ status: 'rejected', reason: 'out_of_bounds: outside' });
+  });
+
+  it('drops the selection when the selected resident leaves the world', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver({ type: 'state', world });
+    store.select('a');
+    deliver({ type: 'state', world });
+    expect(store.getState().selected).toBe('a');
+    deliver({ type: 'state', world: { ...world, residents: [] } });
+    expect(store.getState().selected).toBeNull();
+  });
+
+  it.each([
+    ['the connection fails', (t: ReturnType<typeof fakeConnection>) => t.fail('gone')],
+    ['the server answers with an error', (t: ReturnType<typeof fakeConnection>) =>
+      t.deliver({ type: 'error', code: 'bad_message', message: 'action: invalid' })],
+  ])('stops showing a pending action when %s', (_, interrupt) => {
+    const test = fakeConnection();
+    const store = new GameStore(test.connection);
+    test.deliver({ type: 'welcome', protocolVersion: 3 });
+    store.act({ type: 'move_to', residentId: 'a', target: { x: 1, y: 1 } });
+    interrupt(test);
+    expect(store.getState().lastAction).toBeNull();
   });
 });

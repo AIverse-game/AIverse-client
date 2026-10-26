@@ -17,12 +17,19 @@ describe('parseServerMessage', () => {
   });
 
   it('accepts welcome and error messages, including unknown error codes', () => {
-    expect(parseServerMessage({ type: 'welcome', protocolVersion: 2 }).ok).toBe(true);
+    expect(parseServerMessage({ type: 'welcome', protocolVersion: 3 }).ok).toBe(true);
     expect(parseServerMessage({ type: 'error', code: 'something_new', message: 'x' }).ok).toBe(true);
+  });
+
+  it('accepts action results with and without a rejection reason', () => {
+    expect(parseServerMessage({ type: 'action_result', ok: true }).ok).toBe(true);
+    const rejected = { type: 'action_result', ok: false, code: 'out_of_bounds', message: 'x' };
+    expect(parseServerMessage(rejected)).toEqual({ ok: true, value: rejected });
   });
 
   it.each([
     ['non-object input', 'state'],
+    ['action result without ok', { type: 'action_result' }],
     ['unknown message type', { type: 'resolveRound' }],
     ['missing map', { type: 'state', world: { residents: [] } }],
     ['non-positive size', state(0, [])],

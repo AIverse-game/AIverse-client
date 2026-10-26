@@ -9,14 +9,15 @@
 ```text
 浏览器（本仓库，只依赖 protocol）
   ui/ React 面板、render/ Phaser 地图
-      ↑ 读取快照
+      ↑ 读取快照             ↓ 选中居民、发起操作
   state/ GameStore
-      ↑                     ↓ hello
+      ↑                     ↓ hello、action
   net/ GameConnection（WebSocket，校验每条消息）
       ↑ JSON 文本帧          ↓ JSON 文本帧
 Python 服务端（aiverse-server）
-  app.py      WebSocket /ws：收消息、回复
-  protocol.py 消息模型、输入校验、视图转换
+  app.py      WebSocket /ws：收消息、回复、向所有连接广播新状态
+  protocol.py 消息模型、输入校验、消息与原语/视图的转换
+  actions.py  操作原语：改变世界的唯一入口
   world.py    世界模型与坐标校验
   layout.py   固定的初始布局
 ```
@@ -37,9 +38,9 @@ Python 服务端（aiverse-server）
 | --- | --- | --- |
 | 协议 | `packages/protocol` | 客户端与服务端之间的消息与视图类型；对服务端消息做运行时校验。Python 对应定义在 `aiverse_server/protocol.py` |
 | 传输 | `apps/web/src/net` | `GameConnection` 接口与 WebSocket 实现：发送前排队、校验收到的消息、报告连接失败 |
-| 客户端状态 | `apps/web/src/state` | 保存最近一次快照与连接状态，供渲染和界面读取 |
-| 渲染 | `apps/web/src/render` | 坐标换算与刻度（`layout.ts`）、Phaser 地图场景 |
-| 界面 | `apps/web/src/ui` | React：顶栏、地图容器、地图与居民信息 |
+| 客户端状态 | `apps/web/src/state` | 保存最近一次快照、连接状态、本地选中的居民与最近一次操作结果；发送操作原语 |
+| 渲染 | `apps/web/src/render` | 坐标换算与刻度（`layout.ts`）、Phaser 地图场景（含点选居民、点击地面移动） |
+| 界面 | `apps/web/src/ui` | React：顶栏、地图容器、地图与居民信息、手动操作面板 |
 
 依赖只能自上而下：协议不依赖任何内部包，也不直接访问运行环境；客户端只依赖协议。`npm run lint` 会拒绝越层导入。
 
@@ -50,7 +51,22 @@ Python 服务端（aiverse-server）
 3. 连接层用 zod 校验每条消息；不合协议时断开并在界面报错。
 4. `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
 
-非法消息得到 `error` 回复，连接保持可用。以后加入回合推进时，服务端在每回合结算后主动推送新的 `state`，客户端这一侧的流程不需要改变。
+非法消息得到 `error` 回复，连接保持可用。所有连接共享服务端的同一个世界。
+
+## 操作原语
+
+改变世界的唯一方式是操作原语，定义在服务端 `actions.py`：每个原语是一个不可变的请求，`perform(world, action)` 按规则校验后返回新的世界，或抛出 `ActionRejected` 且不改动任何东西。玩家手动操作和以后的 AI 使用同一组原语与同一个 `perform`；规则只写在这里，不靠调用方保证。目前把新世界写回共享状态并广播的代码还在 `app.py` 的 WebSocket 处理中，接入 AI 时需要把它收进 `Game` 共用。
+
+当前只有 `move_to`：把一名居民放到地图内的目标坐标，即时到达，速度和回合限制待移动规则确定后加入。其余原语（采集、制作、挂单等）按同样方式增加。
+
+一次手动操作：
+
+1. 玩家在侧栏或地图上选中居民（只存在本地 `GameStore`），填写坐标或点击地面。
+2. `GameStore.act()` 发送 `{"type": "action", "action": {"type": "move_to", ...}}`；连接未就绪时不发送。
+3. 服务端要求该连接已完成 `hello`，把消息转换成原语并执行，回复发送者 `action_result`（`ok`，拒绝时附 `code` 与 `message`）。
+4. 世界有变化时，服务端把新的 `state` 放进每个已握手连接的发送队列；各页面按同样的顺序收到更新，地图播放移动动画。状态快照是完整的，每个连接只保留最新一份待发，别人移动得再多也不会让它的队列变长；对自己操作的回复最多积压 256 条，发得比读得快的连接超过就以 1008 关闭。
+
+以后加入回合推进时，原语改为在回合结算时统一执行，结算后同样推送 `state`，客户端这一侧的流程不需要改变。
 
 ## 协议改动
 
