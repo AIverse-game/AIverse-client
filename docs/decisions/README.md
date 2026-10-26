@@ -6,6 +6,7 @@
 
 | 记录 | 状态 | 主题 |
 | --- | --- | --- |
-| [0001-web-stack-and-layering](0001-web-stack-and-layering.md) | 采用 | 网页端技术栈、分层与依赖方向 |
+| [0001-web-stack-and-layering](0001-web-stack-and-layering.md) | 采用，部分已替代 | 网页端技术栈、分层与依赖方向 |
+| [0002-python-server-and-coordinate-map](0002-python-server-and-coordinate-map.md) | 采用 | Python 权威服务端与连续坐标地图 |
 
-仓库检查脚本使用 Python，不代表应用技术栈。
+仓库检查脚本使用 Python，与服务端使用 Python 无关，两者各自独立。

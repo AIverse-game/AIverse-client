@@ -1,58 +1,57 @@
 # 应用架构
 
-技术选型与依据见 [决策 0001](decisions/0001-web-stack-and-layering.md)。本文说明代码如何分层、数据如何流动，以及以后如何接入真正的服务端。
+技术选型与依据见 [决策 0001](decisions/0001-web-stack-and-layering.md) 与 [决策 0002](decisions/0002-python-server-and-coordinate-map.md)。本文说明代码如何分层、数据如何流动。
 
 ## 核心原则：权威服务端，客户端只渲染
 
-游戏结果只由一处计算，即“权威方”。客户端发送意图（如“开始对局”），接收权威方推送的状态快照，然后把快照画出来。客户端不计算金币、库存或成交结果，因此改动客户端代码也无法作弊。
-
-现阶段没有独立服务端。权威方以“本地服务端”的形式运行在浏览器的 Web Worker 里，通过 JSON 字符串与页面通信，行为上等同于一条网络连接。
+游戏状态只由一处计算，即 Python 服务端（与本仓库同级的 `aiverse-server` 目录）。客户端发送意图，接收服务端推送的状态快照，然后把快照画出来。客户端不计算可信的游戏结果，因此改动客户端代码也无法作弊。
 
 ```text
-浏览器主线程（客户端，只依赖 protocol）
+浏览器（本仓库，只依赖 protocol）
   ui/ React 面板、render/ Phaser 地图
-      ↑ 读取快照            ↓ 发送意图
+      ↑ 读取快照
   state/ GameStore
-      ↑                     ↓
-  net/ GameConnection
-      ↑ JSON 快照           ↓ JSON 意图
-Web Worker（本地服务端，依赖全部共享包）
-  local-server/worker.ts
-      → host/GameHost：回合时钟、截止时间、按观察者裁剪
-          → agents/：规则 Agent 做决策
-          → engine/：规则结算
+      ↑                     ↓ hello
+  net/ GameConnection（WebSocket，校验每条消息）
+      ↑ JSON 文本帧          ↓ JSON 文本帧
+Python 服务端（aiverse-server）
+  app.py      WebSocket /ws：收消息、回复
+  protocol.py 消息模型、输入校验、视图转换
+  world.py    世界模型与坐标校验
+  layout.py   固定的初始布局
 ```
+
+开发与预览时，Vite 把页面的 `/ws` 代理到 `127.0.0.1:8000`，客户端不需要写死地址；其他部署方式可在构建时设置 `VITE_SERVER_URL`。
+
+## 坐标系
+
+- 地图是边长为 `size` 个地图单位的正方形（当前 100）。
+- 原点 (0, 0) 在左上角（西北角），x 向右（东）增大，y 向下（南）增大，与屏幕方向一致。
+- 两轴取值为闭区间 [0, size] 内的实数，不是网格。居民有坐标；以后的地点和物品也使用同一坐标系。
+- 服务端拒绝构造越界或 id 重复的世界；客户端收到不满足这些条件的消息会报错，不会渲染。
+- 渲染时，屏幕位置 = 边距 + 坐标 × 缩放，坐标轴不翻转；地图大小变化时刻度和缩放自动调整。
 
 ## 分层与职责
 
 | 层 | 位置 | 职责 |
 | --- | --- | --- |
-| 协议 | `packages/protocol` | 双方共享的动作、决策、视图与消息类型；对不可信输入做运行时校验 |
-| 规则引擎 | `packages/engine` | 纯函数：给定状态和动作，算出新状态和事件；不接触时间、随机源或 IO |
-| 权威宿主 | `packages/host` | 一局对局的唯一权威：回合节奏、收集决策、超时与非法输出降级、按观察者裁剪并广播 |
-| 规则 Agent | `packages/agents` | 调试用的固定策略决策者；以后的大模型适配层实现同一接口 |
-| 传输 | `apps/web/src/net` | `GameConnection` 接口与本地 Worker 实现 |
-| 客户端状态 | `apps/web/src/state` | 保存最近一次快照与行动记录，供渲染和界面读取 |
-| 渲染 | `apps/web/src/render` | Phaser 场景，把快照画成地图并播放移动动画 |
-| 界面 | `apps/web/src/ui` | React 面板：顶栏、我的居民、排行榜、行动记录 |
-| 本地服务端 | `apps/web/src/local-server` | 在 Worker 中组装宿主、规则 Agent 和演示座位 |
+| 协议 | `packages/protocol` | 客户端与服务端之间的消息与视图类型；对服务端消息做运行时校验。Python 对应定义在 `aiverse_server/protocol.py` |
+| 传输 | `apps/web/src/net` | `GameConnection` 接口与 WebSocket 实现：发送前排队、校验收到的消息、报告连接失败 |
+| 客户端状态 | `apps/web/src/state` | 保存最近一次快照与连接状态，供渲染和界面读取 |
+| 渲染 | `apps/web/src/render` | 坐标换算与刻度（`layout.ts`）、Phaser 地图场景 |
+| 界面 | `apps/web/src/ui` | React：顶栏、地图容器、地图与居民信息 |
 
-依赖只能自上而下：协议不依赖任何内部包；引擎只依赖协议；Agent 只通过协议观察世界；客户端主线程只依赖协议。`npm run lint` 会拒绝越层导入，以及共享包中对全局计时器、`Math.random`、`Date` 的直接使用。
+依赖只能自上而下：协议不依赖任何内部包，也不直接访问运行环境；客户端只依赖协议。`npm run lint` 会拒绝越层导入。
 
-## 一个回合怎样运行
+## 一次连接如何进行
 
-1. 宿主为每个座位生成该玩家可见的观察（`Observation`），并发调用其决策者。
-2. 截止时间前未返回、抛错或输出不合协议的，本回合按等待处理，并在该玩家的 `AgentStatus` 中记录原因；迟到的结果被丢弃。
-3. 宿主把合法动作交给引擎 `resolveRound`，引擎按种子决定的顺序结算，产生新状态与事件。
-4. 宿主向每个连接推送按观察者裁剪过的 `state` 消息：自己的体力、背包和失败原因只发给自己。
-5. 客户端 `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
+1. 页面创建 WebSocket 连接，`GameStore` 立即发送 `hello`（连接打开前排队）。
+2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图和居民。
+3. 连接层用 zod 校验每条消息；不合协议时断开并在界面报错。
+4. `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
 
-相同的初始种子与动作序列总能得到相同结算，这是以后实现回放和排查争议的基础。
+非法消息得到 `error` 回复，连接保持可用。以后加入回合推进时，服务端在每回合结算后主动推送新的 `state`，客户端这一侧的流程不需要改变。
 
-## 以后接入服务端
+## 协议改动
 
-1. 新增 `apps/server`（Node），用 WebSocket 接收连接；每条连接调用 `host.connect(link, { viewerId })`，`viewerId` 由登录或房间系统决定，不能由客户端自报。
-2. 在 `apps/web/src/net` 中新增 WebSocket 版 `GameConnection`，在 `main.tsx` 里替换本地连接。
-3. 大模型适配层实现 `Decider`，运行在服务端，持有玩家 API Key；不要在纯前端模式里使用真实 Key。
-
-协议、引擎、宿主、渲染和界面在这一步都无需改写。共享包目前以 TypeScript 源码导出，Node 服务端需要打包或使用 TypeScript 运行器。
+协议在两种语言中各有一份。改动时同时修改 `packages/protocol` 与服务端的 `protocol.py`，两边的测试一起更新；不兼容的改动要同时提升两边的 `PROTOCOL_VERSION`。

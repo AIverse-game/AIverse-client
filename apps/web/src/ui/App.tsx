@@ -1,8 +1,6 @@
-import { EventLog } from './EventLog';
-import { Leaderboard } from './Leaderboard';
-import { SelfPanel } from './SelfPanel';
+import { MapPanel } from './MapPanel';
+import { MapView } from './MapView';
 import { TopBar } from './TopBar';
-import { TownView } from './TownView';
 
 export function App() {
   return (
@@ -10,12 +8,10 @@ export function App() {
       <TopBar />
       <main className="layout">
         <section className="stage" aria-label="小镇地图">
-          <TownView />
+          <MapView />
         </section>
         <aside className="sidebar">
-          <SelfPanel />
-          <Leaderboard />
-          <EventLog />
+          <MapPanel />
         </aside>
       </main>
     </div>

@@ -10,9 +10,6 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@aiverse/agents": "*",
-    "@aiverse/engine": "*",
-    "@aiverse/host": "*",
     "@aiverse/protocol": "*",
     "phaser": "^4.2.1",
     "react": "^19.3.1",

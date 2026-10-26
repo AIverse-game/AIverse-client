@@ -10,3 +10,4 @@
 | [0002-development-review-skills](0002-development-review-skills.md) | 已完成 | 拆分开发与审查职责，明确调用和交接 |
 | [0003-game-design](0003-game-design.md) | 已完成（设计文档） | AIverse 总体游戏设计与最小可玩版本提案 |
 | [0004-web-foundation](0004-web-foundation.md) | 已完成 | 网页端底层框架、分层与 GitHub Pages 部署 |
+| [0005-coordinate-map](0005-coordinate-map.md) | 已完成 | Python 服务端生成正方形坐标地图，网页按坐标渲染 |

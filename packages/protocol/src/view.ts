@@ -1,77 +1,47 @@
-import type { ActionType } from './decision';
-import type { Inventory, ItemId, PlayerId, ZoneId } from './ids';
+import { z } from 'zod';
 
-// Read-only data the authority sends out. Views are already filtered for their viewer,
-// so clients render them as-is and never derive game results themselves.
+// Read-only data the authority sends out; mirrors aiverse_server/protocol.py in the
+// Python server. Clients render it as-is and never derive game results themselves.
+//
+// Coordinates: the origin (0, 0) is the north-west (top-left) corner of a square map,
+// x grows east (right) and y grows south (down); both lie in [0, map.size]. Positions
+// are continuous map units, not grid cells.
 
-export interface ZoneView {
-  id: ZoneId;
-  neighbors: ZoneId[];
-}
+export type ResidentId = string;
 
-export interface PublicPlayer {
-  id: PlayerId;
-  name: string;
-  color: string;
-  zone: ZoneId;
-  coins: number;
-  lastAction: ActionType | null;
-}
+export const positionSchema = z.object({ x: z.number(), y: z.number() });
 
-export interface PrivatePlayer extends PublicPlayer {
-  stamina: number;
-  inventory: Inventory;
-}
+export const residentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  position: positionSchema,
+});
 
-export interface WorldView {
-  /** Rounds already resolved; 0 before the first round. */
-  round: number;
-  maxRounds: number;
-  maxStamina: number;
-  inventoryCapacity: number;
-  zones: ZoneView[];
-  /** All players in seat order, with public fields only. */
-  players: PublicPlayer[];
-  /** The viewer's own character; null for spectators. */
-  self: PrivatePlayer | null;
-}
+export const mapSchema = z.object({
+  /** Side length of the square map, in map units. */
+  size: z.number().positive(),
+});
 
-export type FailureReason =
-  | 'already_there'
-  | 'wrong_zone'
-  | 'not_enough_stamina'
-  | 'missing_materials'
-  | 'inventory_full';
+// The server guarantees these invariants; checking them here catches protocol drift
+// between the two codebases before it turns into a broken picture.
+export const worldViewSchema = z
+  .object({ map: mapSchema, residents: z.array(residentSchema) })
+  .superRefine((world, context) => {
+    const seen = new Set<ResidentId>();
+    world.residents.forEach((resident, index) => {
+      const { x, y } = resident.position;
+      if (x < 0 || y < 0 || x > world.map.size || y > world.map.size) {
+        context.addIssue({ code: 'custom', path: ['residents', index, 'position'], message: 'outside the map' });
+      }
+      if (seen.has(resident.id)) {
+        context.addIssue({ code: 'custom', path: ['residents', index, 'id'], message: 'duplicate id' });
+      }
+      seen.add(resident.id);
+    });
+  });
 
-export type GameEvent =
-  | { type: 'moved'; round: number; playerId: PlayerId; from: ZoneId; to: ZoneId; destination: ZoneId }
-  | { type: 'gathered'; round: number; playerId: PlayerId; item: ItemId; quantity: number }
-  | { type: 'crafted'; round: number; playerId: PlayerId; item: ItemId; quantity: number }
-  | { type: 'rested'; round: number; playerId: PlayerId; usedBread: boolean }
-  | { type: 'waited'; round: number; playerId: PlayerId }
-  | { type: 'actionFailed'; round: number; playerId: PlayerId; action: ActionType; reason: FailureReason }
-  | { type: 'matchEnded'; round: number };
-
-export type GamePhase = 'lobby' | 'running' | 'finished' | 'aborted';
-
-/** How the authority handled the viewer's last decision request. */
-export type DecisionOutcome = 'ok' | 'timeout' | 'invalid_decision' | 'decider_error';
-
-export interface AgentStatus {
-  lastOutcome: DecisionOutcome | null;
-  /** Validation error fed back after an invalid decision. */
-  lastError: string | null;
-  /** The model's short explanation for its last accepted decision. */
-  note: string | null;
-}
-
-/** What a decider (rule agent now, model adapter later) sees before choosing an action. */
-export interface Observation {
-  /** The round this decision is for, starting at 1. */
-  decidingRound: number;
-  world: WorldView & { self: PrivatePlayer };
-  /** Events from the previous round that are visible to this player. */
-  recentEvents: GameEvent[];
-  agent: AgentStatus;
-  memory: string | null;
-}
+export type Position = z.infer<typeof positionSchema>;
+export type ResidentView = z.infer<typeof residentSchema>;
+export type MapView = z.infer<typeof mapSchema>;
+export type WorldView = z.infer<typeof worldViewSchema>;

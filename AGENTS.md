@@ -40,6 +40,7 @@ Skill 只在适用时读取。未自动发现 Skill 时，直接读取上述文�
 ```sh
 python3 scripts/check_repo.py   # 仓库骨架：链接与文本格式
 npm run verify                  # 应用：类型检查、ESLint、测试、生产构建
+make verify                     # 在同级 aiverse-server 目录：ruff、mypy、pytest
 ```
 
-应用分层和依赖方向见 `docs/architecture.md`，越层导入由 ESLint 拒绝。流程细节见 `docs/development.md`。
+权威服务端是同级的 Python 项目 `aiverse-server`。协议改动需同时修改两边，见 `docs/architecture.md`；应用分层和依赖方向也在该文件中，越层导入由 ESLint 拒绝。流程细节见 `docs/development.md`。

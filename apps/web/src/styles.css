@@ -47,45 +47,6 @@ h2 {
   letter-spacing: 0.04em;
 }
 
-.round {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-variant-numeric: tabular-nums;
-}
-
-.phase {
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--surface-strong);
-  font-size: 13px;
-}
-
-.phase-running {
-  background: #2f6b4a;
-}
-
-.phase-aborted {
-  background: #7a3030;
-}
-
-button {
-  padding: 6px 16px;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: #1b1405;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: var(--surface-strong);
-  color: var(--muted);
-  cursor: default;
-}
-
 .mode {
   flex-basis: 100%;
   margin: 0;
@@ -107,9 +68,14 @@ button:disabled {
   background: #24372d;
 }
 
-.town {
-  width: 100%;
-  aspect-ratio: 960 / 600;
+.map {
+  /* Square canvas that fits the viewport height on wide screens. */
+  width: min(100%, calc(100vh - 140px));
+  min-width: 280px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  /* Without this the canvas can stretch the box past its aspect ratio. */
+  overflow: hidden;
 }
 
 .sidebar {
@@ -156,29 +122,26 @@ button:disabled {
   border-radius: 50%;
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 4px 12px;
-  margin: 0;
-  font-size: 14px;
-}
-
-.stats dt {
-  color: var(--muted);
-}
-
-.stats dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.note {
-  color: var(--muted);
+.status {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--surface-strong);
   font-size: 13px;
 }
 
-.leaderboard {
+.status-ready {
+  background: #2f6b4a;
+}
+
+.status-failed {
+  background: #7a3030;
+}
+
+.subheading {
+  margin-top: 12px;
+}
+
+.residents {
   display: grid;
   gap: 4px;
   margin: 0;
@@ -187,47 +150,18 @@ button:disabled {
   font-size: 14px;
 }
 
-.leaderboard li {
+.residents li {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 2px 6px;
-  border-radius: 6px;
 }
 
-.leaderboard li.me {
-  background: var(--surface-strong);
-}
-
-.leaderboard .rank {
-  width: 1.5em;
-  color: var(--muted);
-  text-align: right;
-}
-
-.leaderboard .name {
+.residents .name {
   flex: 1;
 }
 
-.leaderboard .coins {
+.residents .coords {
   font-variant-numeric: tabular-nums;
-}
-
-.log ul {
-  max-height: 280px;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  list-style: none;
-  font-size: 13px;
-}
-
-.log li {
-  padding: 2px 0;
-}
-
-.log li.failed {
-  color: var(--danger);
 }
 
 @media (max-width: 900px) {

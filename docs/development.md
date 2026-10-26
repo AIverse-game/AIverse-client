@@ -68,9 +68,9 @@ Skill 提供工作方法，不会自行启动 Agent。本仓库的调用约定�
 | 界面 | 实际用户流程、交互反馈及适用的可访问性检查 |
 | 性能改动 | 可重复的基线和前后测量 |
 
-`make check` 只检查仓库骨架；`npm run verify` 依次执行类型检查、ESLint（含分层规则）、Vitest 和生产构建，`make verify` 两者都跑。CI 复用同一组命令。不要添加占位命令、强制覆盖率数字或无效测试来制造通过结果。
+`make check` 只检查仓库骨架；`npm run verify` 依次执行类型检查、ESLint（含分层规则）、Vitest 和生产构建，`make verify` 两者都跑。CI 复用同一组命令。服务端改动在 `aiverse-server` 目录运行 `make verify`（ruff、mypy、pytest），CI 不包含这一项。不要添加占位命令、强制覆盖率数字或无效测试来制造通过结果。
 
-界面改动除自动检查外，应在浏览器实际操作一次：`npm run dev` 或 `npm run build && npm run preview`。
+界面改动除自动检查外，应先启动服务端（`uv run aiverse-server`），再在浏览器实际操作一次：`npm run dev` 或 `npm run build && npm run preview`。
 
 ## Git 与多会话协作
 
@@ -82,4 +82,4 @@ Skill 提供工作方法，不会自行启动 Agent。本仓库的调用约定�
 
 ## 技术栈与分层
 
-应用技术栈与分层已在 [决策 0001](decisions/0001-web-stack-and-layering.md) 确定，结构说明见 [应用架构](architecture.md)。新增依赖、改变层间依赖方向或引入服务端、数据库时，先补充或替代决策记录。
+应用技术栈与分层已在 [决策 0001](decisions/0001-web-stack-and-layering.md) 与 [决策 0002](decisions/0002-python-server-and-coordinate-map.md) 确定，结构说明见 [应用架构](architecture.md)。新增依赖、改变层间依赖方向或引入服务端、数据库时，先补充或替代决策记录。

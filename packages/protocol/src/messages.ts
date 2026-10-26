@@ -1,37 +1,37 @@
 import { z } from 'zod';
-import { formatIssues, type ParseResult } from './decision';
-import type { PlayerId } from './ids';
-import type { AgentStatus, GameEvent, GamePhase, WorldView } from './view';
+import { worldViewSchema } from './view';
 
-export const PROTOCOL_VERSION = 1;
+/** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
+export const PROTOCOL_VERSION = 2;
 
-// Client -> authority. Untrusted, so validated on arrival.
-export const clientMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('hello'), protocolVersion: z.number().int() }),
-  z.object({ type: z.literal('start') }),
+// Client -> authority. Validated by the server on arrival.
+export type ClientMessage = { type: 'hello'; protocolVersion: number };
+
+// Authority -> client. Every message is a JSON text frame; the client validates it
+// because the server is a separate codebase that can fall out of step.
+export const serverMessageSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('welcome'), protocolVersion: z.number().int() }),
+  z.object({ type: z.literal('state'), world: worldViewSchema }),
+  // Codes are open-ended so a newer server's errors still reach the user.
+  z.object({ type: z.literal('error'), code: z.string(), message: z.string() }),
 ]);
 
-export type ClientMessage = z.infer<typeof clientMessageSchema>;
+export type ServerMessage = z.infer<typeof serverMessageSchema>;
 
-export function parseClientMessage(input: unknown): ParseResult<ClientMessage> {
-  const result = clientMessageSchema.safeParse(input);
+export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
+
+const ERROR_MAX_LENGTH = 200;
+
+function formatIssues(error: z.ZodError): string {
+  const text = error.issues
+    .map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`)
+    .join('; ');
+  return text.length > ERROR_MAX_LENGTH ? `${text.slice(0, ERROR_MAX_LENGTH - 1)}…` : text;
+}
+
+export function parseServerMessage(input: unknown): ParseResult<ServerMessage> {
+  const result = serverMessageSchema.safeParse(input);
   return result.success
     ? { ok: true, value: result.data }
     : { ok: false, error: formatIssues(result.error) };
 }
-
-export type ErrorCode = 'bad_message' | 'protocol_mismatch' | 'not_ready' | 'already_started';
-
-// Authority -> client. Every message must survive a JSON round trip.
-export type ServerMessage =
-  | { type: 'welcome'; protocolVersion: number; viewerId: PlayerId | null; roundDurationMs: number }
-  | {
-      type: 'state';
-      phase: GamePhase;
-      world: WorldView;
-      /** Visible events from the most recently resolved round. */
-      events: GameEvent[];
-      /** Decision status of the viewer's own agent; null for spectators. */
-      agent: AgentStatus | null;
-    }
-  | { type: 'error'; code: ErrorCode; message: string };

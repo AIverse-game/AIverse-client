@@ -1,22 +1,15 @@
-import { PHASE_NAMES } from '../labels';
-import { useGameState, useStore } from '../state/react';
+import { useGameState } from '../state/react';
+
+const STATUS_TEXT = { connecting: '连接中…', ready: '已连接', failed: '无法连接' } as const;
 
 export function TopBar() {
-  const store = useStore();
-  const { connection, phase, world, error } = useGameState();
-  const canStart = connection === 'ready' && phase === 'lobby';
+  const { connection, error } = useGameState();
 
   return (
     <header className="top-bar">
       <h1>AIverse</h1>
-      <div className="round">
-        {world ? `第 ${world.round} / ${world.maxRounds} 回合` : connection === 'failed' ? '无法连接' : '连接中…'}
-        {phase && <span className={`phase phase-${phase}`}>{PHASE_NAMES[phase]}</span>}
-      </div>
-      <button type="button" onClick={() => store.start()} disabled={!canStart}>
-        开始对局
-      </button>
-      <p className="mode">本地演示：规则在浏览器内运行，居民由调试用规则 Agent 控制</p>
+      <span className={`status status-${connection}`}>{STATUS_TEXT[connection]}</span>
+      <p className="mode">地图与居民坐标由 Python 服务端下发，页面只负责渲染</p>
       {error && <p className="error" role="alert">{error}</p>}
     </header>
   );

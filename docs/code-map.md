@@ -1,6 +1,6 @@
 # 仓库地图
 
-包含总体游戏设计、通用开发基础，以及网页端底层框架。分层与数据流见 [应用架构](architecture.md)。
+包含总体游戏设计、通用开发基础和网页客户端。权威服务端是与本仓库同级的 Python 项目 `aiverse-server`。分层与数据流见 [应用架构](architecture.md)。
 
 ## 应用代码
 
@@ -10,22 +10,30 @@
 | `tsconfig.base.json` | 各包共享的 TypeScript 严格配置；共享包不含 DOM 类型 |
 | `eslint.config.js` | 代码检查与分层规则 |
 | `vitest.config.ts` | 测试入口，收集各包 `src/**/*.test.ts` |
-| `packages/protocol/src/` | `ids.ts` 区域与物品；`decision.ts` 动作与决策校验；`view.ts` 视图、事件、观察；`messages.ts` 客户端与服务端消息 |
-| `packages/engine/src/` | `rules.ts` 默认数值；`state.ts` 对局状态；`resolve.ts` 回合结算；`view.ts` 按观察者裁剪；`map.ts` 寻路；`rng.ts` 种子随机数 |
-| `packages/host/src/host.ts` | `GameHost`：回合时钟、决策截止、连接会话与广播、异常中止 |
-| `packages/host/tsconfig.test.json` | 只给宿主测试引入 Node 类型，源码不可见 Node 全局 |
-| `packages/agents/src/scripted.ts` | 调试用规则 Agent |
-| `apps/web/index.html`、`apps/web/vite.config.ts` | 网页入口与构建配置（相对资源路径） |
-| `apps/web/src/main.tsx` | 组装连接、状态与界面；唯一选择传输方式的地方 |
-| `apps/web/src/net/` | `GameConnection` 接口与本地 Worker 实现 |
-| `apps/web/src/local-server/` | Worker 中的本地服务端与演示座位 |
+| `packages/protocol/src/` | `view.ts` 地图、居民与坐标视图及校验；`messages.ts` 客户端与服务端消息、协议版本 |
+| `apps/web/index.html`、`apps/web/vite.config.ts` | 网页入口与构建配置（相对资源路径、`/ws` 代理到服务端） |
+| `apps/web/src/main.tsx` | 组装连接、状态与界面；唯一选择传输方式和服务端地址的地方 |
+| `apps/web/src/vite-env.d.ts` | `VITE_SERVER_URL` 环境变量类型 |
+| `apps/web/src/net/` | `GameConnection` 接口与 WebSocket 实现 |
 | `apps/web/src/state/` | `GameStore` 客户端状态与 React 绑定 |
-| `apps/web/src/render/` | Phaser 小镇场景与画面布局 |
-| `apps/web/src/ui/` | React 面板 |
-| `apps/web/src/labels.ts` | 区域、物品、动作、事件的中文显示文本 |
-| `.github/workflows/pages.yml` | 推送 `main` 时检查、构建并部署 GitHub Pages |
+| `apps/web/src/render/` | `layout.ts` 坐标换算、刻度与格式；`MapScene.ts` Phaser 地图场景 |
+| `apps/web/src/ui/` | React：顶栏、地图容器、地图与居民信息面板 |
+| `.github/workflows/ci.yml` | 推送 `main` 或提交 PR 时运行仓库检查与 `npm run verify` |
 
 测试与源码同目录，命名为 `*.test.ts`。
+
+## Python 服务端（`aiverse-server`）
+
+| 文件 | 用途 |
+| --- | --- |
+| `pyproject.toml`、`uv.lock` | 依赖、启动脚本与 ruff/mypy/pytest 配置 |
+| `src/aiverse_server/world.py` | 坐标、居民、地图与世界模型，越界与重复 id 校验 |
+| `src/aiverse_server/layout.py` | 固定的初始地图与居民 |
+| `src/aiverse_server/protocol.py` | 消息模型、客户端消息解析、世界到视图的转换 |
+| `src/aiverse_server/app.py` | FastAPI 应用与 WebSocket `/ws` |
+| `src/aiverse_server/__main__.py` | `uv run aiverse-server` 启动入口 |
+| `tests/` | 世界模型与 WebSocket 接口测试 |
+| `Makefile` | `dev` 启动；`verify` 检查与测试 |
 
 ## 文档与协作
 
@@ -36,7 +44,7 @@
 | `CLAUDE.md` | Claude Code 入口，指向共同规则 |
 | `.agents/skills/implement-change/SKILL.md` | 开发实现、验证与独立审查交接 |
 | `.agents/skills/review-change/SKILL.md` | 默认只读的代码审查与修复复核 |
-| `docs/architecture.md` | 应用分层、依赖方向与回合数据流 |
+| `docs/architecture.md` | 应用分层、坐标系与数据流 |
 | `docs/development.md` | 通用任务闭环、审查与协作流程 |
 | `docs/status.md` | 跨会话交接状态 |
 | `docs/design/game-overview.md` | AIverse 总体设计提案、最小玩法与待验证假设 |

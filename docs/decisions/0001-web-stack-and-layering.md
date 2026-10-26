@@ -1,6 +1,6 @@
 # 0001：网页端技术栈与分层
 
-状态：采用。
+状态：采用，部分已被 [0002](0002-python-server-and-coordinate-map.md) 替代（共享 TypeScript 规则引擎、Web Worker 本地服务端、GitHub Pages 部署）。
 日期：2026-10-25。
 
 ## 背景
