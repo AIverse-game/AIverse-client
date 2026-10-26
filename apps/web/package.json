@@ -1,0 +1,21 @@
+{
+  "name": "@aiverse/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@aiverse/agents": "*",
+    "@aiverse/engine": "*",
+    "@aiverse/host": "*",
+    "@aiverse/protocol": "*",
+    "phaser": "^4.2.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

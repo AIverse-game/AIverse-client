@@ -1,0 +1,31 @@
+# Local secrets; example configuration may be committed.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local environment and caches.
+.DS_Store
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+.cache/
+
+# Generated outputs and local run data.
+dist/
+build/
+coverage/
+htmlcov/
+.coverage
+*.log
+tmp/
+artifacts/
+local/
+
+# Keep intentional test fixtures in version control.
