@@ -11,7 +11,7 @@ export function MapPanel() {
     <section className="panel">
       <h2>地图</h2>
       <p className="small">
-        {size} × {size}，原点 (0, 0) 在左上角，x 向右、y 向下增大。
+        {size} × {size}，原点 (0, 0) 是西北角，画在地图最上方的顶角；x 向右下、y 向左下增大。
       </p>
       <h2 className="subheading">居民</h2>
       {world.residents.length === 0 ? (

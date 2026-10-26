@@ -65,14 +65,15 @@ h2 {
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #24372d;
+  /* Matches the canvas background so the letterboxing blends in. */
+  background: #1b1712;
 }
 
 .map {
-  /* Square canvas that fits the viewport height on wide screens. */
-  width: min(100%, calc(100vh - 140px));
+  /* 3:2 canvas that fits the viewport height on wide screens. */
+  width: min(100%, calc((100vh - 140px) * 1.5));
   min-width: 280px;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 2;
   margin: 0 auto;
   /* Without this the canvas can stretch the box past its aspect ratio. */
   overflow: hidden;

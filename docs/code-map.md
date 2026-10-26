@@ -16,7 +16,7 @@
 | `apps/web/src/vite-env.d.ts` | `VITE_SERVER_URL` 环境变量类型 |
 | `apps/web/src/net/` | `GameConnection` 接口与 WebSocket 实现 |
 | `apps/web/src/state/` | `GameStore` 客户端状态与 React 绑定 |
-| `apps/web/src/render/` | `layout.ts` 坐标换算、刻度与格式；`MapScene.ts` Phaser 地图场景 |
+| `apps/web/src/render/` | `layout.ts` 2.5D 透视投影及其反算、刻度与格式；`MapScene.ts` Phaser 地图场景（地块、居民、指针坐标） |
 | `apps/web/src/ui/` | React：顶栏、地图容器、地图与居民信息面板 |
 | `.github/workflows/ci.yml` | 推送 `main` 或提交 PR 时运行仓库检查与 `npm run verify` |
 

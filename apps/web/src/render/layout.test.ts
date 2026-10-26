@@ -1,27 +1,82 @@
 import { describe, expect, it } from 'vitest';
-import { axisTicks, formatCoordinate, MAP_PIXELS, MARGIN, projectMap } from './layout';
+import {
+  axisTicks,
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  formatCoordinate,
+  HEADROOM,
+  MARGIN,
+  projectMap,
+  SLAB_DEPTH,
+} from './layout';
 
 describe('projectMap', () => {
-  it('puts the origin at the top-left and the far corner at the bottom-right', () => {
-    const { toScreen, scale } = projectMap(100);
-    expect(scale).toBe(MAP_PIXELS / 100);
-    expect(toScreen({ x: 0, y: 0 })).toEqual({ x: MARGIN, y: MARGIN });
-    expect(toScreen({ x: 100, y: 100 })).toEqual({ x: MARGIN + MAP_PIXELS, y: MARGIN + MAP_PIXELS });
-    // x moves right only, y moves down only.
-    expect(toScreen({ x: 25, y: 0 })).toEqual({ x: MARGIN + MAP_PIXELS / 4, y: MARGIN });
-    expect(toScreen({ x: 0, y: 25 })).toEqual({ x: MARGIN, y: MARGIN + MAP_PIXELS / 4 });
+  const size = 100;
+  const { toScreen, scaleAt, toMap } = projectMap(size);
+  const origin = toScreen({ x: 0, y: 0 });
+  const east = toScreen({ x: size, y: 0 });
+  const south = toScreen({ x: 0, y: size });
+  const far = toScreen({ x: size, y: size });
+
+  it('turns the map so the origin is the top corner, x runs down-right and y down-left', () => {
+    expect(origin.y).toBeLessThan(Math.min(east.y, south.y));
+    expect(far.y).toBeGreaterThan(Math.max(east.y, south.y));
+    expect(east.x).toBeGreaterThan(origin.x);
+    expect(south.x).toBeLessThan(origin.x);
+    // The camera looks straight along the diagonal, so the picture is symmetric.
+    expect(origin.x).toBeCloseTo(far.x);
+    expect(east.y).toBeCloseTo(south.y);
+    expect(east.x - origin.x).toBeCloseTo(origin.x - south.x);
   });
 
-  it('scales any map size to the same canvas square', () => {
-    expect(projectMap(40).toScreen({ x: 40, y: 20 })).toEqual({ x: MARGIN + MAP_PIXELS, y: MARGIN + MAP_PIXELS / 2 });
+  it('draws the far side smaller than the near side', () => {
+    expect(scaleAt({ x: 0, y: 0 })).toBeLessThan(1);
+    expect(scaleAt({ x: size / 2, y: size / 2 })).toBeCloseTo(1);
+    expect(scaleAt({ x: size, y: size })).toBeGreaterThan(1);
+    // The far half of the diamond is shorter on screen than the near half.
+    expect(east.y - origin.y).toBeLessThan(far.y - east.y);
   });
 
-  it('maps canvas points back to map positions, and nothing outside the map', () => {
-    const { toMap, toScreen } = projectMap(100);
-    const screen = toScreen({ x: 12.5, y: 80 });
-    expect(toMap(screen.x, screen.y)).toEqual({ x: 12.5, y: 80 });
-    expect(toMap(MARGIN - 1, MARGIN)).toBeNull();
-    expect(toMap(MARGIN, MARGIN + MAP_PIXELS + 1)).toBeNull();
+  it('fits the whole slab inside the margins, with headroom above the far corner', () => {
+    const points = [origin, east, south, far, toScreen({ x: size, y: size }, -SLAB_DEPTH * size)];
+    for (const { x, y } of points) {
+      expect(x).toBeGreaterThanOrEqual(MARGIN - 1e-6);
+      expect(x).toBeLessThanOrEqual(CANVAS_WIDTH - MARGIN + 1e-6);
+      expect(y).toBeGreaterThanOrEqual(MARGIN + HEADROOM - 1e-6);
+      expect(y).toBeLessThanOrEqual(CANVAS_HEIGHT - MARGIN + 1e-6);
+    }
+  });
+
+  it('draws any map size as the same picture', () => {
+    const small = projectMap(40).toScreen({ x: 40, y: 20 });
+    const large = toScreen({ x: 100, y: 50 });
+    expect(small.x).toBeCloseTo(large.x);
+    expect(small.y).toBeCloseTo(large.y);
+  });
+
+  it('lifts raised points straight up the screen', () => {
+    const ground = toScreen({ x: 50, y: 50 });
+    const raised = toScreen({ x: 50, y: 50 }, 5);
+    expect(raised.x).toBeCloseTo(ground.x);
+    expect(raised.y).toBeLessThan(ground.y);
+  });
+
+  it('maps canvas points back to ground positions, and nothing outside the map', () => {
+    for (const position of [
+      { x: 12.5, y: 80 },
+      { x: 0, y: 0 },
+      { x: 100, y: 100 },
+    ]) {
+      const screen = toScreen(position);
+      const back = toMap(screen.x, screen.y)!;
+      expect(back.x).toBeCloseTo(position.x, 6);
+      expect(back.y).toBeCloseTo(position.y, 6);
+    }
+    expect(toMap(origin.x, origin.y - 5)).toBeNull();
+    expect(toMap(far.x, far.y + 5)).toBeNull();
+    // The top-left canvas corner is off the map; far above it is past the horizon.
+    expect(toMap(0, 0)).toBeNull();
+    expect(toMap(origin.x, -1e6)).toBeNull();
   });
 });
 
