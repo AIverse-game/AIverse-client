@@ -68,7 +68,7 @@ make verify                     # 以上两者
 
 开发任务示例：
 
-> 阅读 AGENTS.md 和 .agents/skills/implement-change/SKILL.md，完成以下任务：［目标］。范围：［范围］。验收条件：［可观察结果］。完成验证与独立审查，处理发现并更新交接状态。
+> 阅读 AGENTS.md 和 .agents/skills/implement-change/SKILL.md，完成以下任务：［目标］。范围：［范围］。验收条件：［可观察结果］。完成验证与独立审查，处理发现并更新交接状态，审查无误后提交。
 
 单独审查任务示例：
 

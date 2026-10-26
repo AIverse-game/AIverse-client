@@ -24,6 +24,7 @@
 5. **验证**：执行与风险相称的格式、类型、测试或构建检查，修复本次引入的问题。
 6. **审查**：阅读最终差异，确认行为满足目标，检查无关修改和遗漏。
 7. **交接**：记录实际证据，更新必要文档与当前状态，总结结果和限制。
+8. **提交**：验证通过、审查无误后，按 [提交约定](#提交约定) 提交本次改动。
 
 默认在用户授权范围内持续推进，不把每一步都变成确认环节。只有缺少必要信息或存在影响目标的歧义时，集中澄清；等待期间继续可独立完成的工作。
 
@@ -35,7 +36,7 @@ Claude Code 从 `CLAUDE.md` 进入共同规则，再按任务显式读取同一�
 
 可用的任务示例：
 
-- 开发：“读取 `.agents/skills/implement-change/SKILL.md`，实现［需求］，验收条件为［结果］，完成验证和独立审查。”
+- 开发：“读取 `.agents/skills/implement-change/SKILL.md`，实现［需求］，验收条件为［结果］，完成验证、独立审查和提交。”
 - 审查：“读取 `.agents/skills/review-change/SKILL.md`，只审查［文件或差异范围］，基线为［引用或快照］，需求为［预期行为］，不要改文件。”
 
 Skill 提供工作方法，不会自行启动 Agent。本仓库的调用约定由主 Agent 在当前开发会话执行，尚无 CI 或后台任务触发。
@@ -76,7 +77,42 @@ Skill 提供工作方法，不会自行启动 Agent。本仓库的调用约定�
 
 开始前查看 `git status`，结束前审查差异。当前文件尚未跟踪时，`git diff` 不会显示其内容，应直接阅读和检查文件。
 
-提交以一次可解释的改动为单位，说明具体结果。只有用户要求时才提交、推送或发布。不自动安装提交钩子，不改变全局 Git 配置。
+不自动安装提交钩子，不改变全局 Git 配置。
+
+### 提交约定
+
+开发任务同时满足以下条件后，主 Agent 直接提交，不必等待用户另行要求：
+
+- 与改动相关的检查已通过。
+- 独立审查（或工具不支持时的自查）中确认的问题都已修复并复核；待确认疑点在交接中写明。
+- 状态、变更说明等交接文档已按需更新，与代码一同提交。
+
+任一条件不满足时不提交，在交接中说明原因。推送、发布仍只在用户要求时进行。
+
+提交范围只含本次任务的改动：按路径逐个暂存，不使用 `git add -A` 或 `git add .`；任务开始前已有的修改不纳入。同一文件中已有修改与本次修改无法分开时，不提交该文件，说明情况交给用户处理。以一次可解释的改动为单位提交；协议改动涉及 `aiverse-server` 时，在两个仓库分别提交，并在说明中注明对应仓库的改动。不修改已有提交（不 amend、rebase 或强制推送），不使用 `--no-verify` 跳过检查。
+
+提交说明遵循 Google 的 [CL 描述规范](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)，用英文书写，不加 `feat:` 一类的类型前缀：
+
+- **首行**：简短、具体地概括这次改动做了什么，使用祈使句（如 “Add …”“Fix …”），独立成句；只读首行也能知道改了什么。首行后空一行。不写 “Fix bug”“Update code” 这类空泛描述。
+- **正文**：说明解决什么问题、为什么这样做；有取舍或已知不足时写明。按需附上背景，例如相关变更说明、决策记录路径或实际验证结果。小改动正文可以简短，但要说明原因。
+- **提交前复核**：审查修复后差异可能变化，提交前对照最终差异确认说明仍然准确。
+
+示例：
+
+```text
+Show a retry button on the map panel after disconnect
+
+When the WebSocket closed, the map panel stayed in its loading state and
+the only way to recover was reloading the page. Show the error and a
+retry button instead; retrying reuses the existing reconnect logic, so
+no new connection state is added.
+
+Change notes: changes/0006-reconnect.md
+Tested: npm run verify passes; stopped the server in the browser session
+and confirmed retry recovers.
+```
+
+### 多会话协作
 
 跨会话通过状态、变更说明和决策记录交接。确需并行工作时，先明确文件所有权与接口，避免共享工作区内覆盖修改；分支或 worktree 根据实际需要选择。
 
