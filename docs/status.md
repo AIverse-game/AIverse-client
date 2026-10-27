@@ -8,7 +8,8 @@
 - Python 服务端（与本仓库同级的 `aiverse-server` 目录，[决策 0002](decisions/0002-python-server-and-coordinate-map.md)）：FastAPI WebSocket `/ws`，生成固定布局的 100 × 100 连续坐标地图和 4 名居民，校验坐标与客户端消息。
 - 网页客户端（[变更 0005](../changes/0005-coordinate-map.md)）：经 WebSocket 读取地图并校验，Phaser 绘制地图、刻度、居民及指针坐标，侧栏列出地图边长和居民坐标；服务端不可达时显示错误。见 [应用架构](architecture.md)。
 - 2.5D 地图（[变更 0006](../changes/0006-perspective-map.md)）：参考《饥荒》的固定透视视角，地块转 45° 并露出土层，居民是带影子的站立小人，按远近缩放和遮挡。
-- 操作原语（[变更 0007](../changes/0007-action-primitives.md)）：服务端 `actions.py` 是改变世界的唯一入口，目前只有 `move_to`（即时到达，校验居民存在和目标在地图内）。页面可手动操作：点选居民后填写坐标或点击地面；所有页面共享同一个世界并同步看到变化。协议版本为 3。
+- 操作原语（[变更 0007](../changes/0007-action-primitives.md)）：服务端 `actions.py` 是玩家与 AI 改变世界的唯一入口，目前只有 `move_to`（即时到达，校验居民存在和目标在地图内）。页面可手动操作：点选居民后填写坐标或点击地面；所有页面共享同一个世界并同步看到变化。协议版本为 3。
+- 居民物品（[变更 0008](../changes/0008-resident-inventory.md)）：每名居民有一个物品栏（物品种类 → 数量），容量无限，只存在于内存中的世界，新开一局即为空。服务端 `inventory.py` 提供存入、移出（不足时整体拒绝）、计数、列出和清空（出局时用）的内部接口，尚未开放为原语，也不在协议中。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
 - Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。
 - 本地 Git 仓库，分支为 `main`，未配置远程仓库；`aiverse-server` 是独立的 Git 仓库，同样只在本地。
@@ -29,11 +30,12 @@ python3 scripts/check_repo.py   # 仓库骨架检查
 make verify                     # 仓库检查加 npm run verify
 ```
 
-验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md) 与 [变更 0007](../changes/0007-action-primitives.md)。
+验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md) 与 [变更 0008](../changes/0008-resident-inventory.md)。
 
 ## 尚未实现或未验证
 
-- 移动速度与每回合距离（`move_to` 目前即时到达）、回合时钟、地点与物品、生产与交易、系统收购、公开消息，以及采集、制作等其余原语：五区域版本的 TypeScript 实现已删除，需要在 Python 服务端重新实现。旧代码见提交 `11d852a`。
+- 移动速度与每回合距离（`move_to` 目前即时到达）、回合时钟、地点、物品种类定义与物品的客户端展示、生产与交易、系统收购、公开消息，以及采集、制作等其余原语：五区域版本的 TypeScript 实现已删除，需要在 Python 服务端重新实现。旧代码见提交 `11d852a`。
+- “局”与“出局”的概念：尚无房间和对局生命周期，`clear_items` 已备好但还没有调用方。
 - 操作权限：任何连接都能操作任何居民，尚无“玩家拥有哪名居民”的概念。
 - 房间、准备流程、身份认证、Origin 检查、消息大小限制、断线重连、真实大模型接入、事件记录与复盘、正式美术（当前地面和居民都是程序绘制）、镜头旋转与缩放。
 - 尚无自动的跨语言协议契约测试，靠客户端运行时校验和端到端实测发现不一致。

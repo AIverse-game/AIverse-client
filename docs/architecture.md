@@ -17,8 +17,9 @@
 Python 服务端（aiverse-server）
   app.py      WebSocket /ws：收消息、回复、向所有连接广播新状态
   protocol.py 消息模型、输入校验、消息与原语/视图的转换
-  actions.py  操作原语：改变世界的唯一入口
-  world.py    世界模型与坐标校验
+  actions.py  操作原语：玩家与 AI 改变世界的唯一入口
+  inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
+  world.py    世界模型（含物品栏）与坐标校验
   layout.py   固定的初始布局
 ```
 
@@ -55,9 +56,11 @@ Python 服务端（aiverse-server）
 
 ## 操作原语
 
-改变世界的唯一方式是操作原语，定义在服务端 `actions.py`：每个原语是一个不可变的请求，`perform(world, action)` 按规则校验后返回新的世界，或抛出 `ActionRejected` 且不改动任何东西。玩家手动操作和以后的 AI 使用同一组原语与同一个 `perform`；规则只写在这里，不靠调用方保证。目前把新世界写回共享状态并广播的代码还在 `app.py` 的 WebSocket 处理中，接入 AI 时需要把它收进 `Game` 共用。
+玩家与 AI 改变世界的唯一方式是操作原语，定义在服务端 `actions.py`：每个原语是一个不可变的请求，`perform(world, action)` 按规则校验后返回新的世界，或抛出 `ActionRejected` 且不改动任何东西。玩家手动操作和以后的 AI 使用同一组原语与同一个 `perform`；规则只写在这里，不靠调用方保证。目前把新世界写回共享状态并广播的代码还在 `app.py` 的 WebSocket 处理中，接入 AI 时需要把它收进 `Game` 共用。
 
 当前只有 `move_to`：把一名居民放到地图内的目标坐标，即时到达，速度和回合限制待移动规则确定后加入。其余原语（采集、制作、挂单等）按同样方式增加。
+
+居民物品由服务端内部的 `inventory.py` 管理（存入、移出、计数、列出、清空），这些函数同样返回新的世界，但不对客户端和 AI 开放；以后的原语调用它们，并把 `InventoryError` 转成 `ActionRejected`。
 
 一次手动操作：
 
