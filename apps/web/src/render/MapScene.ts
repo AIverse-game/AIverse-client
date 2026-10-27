@@ -31,6 +31,9 @@ const LABEL_OFFSET = 0.04;
 /** Grass tufts scattered over the ground for texture; they are not game objects. */
 const TUFT_COUNT = 240;
 const TUFT_SEED = 7;
+/** Residents who left the game stay on the map, faded. */
+const LEFT_ALPHA = 0.35;
+
 /** Height of a resident's figure, in the units `drawFigure` uses. */
 const FIGURE_HEIGHT = 46;
 /** Canvas pixels per figure unit at the map centre. */
@@ -111,7 +114,9 @@ export class MapScene extends Phaser.Scene {
     }
     const { selected } = this.store.getState();
     const target = this.projection?.toMap(pointer.x, pointer.y);
-    if (selected && target) this.store.act({ type: 'move_to', residentId: selected, target });
+    if (selected && target && this.store.canAct(selected)) {
+      this.store.act({ type: 'move_to', residentId: selected, target });
+    }
   }
 
   private drawMap(size: number): void {
@@ -210,6 +215,7 @@ export class MapScene extends Phaser.Scene {
       const resident = this.residents.get(view.id);
       if (!resident) {
         const created = this.createResident(view);
+        created.root.setAlpha(view.left ? LEFT_ALPHA : 1);
         this.residents.set(view.id, created);
         this.place(created);
         continue;
@@ -219,6 +225,7 @@ export class MapScene extends Phaser.Scene {
         drawFigure(resident.figure, view.color);
       }
       resident.label.setText(view.name);
+      resident.root.setAlpha(view.left ? LEFT_ALPHA : 1);
       const moved = resident.position.x !== view.position.x || resident.position.y !== view.position.y;
       resident.position = view.position;
       if (resized) {

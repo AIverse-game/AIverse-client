@@ -231,6 +231,72 @@ h2 {
   cursor: not-allowed;
 }
 
+.clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+.clock-ended {
+  color: var(--danger);
+}
+
+.tag {
+  font-size: 12px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.ranking {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.ranking li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.ranking li.left .name {
+  color: var(--muted);
+}
+
+.ranking .place {
+  width: 1.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.ranking .coins {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.leave {
+  margin-top: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--danger);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.leave:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

@@ -17,6 +17,11 @@ export interface ClientState {
   /** The resident manual operations apply to. Local only; the server never sees it. */
   selected: ResidentId | null;
   lastAction: ActionStatus | null;
+  /**
+   * When the game ends on this client's clock (see `now`), from the latest snapshot's
+   * remaining time; a local time, so the two machines' clocks need not agree.
+   */
+  deadline: number | null;
 }
 
 const INITIAL_STATE: ClientState = {
@@ -25,6 +30,7 @@ const INITIAL_STATE: ClientState = {
   error: null,
   selected: null,
   lastAction: null,
+  deadline: null,
 };
 
 /**
@@ -37,7 +43,11 @@ export class GameStore {
   private readonly listeners = new Set<() => void>();
   private readonly detach: (() => void)[];
 
-  constructor(private readonly connection: GameConnection) {
+  /** `now` is a monotonic clock in milliseconds, replaceable in tests. */
+  constructor(
+    private readonly connection: GameConnection,
+    private readonly now: () => number = () => performance.now(),
+  ) {
     this.detach = [
       connection.onMessage((message) => this.apply(message)),
       // No result can arrive any more, so a pending action is dropped rather than left spinning.
@@ -58,6 +68,22 @@ export class GameStore {
     if (this.state.connection !== 'ready') return;
     this.connection.send({ type: 'action', action });
     this.update({ lastAction: { status: 'pending' } });
+  }
+
+  /**
+   * Whether a primitive for this resident is worth sending: connected, the game still on and
+   * the resident still in it. The server checks again; this only spares a certain rejection.
+   */
+  canAct(id: ResidentId): boolean {
+    const { connection, world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    return connection === 'ready' && !world?.game.ended && resident !== undefined && !resident.left;
+  }
+
+  /** Seconds left in the game by the local clock; only for display, the server ends it. */
+  remainingSeconds(): number | null {
+    const { deadline } = this.state;
+    return deadline === null ? null : Math.max(0, (deadline - this.now()) / 1000);
   }
 
   select(id: ResidentId | null): void {
@@ -82,7 +108,8 @@ export class GameStore {
       case 'state': {
         const { selected } = this.state;
         const stillThere = message.world.residents.some((resident) => resident.id === selected);
-        this.update({ world: message.world, selected: stillThere ? selected : null });
+        const deadline = this.now() + message.world.game.remainingSeconds * 1000;
+        this.update({ world: message.world, selected: stillThere ? selected : null, deadline });
         return;
       }
       case 'action_result':

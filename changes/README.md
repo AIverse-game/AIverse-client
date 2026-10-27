@@ -16,3 +16,4 @@
 | [0008-resident-inventory](0008-resident-inventory.md) | 已完成 | 居民持有物品：容量无限、只在局内有效，服务端内部的增删查接口 |
 | [0009-event-queue](0009-event-queue.md) | 已完成 | 事件系统框架：居民之间的请求排队等待同意、拒绝或撤回，事件种类可扩展 |
 | [0010-trade-offers](0010-trade-offers.md) | 已完成 | 购买与出售：任一方发起报价并预留自己的一份，对方同意后物品换金币 |
+| [0011-coins-leaving-and-game-end](0011-coins-leaving-and-game-end.md) | 已完成 | 金币独立余额（开局 10000）、居民出局、一局定时结束与金币排名，协议 4 与页面展示 |

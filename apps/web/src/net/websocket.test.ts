@@ -38,7 +38,10 @@ function setup() {
   return { socket, connection, messages, failures };
 }
 
-const STATE = { type: 'state', world: { map: { size: 10 }, residents: [] } };
+const STATE = {
+  type: 'state',
+  world: { map: { size: 10 }, residents: [], game: { ended: false, remainingSeconds: 60 } },
+};
 
 describe('createWebSocketConnection', () => {
   it('queues messages until the socket opens', () => {

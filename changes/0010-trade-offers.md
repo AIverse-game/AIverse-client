@@ -46,6 +46,8 @@
 
 已更新 `docs/status.md`、`docs/architecture.md`、`docs/code-map.md`、`changes/README.md` 与服务端 `README.md`。
 
+后续：[变更 0011](0011-coins-leaving-and-game-end.md) 把金币拆为居民的独立余额，出局与结束时的报价处理和排名计入预留金币也在其中实现。
+
 独立审查首轮：无 P1/P2，3 个 P3，均已修复。
 - P3：条款校验未检查种类的类型，也没有数值上限；超长整数会让错误信息的格式化抛出 `ValueError`，绕过 `ActionRejected`。补上类型检查和 `MAX_AMOUNT`，错误信息不再回显数值，并补了测试。
 - P3：没有测试证明预留不能重复使用，也没有测试经 `perform` 同意失败的情况。两者都已补上。

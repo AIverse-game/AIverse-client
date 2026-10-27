@@ -1,6 +1,7 @@
 import { ActionPanel } from './ActionPanel';
 import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
+import { RankingPanel } from './RankingPanel';
 import { TopBar } from './TopBar';
 
 export function App() {
@@ -12,6 +13,7 @@ export function App() {
           <MapView />
         </section>
         <aside className="sidebar">
+          <RankingPanel />
           <MapPanel />
           <ActionPanel />
         </aside>

@@ -28,6 +28,7 @@ export function MapPanel() {
               >
                 <span className="swatch" style={{ background: resident.color }} />
                 <span className="name">{resident.name}</span>
+                {resident.left && <span className="tag">已出局</span>}
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
                 </span>

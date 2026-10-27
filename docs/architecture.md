@@ -21,7 +21,8 @@ Python 服务端（aiverse-server）
   inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
   events.py   事件队列：居民之间的请求，等待同意、拒绝或撤回
   trade.py    购买与出售报价：事件种类，物品换金币
-  world.py    世界模型（含物品栏、事件队列）与坐标校验
+  lifecycle.py 一局的生命周期：能否行动、出局、结束、金币排名
+  world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列）与坐标校验
   layout.py   固定的初始布局
 ```
 
@@ -50,7 +51,7 @@ Python 服务端（aiverse-server）
 ## 一次连接如何进行
 
 1. 页面创建 WebSocket 连接，`GameStore` 立即发送 `hello`（连接打开前排队）。
-2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图和居民。
+2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、居民（含金币、出局、名次）和对局状态（是否结束、剩余时间）。
 3. 连接层用 zod 校验每条消息；不合协议时断开并在界面报错。
 4. `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
 
@@ -60,7 +61,7 @@ Python 服务端（aiverse-server）
 
 玩家与 AI 改变世界的唯一方式是操作原语，定义在服务端 `actions.py`：每个原语是一个不可变的请求，`perform(world, action)` 按规则校验后返回新的世界，或抛出 `ActionRejected` 且不改动任何东西。玩家手动操作和以后的 AI 使用同一组原语与同一个 `perform`；规则只写在这里，不靠调用方保证。目前把新世界写回共享状态并广播的代码还在 `app.py` 的 WebSocket 处理中，接入 AI 时需要把它收进 `Game` 共用。
 
-当前只有 `move_to`：把一名居民放到地图内的目标坐标，即时到达，速度和回合限制待移动规则确定后加入。其余原语（采集、制作、挂单等）按同样方式增加。
+客户端可用的原语有 `move_to`（把一名居民放到地图内的目标坐标，即时到达，速度和回合限制待移动规则确定后加入）和 `leave_game`（退出游戏，见下文“一局的生命周期”）。交易与答复事件的原语已在服务端实现，尚未进入协议。其余原语（采集、制作等）按同样方式增加。
 
 居民物品由服务端内部的 `inventory.py` 管理（存入、移出、计数、列出、清空），这些函数同样返回新的世界，但不对客户端和 AI 开放；以后的原语调用它们，并把 `InventoryError` 转成 `ActionRejected`。
 
@@ -74,7 +75,16 @@ Python 服务端（aiverse-server）
 
 每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。事件尚未进入协议。
 
-第一批具体种类是交易，见服务端 `trade.py` 与 [变更 0010](../changes/0010-trade-offers.md)：买方用原语 `OfferToBuy` 向卖方发出 `PurchaseOffer`，或卖方用 `OfferToSell` 向买方发出 `SaleOffer`。发件人承诺的那一份（买方的金币或卖方的物品）在发送时预留，收件人同意时交出自己的一份并完成互换；拒绝或撤回时预留退回。金币暂时是种类为 `"coin"` 的物品，价格是整批的总价。
+第一批具体种类是交易，见服务端 `trade.py` 与 [变更 0010](../changes/0010-trade-offers.md)：买方用原语 `OfferToBuy` 向卖方发出 `PurchaseOffer`，或卖方用 `OfferToSell` 向买方发出 `SaleOffer`。发件人承诺的那一份（买方的金币或卖方的物品）在发送时预留，收件人同意时交出自己的一份并完成互换；拒绝或撤回时预留退回。金币是居民的独立余额，价格是整批的总价。
+
+## 一局的生命周期
+
+见服务端 `lifecycle.py` 与 [变更 0011](../changes/0011-coins-leaving-and-game-end.md)：
+
+- `perform` 先调用 `check_can_act`：游戏结束后一律 `game_over`，出局的居民一律 `resident_left`。
+- 出局（原语 `LeaveGame`，或服务端直接调用 `leave_game`）：撤销与该居民有关的报价并退回双方预留，清空物品，保留金币，标记 `left`。居民留在世界和排名中，游戏照常进行。
+- 结束：`app.py` 的 `Game` 在创建时记下截止时间（单调时钟，默认 `GAME_DURATION` 即 20 分钟）。应用 lifespan 中的计时任务到点调用 `end_game` 并广播；每帧处理前也检查一次。`end_game` 撤销所有报价并设 `World.ended`，世界从此不变。
+- 视图：每名居民带公开的金币总额（余额加待处理购买报价中的预留）、`left` 与 `rank`（相同并列）；世界带 `game.ended` 与发送时的 `remainingSeconds`。客户端以收到状态的本地时刻为起点倒计时，不比较两台机器的时钟。
 
 一次手动操作：
 

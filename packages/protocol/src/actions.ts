@@ -7,4 +7,10 @@ import type { Position, ResidentId } from './view';
 /** Put a resident at `target`. Instant and in a straight line until movement rules exist. */
 export type MoveToAction = { type: 'move_to'; residentId: ResidentId; target: Position };
 
-export type Action = MoveToAction;
+/**
+ * Leave the game for good: pending offers are called off, items are lost and coins still
+ * count for the ranking. The game goes on for everyone else.
+ */
+export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
+
+export type Action = MoveToAction | LeaveGameAction;

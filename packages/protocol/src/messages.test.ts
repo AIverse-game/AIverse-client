@@ -6,9 +6,17 @@ const resident = (id: string, x: number, y: number) => ({
   name: id,
   color: '#e4572e',
   position: { x, y },
+  coins: 10000,
+  left: false,
+  rank: 1,
 });
 
-const state = (size: unknown, residents: unknown[]) => ({ type: 'state', world: { map: { size }, residents } });
+const game = { ended: false, remainingSeconds: 1200 };
+
+const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
+  type: 'state',
+  world: { map: { size }, residents, game: clock },
+});
 
 describe('parseServerMessage', () => {
   it('accepts a map whose residents sit anywhere inside it, edges included', () => {
@@ -17,7 +25,7 @@ describe('parseServerMessage', () => {
   });
 
   it('accepts welcome and error messages, including unknown error codes', () => {
-    expect(parseServerMessage({ type: 'welcome', protocolVersion: 3 }).ok).toBe(true);
+    expect(parseServerMessage({ type: 'welcome', protocolVersion: 4 }).ok).toBe(true);
     expect(parseServerMessage({ type: 'error', code: 'something_new', message: 'x' }).ok).toBe(true);
   });
 
@@ -39,6 +47,12 @@ describe('parseServerMessage', () => {
     ['coordinate as a string', state(100, [{ ...resident('a', 1, 1), position: { x: '1', y: 1 } }])],
     ['malformed color', state(100, [{ ...resident('a', 1, 1), color: 'red' }])],
     ['duplicate resident ids', state(100, [resident('a', 1, 1), resident('a', 2, 2)])],
+    ['negative coins', state(100, [{ ...resident('a', 1, 1), coins: -1 }])],
+    ['fractional coins', state(100, [{ ...resident('a', 1, 1), coins: 1.5 }])],
+    ['missing left flag', state(100, [{ ...resident('a', 1, 1), left: undefined }])],
+    ['rank below 1', state(100, [{ ...resident('a', 1, 1), rank: 0 }])],
+    ['missing game', { type: 'state', world: { map: { size: 100 }, residents: [] } }],
+    ['negative remaining time', state(100, [], { ended: false, remainingSeconds: -1 })],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);
     expect(result.ok).toBe(false);
