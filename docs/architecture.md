@@ -20,6 +20,7 @@ Python 服务端（aiverse-server）
   actions.py  操作原语：玩家与 AI 改变世界的唯一入口
   inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
   events.py   事件队列：居民之间的请求，等待同意、拒绝或撤回
+  trade.py    购买与出售报价：事件种类，物品换金币
   world.py    世界模型（含物品栏、事件队列）与坐标校验
   layout.py   固定的初始布局
 ```
@@ -71,7 +72,9 @@ Python 服务端（aiverse-server）
 2. 收件人从 `pending_for` 看到发给自己的事件，用原语 `RespondToEvent` 同意或拒绝；发件人可以用 `WithdrawEvent` 撤回尚未答复的事件。只有收件人能答复、只有发件人能撤回，对别人的事件一律报告 `unknown_event`。
 3. 同意时事件离开队列并执行 `on_accept`；拒绝或撤回时执行 `on_decline`，释放预留。钩子失败时世界与队列整体不变，事件仍待处理。
 
-每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。目前还没有具体事件种类，事件也未进入协议。
+每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。事件尚未进入协议。
+
+第一批具体种类是交易，见服务端 `trade.py` 与 [变更 0010](../changes/0010-trade-offers.md)：买方用原语 `OfferToBuy` 向卖方发出 `PurchaseOffer`，或卖方用 `OfferToSell` 向买方发出 `SaleOffer`。发件人承诺的那一份（买方的金币或卖方的物品）在发送时预留，收件人同意时交出自己的一份并完成互换；拒绝或撤回时预留退回。金币暂时是种类为 `"coin"` 的物品，价格是整批的总价。
 
 一次手动操作：
 

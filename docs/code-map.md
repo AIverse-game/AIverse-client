@@ -29,13 +29,14 @@
 | `pyproject.toml`、`uv.lock` | 依赖、启动脚本与 ruff/mypy/pytest 配置 |
 | `src/aiverse_server/world.py` | 坐标、居民、物品栏（`Inventory`）、事件队列字段、地图与世界模型，越界与重复 id 校验 |
 | `src/aiverse_server/layout.py` | 固定的初始地图与居民 |
-| `src/aiverse_server/actions.py` | 操作原语（`MoveTo`、`RespondToEvent`、`WithdrawEvent`）及其规则校验与执行 `perform` |
+| `src/aiverse_server/actions.py` | 操作原语（`MoveTo`、`RespondToEvent`、`WithdrawEvent`、`OfferToBuy`、`OfferToSell`）及其规则校验与执行 `perform` |
 | `src/aiverse_server/inventory.py` | 居民物品的存入、移出、计数、列出与清空（服务端内部接口，不是原语） |
 | `src/aiverse_server/events.py` | 事件队列：事件种类基类 `EventPayload` 与其钩子，发送、同意、拒绝、撤回和收件箱查询 |
+| `src/aiverse_server/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，金币种类 `COIN`，条款校验、预留与互换 |
 | `src/aiverse_server/protocol.py` | 消息模型、客户端消息解析、消息到原语与世界到视图的转换 |
 | `src/aiverse_server/app.py` | FastAPI 应用与 WebSocket `/ws`：共享世界、握手、执行原语、广播状态 |
 | `src/aiverse_server/__main__.py` | `uv run aiverse-server` 启动入口 |
-| `tests/` | 世界模型、操作原语、物品栏、事件与 WebSocket 接口测试 |
+| `tests/` | 世界模型、操作原语、物品栏、事件、交易与 WebSocket 接口测试 |
 | `Makefile` | `dev` 启动；`verify` 检查与测试 |
 
 ## 文档与协作
