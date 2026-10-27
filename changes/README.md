@@ -14,3 +14,4 @@
 | [0006-perspective-map](0006-perspective-map.md) | 已完成 | 参考《饥荒》的 2.5D 透视地图 |
 | [0007-action-primitives](0007-action-primitives.md) | 已完成 | 操作原语系统，首个原语“移动到坐标”，页面可手动操作 |
 | [0008-resident-inventory](0008-resident-inventory.md) | 已完成 | 居民持有物品：容量无限、只在局内有效，服务端内部的增删查接口 |
+| [0009-event-queue](0009-event-queue.md) | 已完成 | 事件系统框架：居民之间的请求排队等待同意、拒绝或撤回，事件种类可扩展 |
