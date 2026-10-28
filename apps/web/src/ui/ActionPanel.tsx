@@ -17,11 +17,19 @@ export function ActionPanel() {
   const size = world.map.size;
   const ended = world.game.ended;
   const canAct = resident !== null && store.canAct(resident.id);
+  // Mining keeps the resident busy: everything but leaving waits until the job ends.
+  const free = resident !== null && store.isFree(resident.id);
+  const pool = resident ? store.poolInReach(resident.id) : null;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!resident) return;
     store.act({ type: 'move_to', residentId: resident.id, target: { x: Number(x), y: Number(y) } });
+  };
+
+  const mine = () => {
+    if (!resident || !pool) return;
+    store.act({ type: 'mine', residentId: resident.id, poolId: pool.id });
   };
 
   const leave = () => {
@@ -36,7 +44,8 @@ export function ActionPanel() {
       {resident ? (
         <p className="small selected">
           <span className="swatch" style={{ background: resident.color }} />
-          {resident.name}，现在位于 ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
+          {resident.name}，现在位于 ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})，持有{' '}
+          {resident.tokens} token
         </p>
       ) : (
         <p className="muted small">先在居民列表或地图上点选一名居民。</p>
@@ -45,6 +54,11 @@ export function ActionPanel() {
         <p className="muted small">游戏已结束，不能再操作。</p>
       ) : (
         resident?.left && <p className="muted small">{resident.name} 已出局，不能再操作。</p>
+      )}
+      {resident?.mining && (
+        <p className="small" role="status">
+          正在矿池 {resident.mining.poolId} 采矿，完成后获得 {resident.mining.amount} token；采矿期间只能退出游戏。
+        </p>
       )}
       <form className="move-form" onSubmit={submit}>
         <label>
@@ -73,11 +87,18 @@ export function ActionPanel() {
             onChange={(event) => setY(event.target.value)}
           />
         </label>
-        <button type="submit" disabled={!canAct}>
+        <button type="submit" disabled={!free}>
           移动到此坐标
         </button>
       </form>
-      <p className="muted small">选中居民后，点击地图上的地面也会让其移动到该点。</p>
+      <p className="muted small">
+        选中居民后，点击地图上的地面也会让其移动到该点。走路按直线距离消耗 token（向上取整），不够则走不了；token
+        用完即出局。
+      </p>
+      <button type="button" className="mine" disabled={!free || !pool || pool.reserve === 0} onClick={mine}>
+        {pool ? `在矿池 ${pool.id} 采矿（剩余 ${pool.reserve}）` : '采矿'}
+      </button>
+      {resident && !pool && !resident.left && <p className="muted small">走到矿池的圆圈范围内才能采矿。</p>}
       <button type="button" className="leave" disabled={!canAct} onClick={leave}>
         退出游戏
       </button>

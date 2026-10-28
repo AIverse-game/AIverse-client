@@ -1,6 +1,7 @@
 import {
   PROTOCOL_VERSION,
   type Action,
+  type PoolView,
   type ResidentId,
   type ServerMessage,
   type WorldView,
@@ -78,6 +79,23 @@ export class GameStore {
     const { connection, world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
     return connection === 'ready' && !world?.game.ended && resident !== undefined && !resident.left;
+  }
+
+  /** Like `canAct`, and the resident is not busy mining: then only leaving goes through. */
+  isFree(id: ResidentId): boolean {
+    const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
+    return this.canAct(id) && resident?.mining === undefined;
+  }
+
+  /** The pool the resident stands within reach of, the nearest if several; null if none. */
+  poolInReach(id: ResidentId): PoolView | null {
+    const { world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    if (!world || !resident) return null;
+    const distance = (pool: PoolView) =>
+      Math.hypot(pool.position.x - resident.position.x, pool.position.y - resident.position.y);
+    const reachable = world.pools.filter((pool) => distance(pool) <= pool.radius);
+    return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
   }
 
   /** Seconds left in the game by the local clock; only for display, the server ends it. */

@@ -17,3 +17,4 @@
 | [0009-event-queue](0009-event-queue.md) | 已完成 | 事件系统框架：居民之间的请求排队等待同意、拒绝或撤回，事件种类可扩展 |
 | [0010-trade-offers](0010-trade-offers.md) | 已完成 | 购买与出售：任一方发起报价并预留自己的一份，对方同意后物品换金币 |
 | [0011-coins-leaving-and-game-end](0011-coins-leaving-and-game-end.md) | 已完成 | 金币独立余额（开局 10000）、居民出局、一局定时结束与金币排名，协议 4 与页面展示 |
+| [0012-tokens-and-mining](0012-tokens-and-mining.md) | 已完成 | token 体力：走路消耗、开局固定的随机矿池与定时采矿、可交易、耗尽出局，协议 5 与页面展示 |

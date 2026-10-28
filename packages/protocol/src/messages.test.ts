@@ -9,13 +9,16 @@ const resident = (id: string, x: number, y: number) => ({
   coins: 10000,
   left: false,
   rank: 1,
+  tokens: 200,
 });
 
 const game = { ended: false, remainingSeconds: 1200 };
 
-const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
+const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, radius: 4, reserve: 300 });
+
+const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, residents, game: clock },
+  world: { map: { size }, pools, residents, game: clock },
 });
 
 describe('parseServerMessage', () => {
@@ -24,8 +27,14 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
+  it('accepts pools and a resident mining one of them', () => {
+    const miner = { ...resident('a', 1, 1), mining: { poolId: 'p1', amount: 30, remainingSeconds: 9.5 } };
+    const message = state(100, [miner], game, [pool('p1', 10, 10), pool('p2', 100, 0)]);
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
   it('accepts welcome and error messages, including unknown error codes', () => {
-    expect(parseServerMessage({ type: 'welcome', protocolVersion: 4 }).ok).toBe(true);
+    expect(parseServerMessage({ type: 'welcome', protocolVersion: 5 }).ok).toBe(true);
     expect(parseServerMessage({ type: 'error', code: 'something_new', message: 'x' }).ok).toBe(true);
   });
 
@@ -53,6 +62,16 @@ describe('parseServerMessage', () => {
     ['rank below 1', state(100, [{ ...resident('a', 1, 1), rank: 0 }])],
     ['missing game', { type: 'state', world: { map: { size: 100 }, residents: [] } }],
     ['negative remaining time', state(100, [], { ended: false, remainingSeconds: -1 })],
+    ['missing tokens', state(100, [{ ...resident('a', 1, 1), tokens: undefined }])],
+    ['fractional tokens', state(100, [{ ...resident('a', 1, 1), tokens: 0.5 }])],
+    ['missing pools', { type: 'state', world: { map: { size: 100 }, residents: [], game } }],
+    ['pool outside the map', state(100, [], game, [pool('p1', 101, 5)])],
+    ['duplicate pool ids', state(100, [], game, [pool('p1', 1, 1), pool('p1', 2, 2)])],
+    ['negative reserve', state(100, [], game, [{ ...pool('p1', 1, 1), reserve: -1 }])],
+    [
+      'mining an unknown pool',
+      state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p9', amount: 1, remainingSeconds: 1 } }]),
+    ],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);
     expect(result.ok).toBe(false);

@@ -1,7 +1,7 @@
 import { formatCoordinate } from '../render/layout';
 import { useGameState, useStore } from '../state/react';
 
-/** Map facts and resident coordinates as text, to cross-check the drawing; picks who to operate. */
+/** Map facts, pools and residents as text, to cross-check the drawing; picks who to operate. */
 export function MapPanel() {
   const store = useStore();
   const { world, selected } = useGameState();
@@ -29,6 +29,8 @@ export function MapPanel() {
                 <span className="swatch" style={{ background: resident.color }} />
                 <span className="name">{resident.name}</span>
                 {resident.left && <span className="tag">已出局</span>}
+                {resident.mining && <span className="tag tag-mining">采矿中</span>}
+                <span className="tokens">{resident.tokens} token</span>
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
                 </span>
@@ -37,6 +39,23 @@ export function MapPanel() {
           ))}
         </ul>
       )}
+      <h2 className="subheading">token 矿池</h2>
+      {world.pools.length === 0 ? (
+        <p className="muted small">地图上没有矿池。</p>
+      ) : (
+        <ul className="pools">
+          {world.pools.map((pool) => (
+            <li key={pool.id} className={pool.reserve === 0 ? 'empty' : undefined}>
+              <span className="name">{pool.id}</span>
+              <span className="coords">
+                ({formatCoordinate(pool.position.x)}, {formatCoordinate(pool.position.y)})，半径 {formatCoordinate(pool.radius)}
+              </span>
+              <span className="tokens">剩余 {pool.reserve}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="muted small">矿池开局时随机放置，整局固定不动。</p>
     </section>
   );
 }

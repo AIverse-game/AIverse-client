@@ -1,4 +1,4 @@
-import type { Position, ResidentId } from './view';
+import type { PoolId, Position, ResidentId } from './view';
 
 // Operation primitives: the only ways to change the world, mirroring aiverse_server/actions.py.
 // Players send them by hand today; AI-driven residents will use the same set later. The
@@ -13,4 +13,10 @@ export type MoveToAction = { type: 'move_to'; residentId: ResidentId; target: Po
  */
 export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
 
-export type Action = MoveToAction | LeaveGameAction;
+/**
+ * Spend time at a token pool the resident stands within reach of. The tokens arrive when the
+ * job ends; until then the resident can do nothing but leave.
+ */
+export type MineAction = { type: 'mine'; residentId: ResidentId; poolId: PoolId };
+
+export type Action = MoveToAction | LeaveGameAction | MineAction;

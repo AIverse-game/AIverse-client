@@ -179,8 +179,42 @@ h2 {
   flex: 1;
 }
 
-.residents .coords {
+.residents .coords,
+.residents .tokens,
+.pools .coords,
+.pools .tokens {
   font-variant-numeric: tabular-nums;
+}
+
+.residents .tokens {
+  color: #9fe3f0;
+}
+
+.pools {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 4px;
+  padding: 0 6px;
+  list-style: none;
+  font-size: 14px;
+}
+
+.pools li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.pools .name {
+  color: #9fe3f0;
+}
+
+.pools .tokens {
+  margin-left: auto;
+}
+
+.pools li.empty {
+  color: var(--muted);
 }
 
 .selected {
@@ -249,6 +283,11 @@ h2 {
   color: var(--muted);
 }
 
+.tag-mining {
+  border-color: #4fc3d9;
+  color: #9fe3f0;
+}
+
 .ranking {
   list-style: none;
   margin: 0 0 8px;
@@ -280,8 +319,26 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-.leave {
+.mine {
+  display: block;
   margin-top: 4px;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #4fc3d9;
+  color: #1d1a16;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mine:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.leave {
+  margin-top: 8px;
   padding: 4px 12px;
   border: 1px solid var(--danger);
   border-radius: 6px;

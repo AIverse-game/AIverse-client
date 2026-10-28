@@ -40,7 +40,7 @@ function setup() {
 
 const STATE = {
   type: 'state',
-  world: { map: { size: 10 }, residents: [], game: { ended: false, remainingSeconds: 60 } },
+  world: { map: { size: 10 }, pools: [], residents: [], game: { ended: false, remainingSeconds: 60 } },
 };
 
 describe('createWebSocketConnection', () => {

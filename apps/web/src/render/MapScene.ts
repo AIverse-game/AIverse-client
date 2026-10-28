@@ -1,4 +1,4 @@
-import type { Position, ResidentId, ResidentView } from '@aiverse/protocol';
+import type { PoolView, Position, ResidentId, ResidentView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import type { GameStore } from '../state/store';
 import {
@@ -33,6 +33,13 @@ const TUFT_COUNT = 240;
 const TUFT_SEED = 7;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
+/** Token pools: a glowing patch of ground the size of their reach, with a crystal in the middle. */
+const POOL_FILL = 0x4fc3d9;
+const POOL_EDGE = 0xb8f0fa;
+const POOL_CRYSTAL = 0xdff8fc;
+/** Pools with nothing left stay on the map, faded. */
+const EMPTY_POOL_ALPHA = 0.35;
+const POOL_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#dff8fc', stroke: '#1d1a16', strokeThickness: 3 };
 
 /** Height of a resident's figure, in the units `drawFigure` uses. */
 const FIGURE_HEIGHT = 46;
@@ -52,6 +59,9 @@ interface Resident {
   shown: Position;
 }
 
+/** Pools lie on the ground, above the turf and below every resident. */
+const POOL_DEPTH = 0.5;
+
 /**
  * Residents get depths in [1, 2) by how far down the canvas they stand, so nearer
  * ones cover farther ones. All of them stay above the ground and axis labels and
@@ -61,12 +71,17 @@ const RESIDENT_DEPTH = 1;
 const CURSOR_DEPTH = 10;
 
 /**
- * Draws the map as a tilted ground slab and its residents from the latest snapshot in the store.
+ * Draws the map as a tilted ground slab, its token pools and its residents from the latest
+ * snapshot in the store.
  * Clicking a resident selects it; clicking the ground then asks the server to move it there.
  */
 export class MapScene extends Phaser.Scene {
   private readonly residents = new Map<ResidentId, Resident>();
   private ground: Phaser.GameObjects.Graphics | null = null;
+  private pools: Phaser.GameObjects.Graphics | null = null;
+  private poolLabels: Phaser.GameObjects.Text[] = [];
+  /** What the pools were last drawn from, so they are redrawn only when that changes. */
+  private drawnPools = '';
   private axisLabels: Phaser.GameObjects.Text[] = [];
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
@@ -79,6 +94,7 @@ export class MapScene extends Phaser.Scene {
   create(): void {
     // Created first so the ground stays underneath everything else.
     this.ground = this.add.graphics();
+    this.pools = this.add.graphics().setDepth(POOL_DEPTH);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
     this.input.on(Phaser.Input.Events.GAME_OUT, () => this.cursor?.setText(''));
@@ -98,6 +114,11 @@ export class MapScene extends Phaser.Scene {
     if (!world) return;
     const resized = world.map.size !== this.drawnSize;
     if (resized) this.drawMap(world.map.size);
+    const pools = JSON.stringify([world.map.size, world.pools]);
+    if (pools !== this.drawnPools) {
+      this.drawPools(world.pools);
+      this.drawnPools = pools;
+    }
     this.syncResidents(world.residents, resized);
     for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
   }
@@ -114,7 +135,7 @@ export class MapScene extends Phaser.Scene {
     }
     const { selected } = this.store.getState();
     const target = this.projection?.toMap(pointer.x, pointer.y);
-    if (selected && target && this.store.canAct(selected)) {
+    if (selected && target && this.store.isFree(selected)) {
       this.store.act({ type: 'move_to', residentId: selected, target });
     }
   }
@@ -208,6 +229,51 @@ export class MapScene extends Phaser.Scene {
     this.drawnSize = size;
   }
 
+  private drawPools(pools: PoolView[]): void {
+    const projection = this.projection!;
+    const graphics = this.pools!;
+    graphics.clear();
+    for (const label of this.poolLabels) label.destroy();
+    this.poolLabels = [];
+    for (const pool of pools) {
+      const alpha = pool.reserve > 0 ? 1 : EMPTY_POOL_ALPHA;
+      // The reach is a circle on the ground, so it is drawn through the projection.
+      const rim = Array.from({ length: 48 }, (_, i) => {
+        const angle = (i / 48) * 2 * Math.PI;
+        const at = {
+          x: pool.position.x + pool.radius * Math.cos(angle),
+          y: pool.position.y + pool.radius * Math.sin(angle),
+        };
+        const { x, y } = projection.toScreen(at);
+        return new Phaser.Math.Vector2(x, y);
+      });
+      graphics.fillStyle(POOL_FILL, 0.35 * alpha);
+      graphics.fillPoints(rim, true);
+      graphics.lineStyle(2, POOL_EDGE, 0.8 * alpha);
+      graphics.strokePoints(rim, true);
+
+      const { x, y } = projection.toScreen(pool.position);
+      const size = 7 * projection.scaleAt(pool.position);
+      const crystal = [
+        new Phaser.Math.Vector2(x, y - 2.4 * size),
+        new Phaser.Math.Vector2(x + size, y - size),
+        new Phaser.Math.Vector2(x, y),
+        new Phaser.Math.Vector2(x - size, y - size),
+      ];
+      graphics.fillStyle(POOL_CRYSTAL, alpha);
+      graphics.fillPoints(crystal, true);
+      graphics.lineStyle(1.5, INK, 0.8 * alpha);
+      graphics.strokePoints(crystal, true);
+
+      const label = this.add
+        .text(x, y + 4, `${pool.id} · ${pool.reserve}`, POOL_LABEL_STYLE)
+        .setOrigin(0.5, 0)
+        .setDepth(POOL_DEPTH)
+        .setAlpha(alpha);
+      this.poolLabels.push(label);
+    }
+  }
+
   private syncResidents(views: ResidentView[], resized: boolean): void {
     const present = new Set<ResidentId>();
     for (const view of views) {
@@ -224,7 +290,7 @@ export class MapScene extends Phaser.Scene {
         resident.color = view.color;
         drawFigure(resident.figure, view.color);
       }
-      resident.label.setText(view.name);
+      resident.label.setText(residentLabel(view));
       resident.root.setAlpha(view.left ? LEFT_ALPHA : 1);
       const moved = resident.position.x !== view.position.x || resident.position.y !== view.position.y;
       resident.position = view.position;
@@ -260,7 +326,7 @@ export class MapScene extends Phaser.Scene {
     ring.strokeEllipse(0, 0, 38, 16);
     const figure = this.add.graphics();
     drawFigure(figure, view.color);
-    const label = this.add.text(0, -FIGURE_HEIGHT - 4, view.name, NAME_STYLE).setOrigin(0.5, 1);
+    const label = this.add.text(0, -FIGURE_HEIGHT - 4, residentLabel(view), NAME_STYLE).setOrigin(0.5, 1);
     const root = this.add.container(0, 0, [ring, figure, label]);
     // The container has no size, so this rectangle is in figure units around the feet.
     root.setInteractive({
@@ -285,6 +351,10 @@ export class MapScene extends Phaser.Scene {
     const position = this.projection?.toMap(pointer.x, pointer.y);
     this.cursor?.setText(position ? `指针 (${formatCoordinate(position.x)}, ${formatCoordinate(position.y)})` : '');
   }
+}
+
+function residentLabel(view: ResidentView): string {
+  return view.mining ? `${view.name} · 采矿中` : view.name;
 }
 
 /** A standing figure with its feet, and the centre of its shadow, at (0, 0). */
