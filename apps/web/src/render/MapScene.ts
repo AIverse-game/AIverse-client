@@ -1,4 +1,4 @@
-import type { PoolView, Position, ResidentId, ResidentView } from '@aiverse/protocol';
+import type { MarketView, PoolView, Position, ResidentId, ResidentView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import type { GameStore } from '../state/store';
 import {
@@ -40,6 +40,13 @@ const POOL_CRYSTAL = 0xdff8fc;
 /** Pools with nothing left stay on the map, faded. */
 const EMPTY_POOL_ALPHA = 0.35;
 const POOL_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#dff8fc', stroke: '#1d1a16', strokeThickness: 3 };
+/** The market: a patch of ground the size of its reach, with a stall in the middle. */
+const MARKET_FILL = 0xe0a93b;
+const MARKET_EDGE = 0xf7dc8a;
+const MARKET_WALL = 0x8a5a33;
+const MARKET_ROOF = 0xc8462f;
+const MARKET_COIN = 0xf7dc8a;
+const MARKET_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#f7dc8a', stroke: '#1d1a16', strokeThickness: 3 };
 
 /** Height of a resident's figure, in the units `drawFigure` uses. */
 const FIGURE_HEIGHT = 46;
@@ -84,7 +91,7 @@ const RESIDENT_DEPTH = 1;
 const CURSOR_DEPTH = 10;
 
 /**
- * Draws the map as a tilted ground slab, its token pools and its residents from the latest
+ * Draws the map as a tilted ground slab, its token pools, market and residents from the latest
  * snapshot in the store.
  * Clicking a resident selects it; clicking the ground then asks the server to move it there.
  */
@@ -93,6 +100,10 @@ export class MapScene extends Phaser.Scene {
   private ground: Phaser.GameObjects.Graphics | null = null;
   private pools: Phaser.GameObjects.Graphics | null = null;
   private poolLabels: Phaser.GameObjects.Text[] = [];
+  private market: Phaser.GameObjects.Graphics | null = null;
+  private marketLabel: Phaser.GameObjects.Text | null = null;
+  /** Where the market was last drawn, so it is redrawn only when that changes. */
+  private drawnMarket = '';
   /** What the pools were last drawn from, so they are redrawn only when that changes. */
   private drawnPools = '';
   private axisLabels: Phaser.GameObjects.Text[] = [];
@@ -108,6 +119,7 @@ export class MapScene extends Phaser.Scene {
     // Created first so the ground stays underneath everything else.
     this.ground = this.add.graphics();
     this.pools = this.add.graphics().setDepth(POOL_DEPTH);
+    this.market = this.add.graphics().setDepth(POOL_DEPTH);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
     this.input.on(Phaser.Input.Events.GAME_OUT, () => this.cursor?.setText(''));
@@ -131,6 +143,12 @@ export class MapScene extends Phaser.Scene {
     if (pools !== this.drawnPools) {
       this.drawPools(world.pools);
       this.drawnPools = pools;
+    }
+    // Only the place is drawn: the price moves with time, so the side panel shows it.
+    const market = JSON.stringify([world.map.size, world.market?.position, world.market?.radius]);
+    if (market !== this.drawnMarket) {
+      this.drawMarket(world.market);
+      this.drawnMarket = market;
     }
     this.syncResidents(world.residents, resized);
     for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
@@ -285,6 +303,51 @@ export class MapScene extends Phaser.Scene {
         .setAlpha(alpha);
       this.poolLabels.push(label);
     }
+  }
+
+  private drawMarket(market: MarketView | undefined): void {
+    const projection = this.projection!;
+    const graphics = this.market!;
+    graphics.clear();
+    this.marketLabel?.destroy();
+    this.marketLabel = null;
+    if (!market) return;
+    const rim = Array.from({ length: 48 }, (_, i) => {
+      const angle = (i / 48) * 2 * Math.PI;
+      const { x, y } = projection.toScreen({
+        x: market.position.x + market.radius * Math.cos(angle),
+        y: market.position.y + market.radius * Math.sin(angle),
+      });
+      return new Phaser.Math.Vector2(x, y);
+    });
+    graphics.fillStyle(MARKET_FILL, 0.3);
+    graphics.fillPoints(rim, true);
+    graphics.lineStyle(2, MARKET_EDGE, 0.85);
+    graphics.strokePoints(rim, true);
+
+    // A stall: a wall with a coin sign under a pitched roof, standing on the centre.
+    const { x, y } = projection.toScreen(market.position);
+    const unit = 6 * projection.scaleAt(market.position);
+    graphics.fillStyle(MARKET_WALL, 1);
+    graphics.fillRect(x - 2 * unit, y - 2.4 * unit, 4 * unit, 2.4 * unit);
+    graphics.lineStyle(1.5, INK, 0.9);
+    graphics.strokeRect(x - 2 * unit, y - 2.4 * unit, 4 * unit, 2.4 * unit);
+    const roof = [
+      new Phaser.Math.Vector2(x - 2.6 * unit, y - 2.4 * unit),
+      new Phaser.Math.Vector2(x, y - 4 * unit),
+      new Phaser.Math.Vector2(x + 2.6 * unit, y - 2.4 * unit),
+    ];
+    graphics.fillStyle(MARKET_ROOF, 1);
+    graphics.fillPoints(roof, true);
+    graphics.strokePoints(roof, true);
+    graphics.fillStyle(MARKET_COIN, 1);
+    graphics.fillCircle(x, y - 1.2 * unit, 0.7 * unit);
+    graphics.strokeCircle(x, y - 1.2 * unit, 0.7 * unit);
+
+    this.marketLabel = this.add
+      .text(x, y + 4, '收购点', MARKET_LABEL_STYLE)
+      .setOrigin(0.5, 0)
+      .setDepth(POOL_DEPTH);
   }
 
   private syncResidents(views: ResidentView[], resized: boolean): void {

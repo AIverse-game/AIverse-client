@@ -20,3 +20,5 @@
 | [0012-tokens-and-mining](0012-tokens-and-mining.md) | 已完成 | token 体力：走路消耗、开局固定的随机矿池与定时采矿、可交易、耗尽出局，协议 5 与页面展示 |
 | [0013-perception](0013-perception.md) | 已完成 | 感知与发现：每轮开始时注意到周围的矿池、居民和附近发生的活动，记住见过的矿池（服务端内部） |
 | [0014-walking-speed](0014-walking-speed.md) | 已完成 | 行走速度：`move_to` 按每秒 2.5 单位走过去、途中忙碌并可见；`Game.begin_turn` 先推进时间再感知；协议 6 与页面行走动画 |
+| [0015-memory](0015-memory.md) | 已完成 | 长期与短期记忆：Agent 自选记下的文字笔记，短期 120 秒后清除（服务端内部） |
+| [0016-token-market](0016-token-market.md) | 已完成 | token 收购点：随卖出下跌、随时间回升的市场价，金币的新来源；协议 7 与页面卖出 |

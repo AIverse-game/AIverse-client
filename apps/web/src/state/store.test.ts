@@ -1,4 +1,4 @@
-import type { ClientMessage, ServerMessage, WorldView } from '@aiverse/protocol';
+import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage, type WorldView } from '@aiverse/protocol';
 import { describe, expect, it } from 'vitest';
 import type { GameConnection } from '../net/connection';
 import { GameStore } from './store';
@@ -40,8 +40,8 @@ describe('GameStore', () => {
   it('greets the server, becomes ready on welcome and keeps the latest world', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    expect(sent).toEqual([{ type: 'hello', protocolVersion: 6 }]);
-    deliver({ type: 'welcome', protocolVersion: 6 });
+    expect(sent).toEqual([{ type: 'hello', protocolVersion: PROTOCOL_VERSION }]);
+    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
     deliver({ type: 'state', world });
     expect(store.getState()).toMatchObject({ connection: 'ready', world, error: null, selected: null, lastAction: null });
   });
@@ -85,7 +85,7 @@ describe('GameStore', () => {
     expect(sent).toHaveLength(1);
     expect(store.getState().lastAction).toBeNull();
 
-    deliver({ type: 'welcome', protocolVersion: 6 });
+    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
     store.act(move);
     expect(sent.at(-1)).toEqual({ type: 'action', action: move });
     expect(store.getState().lastAction).toEqual({ status: 'pending' });
@@ -110,12 +110,33 @@ describe('GameStore', () => {
     expect(store.remainingSeconds()).toBe(0);
   });
 
+  it('follows the market price on the local clock and knows who stands at the market', () => {
+    const { connection, deliver } = fakeConnection();
+    let now = 5000;
+    const store = new GameStore(connection, () => now);
+    expect(store.marketPrice()).toBeNull();
+    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 100 };
+    deliver({ type: 'state', world: { ...world, market } });
+    expect(store.marketPrice()).toBeCloseTo(10);
+    expect(store.atMarket('a')).toBe(true);
+    expect(store.atMarket('nobody')).toBe(false);
+    now += 60_000;
+    expect(store.marketPrice()).toBeCloseTo(20 / 1.5);
+    expect(store.marketQuote(30)).toBeGreaterThan(0);
+    // Once the game is over the price stops moving.
+    deliver({ type: 'state', world: { ...world, market, game: { ended: true, remainingSeconds: 0 } } });
+    now += 600_000;
+    expect(store.marketPrice()).toBeCloseTo(10);
+    deliver({ type: 'state', world: { ...world, market: { ...market, position: { x: 12, y: 25 } } } });
+    expect(store.atMarket('a')).toBe(false);
+  });
+
   it('allows acting only while connected, the game is on and the resident is still in it', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
     deliver({ type: 'state', world });
     expect(store.canAct('a')).toBe(false);
-    deliver({ type: 'welcome', protocolVersion: 6 });
+    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
     expect(store.canAct('a')).toBe(true);
     expect(store.canAct('nobody')).toBe(false);
     const [resident] = world.residents;
@@ -128,7 +149,7 @@ describe('GameStore', () => {
   it('allows only leaving while the resident is mining', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    deliver({ type: 'welcome', protocolVersion: 6 });
+    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
     deliver({ type: 'state', world });
     expect(store.isFree('a')).toBe(true);
     const [resident] = world.residents;
@@ -141,7 +162,7 @@ describe('GameStore', () => {
   it('allows only leaving while the resident is walking', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    deliver({ type: 'welcome', protocolVersion: 6 });
+    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
     const [resident] = world.residents;
     const walking = { target: { x: 5, y: 5 }, remainingSeconds: 2 };
     deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, walking }] } });
@@ -179,7 +200,7 @@ describe('GameStore', () => {
   ])('stops showing a pending action when %s', (_, interrupt) => {
     const test = fakeConnection();
     const store = new GameStore(test.connection);
-    test.deliver({ type: 'welcome', protocolVersion: 6 });
+    test.deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
     store.act({ type: 'move_to', residentId: 'a', target: { x: 1, y: 1 } });
     interrupt(test);
     expect(store.getState().lastAction).toBeNull();

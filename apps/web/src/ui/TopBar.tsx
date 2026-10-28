@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import { useGameState, useStore } from '../state/react';
 import { formatDuration } from './format';
+import { useSecondTick } from './useSecondTick';
 
 const STATUS_TEXT = { connecting: '连接中…', ready: '已连接', failed: '无法连接' } as const;
 
@@ -22,14 +22,8 @@ export function TopBar() {
 function GameClock() {
   const store = useStore();
   const { world } = useGameState();
-  const [, tick] = useState(0);
   const ended = world?.game.ended ?? false;
-
-  useEffect(() => {
-    if (ended) return;
-    const timer = window.setInterval(() => tick((count) => count + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, [ended]);
+  useSecondTick(!ended);
 
   if (!world) return null;
   if (ended) return <span className="clock clock-ended">游戏已结束</span>;

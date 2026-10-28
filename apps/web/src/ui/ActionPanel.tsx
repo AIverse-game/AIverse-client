@@ -1,7 +1,10 @@
+import type { ResidentView } from '@aiverse/protocol';
 import { useState, type FormEvent } from 'react';
 import { formatCoordinate } from '../render/layout';
 import { useGameState, useStore } from '../state/react';
 import type { ActionStatus } from '../state/store';
+import { formatPrice } from './format';
+import { useSecondTick } from './useSecondTick';
 
 /**
  * Manual control for when no AI drives the residents. It sends the same operation
@@ -108,11 +111,73 @@ export function ActionPanel() {
         {pool ? `在矿池 ${pool.id} 采矿（剩余 ${pool.reserve}）` : '采矿'}
       </button>
       {resident && !pool && !resident.left && <p className="muted small">走到矿池的圆圈范围内才能采矿。</p>}
+      {resident && world.market && <SellForm resident={resident} free={free} />}
       <button type="button" className="leave" disabled={!canAct} onClick={leave}>
         退出游戏
       </button>
       {lastAction && <ActionStatusLine status={lastAction} />}
     </section>
+  );
+}
+
+/** Selling tokens at the market, with what the sale would fetch at the price right now. */
+function SellForm({ resident, free }: { resident: ResidentView; free: boolean }) {
+  const store = useStore();
+  const [quantity, setQuantity] = useState('');
+  const atMarket = store.atMarket(resident.id);
+  const canAct = store.canAct(resident.id);
+  // Kept ticking while busy too: the price line stays up then, only the button waits.
+  useSecondTick(atMarket && canAct);
+  const amount = Number(quantity);
+  const valid = Number.isInteger(amount) && amount >= 1;
+  const estimate = valid ? store.marketQuote(amount) : null;
+  const price = store.marketPrice();
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!valid) return;
+    // `tokens` counts those set aside in offers too: only selling exactly that many empties the
+    // resident, and the server refuses more than they carry. The view has no carried count yet,
+    // so with tokens set aside this asks needlessly and the server then refuses.
+    if (
+      amount === resident.tokens &&
+      !window.confirm(`卖出全部 ${resident.tokens} token 后 ${resident.name} 会出局：不能再行动，金币保留并参与排名。继续？`)
+    )
+      return;
+    store.act({ type: 'sell_tokens', residentId: resident.id, quantity: amount });
+  };
+
+  return (
+    <>
+      <form className="sell-form" onSubmit={submit}>
+        <label>
+          卖出
+          <input
+            type="number"
+            inputMode="numeric"
+            required
+            min={1}
+            max={resident.tokens}
+            step={1}
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+          />
+          token
+        </label>
+        <button type="submit" disabled={!free || !atMarket || !valid}>
+          卖给收购点
+        </button>
+      </form>
+      {!canAct ? null : atMarket ? (
+        <p className="muted small">
+          现价 {price === null ? '—' : formatPrice(price)} 金币 / token
+          {estimate !== null && `，卖出 ${amount} 个约得 ${estimate.toLocaleString('zh-CN')} 金币（以服务端为准）`}
+          。卖得越多单价越低，等一会儿价格会回升。
+        </p>
+      ) : (
+        <p className="muted small">走到地图中央收购点的圆圈范围内才能卖 token。</p>
+      )}
+    </>
   );
 }
 

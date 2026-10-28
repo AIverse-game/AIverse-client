@@ -19,4 +19,10 @@ export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
  */
 export type MineAction = { type: 'mine'; residentId: ResidentId; poolId: PoolId };
 
-export type Action = MoveToAction | LeaveGameAction | MineAction;
+/**
+ * Sell `quantity` carried tokens, a positive integer, to the market the resident stands at, for
+ * coins at the market price. Selling the last token owned takes the resident out of the game.
+ */
+export type SellTokensAction = { type: 'sell_tokens'; residentId: ResidentId; quantity: number };
+
+export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction;

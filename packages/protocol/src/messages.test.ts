@@ -21,6 +21,13 @@ const state = (size: unknown, residents: unknown[], clock: unknown = game, pools
   world: { map: { size }, pools, residents, game: clock },
 });
 
+const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0 };
+
+const withMarket = (value: unknown) => {
+  const message = state(100, []);
+  return { ...message, world: { ...message.world, market: value } };
+};
+
 describe('parseServerMessage', () => {
   it('accepts a map whose residents sit anywhere inside it, edges included', () => {
     const message = state(100, [resident('a', 0, 0), resident('b', 100, 100), resident('c', 12.5, 99.9)]);
@@ -37,6 +44,12 @@ describe('parseServerMessage', () => {
     const walker = { ...resident('a', 1, 1), walking: { target: { x: 100, y: 0 }, remainingSeconds: 39.6 } };
     const message = state(100, [walker]);
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
+  it('accepts a market inside the map, and a map without one', () => {
+    const message = withMarket({ ...market, position: { x: 100, y: 0 }, pressure: 12.5 });
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+    expect(parseServerMessage(state(100, [])).ok).toBe(true);
   });
 
   it('accepts welcome and error messages, including unknown error codes', () => {
@@ -86,6 +99,10 @@ describe('parseServerMessage', () => {
       'walking with negative time left',
       state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 5, y: 5 }, remainingSeconds: -1 } }]),
     ],
+    ['market outside the map', withMarket({ ...market, position: { x: 50, y: 100.1 } })],
+    ['negative market pressure', withMarket({ ...market, pressure: -1 })],
+    ['market without a price', withMarket({ ...market, basePrice: undefined })],
+    ['market with no reach', withMarket({ ...market, radius: 0 })],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);
     expect(result.ok).toBe(false);

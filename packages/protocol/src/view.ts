@@ -62,6 +62,23 @@ export const poolSchema = z.object({
   reserve: z.number().int().nonnegative(),
 });
 
+/**
+ * Where residents sell tokens for coins, and what sets its price. One more token fetches
+ * `basePrice * depth / (depth + p)` coins, where the pressure p of recent sales halves every
+ * `halfLifeSeconds` after the server sent this; selling q tokens pays
+ * `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The server decides each sale.
+ */
+export const marketSchema = z.object({
+  position: positionSchema,
+  /** Residents within this distance of `position` can sell here. */
+  radius: z.number().positive(),
+  basePrice: z.number().positive(),
+  depth: z.number().positive(),
+  halfLifeSeconds: z.number().positive(),
+  /** Recent sales in tokens when the server sent this. */
+  pressure: z.number().nonnegative(),
+});
+
 export const mapSchema = z.object({
   /** Side length of the square map, in map units. */
   size: z.number().positive(),
@@ -76,9 +93,19 @@ export const gameSchema = z.object({
 // The server guarantees these invariants; checking them here catches protocol drift
 // between the two codebases before it turns into a broken picture.
 export const worldViewSchema = z
-  .object({ map: mapSchema, pools: z.array(poolSchema), residents: z.array(residentSchema), game: gameSchema })
+  .object({
+    map: mapSchema,
+    pools: z.array(poolSchema),
+    residents: z.array(residentSchema),
+    game: gameSchema,
+    /** Absent on a map without a market. */
+    market: marketSchema.optional(),
+  })
   .superRefine((world, context) => {
     const inside = ({ x, y }: Position) => x >= 0 && y >= 0 && x <= world.map.size && y <= world.map.size;
+    if (world.market && !inside(world.market.position)) {
+      context.addIssue({ code: 'custom', path: ['market', 'position'], message: 'outside the map' });
+    }
     const pools = new Set<PoolId>();
     world.pools.forEach((pool, index) => {
       if (!inside(pool.position)) {
@@ -111,5 +138,6 @@ export type Position = z.infer<typeof positionSchema>;
 export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
 export type PoolView = z.infer<typeof poolSchema>;
+export type MarketView = z.infer<typeof marketSchema>;
 export type GameView = z.infer<typeof gameSchema>;
 export type WorldView = z.infer<typeof worldViewSchema>;

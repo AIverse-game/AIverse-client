@@ -1,5 +1,7 @@
 import { formatCoordinate } from '../render/layout';
 import { useGameState, useStore } from '../state/react';
+import { formatPrice } from './format';
+import { useSecondTick } from './useSecondTick';
 
 /** Map facts, pools and residents as text, to cross-check the drawing; picks who to operate. */
 export function MapPanel() {
@@ -57,6 +59,32 @@ export function MapPanel() {
         </ul>
       )}
       <p className="muted small">矿池开局时随机放置，整局固定不动。</p>
+      <MarketInfo />
     </section>
+  );
+}
+
+/** Where the market is and its price right now, which recovers between snapshots. */
+function MarketInfo() {
+  const store = useStore();
+  const { world } = useGameState();
+  useSecondTick(world?.market !== undefined && !world.game.ended);
+  const market = world?.market;
+  if (!market) return null;
+  const price = store.marketPrice() ?? market.basePrice;
+
+  return (
+    <>
+      <h2 className="subheading">收购点</h2>
+      <p className="small market-info">
+        <span className="coords">
+          ({formatCoordinate(market.position.x)}, {formatCoordinate(market.position.y)})，半径 {formatCoordinate(market.radius)}
+        </span>
+        <span className="price">{formatPrice(price)} 金币 / token</span>
+      </p>
+      <p className="muted small">
+        镇外的买家用金币收购 token：卖得越多价格越低，没人卖时逐渐回升到 {formatPrice(market.basePrice)}。所有人共用一个价格。
+      </p>
+    </>
   );
 }

@@ -7,6 +7,7 @@ import {
   type WorldView,
 } from '@aiverse/protocol';
 import type { GameConnection } from '../net/connection';
+import { marketPrice, marketQuote } from './market';
 
 /** Outcome of the latest operation primitive this client sent. */
 export type ActionStatus = { status: 'pending' } | { status: 'accepted' } | { status: 'rejected'; reason: string };
@@ -23,6 +24,8 @@ export interface ClientState {
    * remaining time; a local time, so the two machines' clocks need not agree.
    */
   deadline: number | null;
+  /** When the latest snapshot arrived on this client's clock, to follow the market price since. */
+  receivedAt: number | null;
 }
 
 const INITIAL_STATE: ClientState = {
@@ -32,6 +35,7 @@ const INITIAL_STATE: ClientState = {
   selected: null,
   lastAction: null,
   deadline: null,
+  receivedAt: null,
 };
 
 /**
@@ -98,6 +102,27 @@ export class GameStore {
     return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
   }
 
+  /** Whether the resident stands within reach of the market. */
+  atMarket(id: ResidentId): boolean {
+    const { world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    const market = world?.market;
+    if (!resident || !market) return false;
+    return Math.hypot(market.position.x - resident.position.x, market.position.y - resident.position.y) <= market.radius;
+  }
+
+  /** Coins one more token fetches right now by the local clock, or null without a market. */
+  marketPrice(): number | null {
+    const market = this.state.world?.market;
+    return market ? marketPrice(market, this.sinceSnapshot()) : null;
+  }
+
+  /** Coins selling `quantity` tokens would fetch right now; an estimate, the server decides. */
+  marketQuote(quantity: number): number | null {
+    const market = this.state.world?.market;
+    return market ? marketQuote(market, this.sinceSnapshot(), quantity) : null;
+  }
+
   /** Seconds left in the game by the local clock; only for display, the server ends it. */
   remainingSeconds(): number | null {
     const { deadline } = this.state;
@@ -126,8 +151,9 @@ export class GameStore {
       case 'state': {
         const { selected } = this.state;
         const stillThere = message.world.residents.some((resident) => resident.id === selected);
-        const deadline = this.now() + message.world.game.remainingSeconds * 1000;
-        this.update({ world: message.world, selected: stillThere ? selected : null, deadline });
+        const receivedAt = this.now();
+        const deadline = receivedAt + message.world.game.remainingSeconds * 1000;
+        this.update({ world: message.world, selected: stillThere ? selected : null, deadline, receivedAt });
         return;
       }
       case 'action_result':
@@ -149,6 +175,13 @@ export class GameStore {
         return;
       }
     }
+  }
+
+  /** Seconds since the latest snapshot arrived; prices stand still once the game is over. */
+  private sinceSnapshot(): number {
+    const { receivedAt, world } = this.state;
+    if (receivedAt === null || world?.game.ended) return 0;
+    return (this.now() - receivedAt) / 1000;
   }
 
   private fail(error: string): void {
