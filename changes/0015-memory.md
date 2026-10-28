@@ -55,5 +55,6 @@
 ## 交接
 
 - AI 接入时：每轮开始调用 `Game.begin_turn`，把 `Perception.long_term`、`short_term` 连同感知一起交给模型，并把 `Game.remember(resident_id, text, term)`、`Game.forget(resident_id, note_id)` 作为模型可调用的工具；模型给出的 `term` 须为 `long_term` 或 `short_term`、`text` 须为字符串，否则是 `ValueError`，AI 层应先校验或把它转成给模型的错误，`NoteError` 的代码和消息可以原样回给模型。
+- **记忆的归属由调用方保证**：`remember`、`forget`、`begin_turn` 只改或返回传入的那名居民的记忆，以 A 的身份忘不掉 B 的笔记（`unknown_note`）；但它们不知道是谁在调用，任何服务端代码传入 `"b"` 都能读、写、删 B 的记忆。目前记忆不在协议中，外部碰不到。AI 接入时，每个 Agent 必须在循环里与它的居民绑定，给模型的工具不带 `resident_id` 参数，由循环填入绑定的居民；不得采用模型输出中的居民 id。以后若把记忆开放到协议，需先有“玩家拥有哪名居民”的权限检查。
 - 短期时长、条数与长度上限都未经试玩调参。
 - 已更新 `docs/status.md` 与 `docs/code-map.md`。
