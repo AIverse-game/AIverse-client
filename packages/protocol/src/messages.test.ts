@@ -33,8 +33,14 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
+  it('accepts a resident walking to a spot inside the map, edges included', () => {
+    const walker = { ...resident('a', 1, 1), walking: { target: { x: 100, y: 0 }, remainingSeconds: 39.6 } };
+    const message = state(100, [walker]);
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
   it('accepts welcome and error messages, including unknown error codes', () => {
-    expect(parseServerMessage({ type: 'welcome', protocolVersion: 5 }).ok).toBe(true);
+    expect(parseServerMessage({ type: 'welcome', protocolVersion: 6 }).ok).toBe(true);
     expect(parseServerMessage({ type: 'error', code: 'something_new', message: 'x' }).ok).toBe(true);
   });
 
@@ -71,6 +77,14 @@ describe('parseServerMessage', () => {
     [
       'mining an unknown pool',
       state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p9', amount: 1, remainingSeconds: 1 } }]),
+    ],
+    [
+      'walking off the map',
+      state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 100.1, y: 0 }, remainingSeconds: 1 } }]),
+    ],
+    [
+      'walking with negative time left',
+      state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 5, y: 5 }, remainingSeconds: -1 } }]),
     ],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);

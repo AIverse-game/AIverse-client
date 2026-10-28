@@ -45,7 +45,7 @@ Python 服务端（aiverse-server）
 | 协议 | `packages/protocol` | 客户端与服务端之间的消息与视图类型；对服务端消息做运行时校验。Python 对应定义在 `aiverse_server/protocol.py` |
 | 传输 | `apps/web/src/net` | `GameConnection` 接口与 WebSocket 实现：发送前排队、校验收到的消息、报告连接失败 |
 | 客户端状态 | `apps/web/src/state` | 保存最近一次快照、连接状态、本地选中的居民与最近一次操作结果；发送操作原语 |
-| 渲染 | `apps/web/src/render` | 坐标换算与刻度（`layout.ts`）、Phaser 地图场景（含点选居民、点击地面移动） |
+| 渲染 | `apps/web/src/render` | 坐标换算与刻度（`layout.ts`）、Phaser 地图场景（含点选居民、点击地面移动、按真实时间播放行走） |
 | 界面 | `apps/web/src/ui` | React：顶栏、地图容器、地图与居民信息、手动操作面板 |
 
 依赖只能自上而下：协议不依赖任何内部包，也不直接访问运行环境；客户端只依赖协议。`npm run lint` 会拒绝越层导入。
@@ -53,7 +53,7 @@ Python 服务端（aiverse-server）
 ## 一次连接如何进行
 
 1. 页面创建 WebSocket 连接，`GameStore` 立即发送 `hello`（连接打开前排队）。
-2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、矿池、居民（含金币、出局、名次、token、采矿状态）和对局状态（是否结束、剩余时间）。
+2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、矿池、居民（含金币、出局、名次、token、采矿与行走状态）和对局状态（是否结束、剩余时间）。
 3. 连接层用 zod 校验每条消息；不合协议时断开并在界面报错。
 4. `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
 
@@ -63,7 +63,7 @@ Python 服务端（aiverse-server）
 
 玩家与 AI 改变世界的唯一方式是操作原语，定义在服务端 `actions.py`：每个原语是一个不可变的请求，`perform(world, action)` 按规则校验后返回新的世界，或抛出 `ActionRejected` 且不改动任何东西。玩家手动操作和以后的 AI 使用同一组原语与同一个 `perform`；规则只写在这里，不靠调用方保证。目前把新世界写回共享状态并广播的代码还在 `app.py` 的 WebSocket 处理中，接入 AI 时需要把它收进 `Game` 共用。
 
-客户端可用的原语有 `move_to`（把一名居民放到地图内的目标坐标，即时到达，速度和回合限制待移动规则确定后加入）、`leave_game`（退出游戏，见下文“一局的生命周期”）和 `mine`（在矿池采矿，见下文“token 与矿池”）。交易与答复事件的原语已在服务端实现，尚未进入协议。其余原语（采集、制作等）按同样方式增加。
+客户端可用的原语有 `move_to`（让一名居民按固定速度沿直线走到地图内的目标坐标，到达前忙碌，见下文“行走”；每回合距离待移动规则确定后加入）、`leave_game`（退出游戏，见下文“一局的生命周期”）和 `mine`（在矿池采矿，见下文“token 与矿池”）。交易与答复事件的原语已在服务端实现，尚未进入协议。其余原语（采集、制作等）按同样方式增加。
 
 居民物品由服务端内部的 `inventory.py` 管理（存入、移出、计数、列出、清空），这些函数同样返回新的世界，但不对客户端和 AI 开放；以后的原语调用它们，并把 `InventoryError` 转成 `ActionRejected`。
 
@@ -93,7 +93,7 @@ Python 服务端（aiverse-server）
 1. 玩家在侧栏或地图上选中居民（只存在本地 `GameStore`），填写坐标或点击地面。
 2. `GameStore.act()` 发送 `{"type": "action", "action": {"type": "move_to", ...}}`；连接未就绪时不发送。
 3. 服务端要求该连接已完成 `hello`，把消息转换成原语并执行，回复发送者 `action_result`（`ok`，拒绝时附 `code` 与 `message`）。
-4. 世界有变化时，服务端把新的 `state` 放进每个已握手连接的发送队列；各页面按同样的顺序收到更新，地图播放移动动画。状态快照是完整的，每个连接只保留最新一份待发，别人移动得再多也不会让它的队列变长；对自己操作的回复最多积压 256 条，发得比读得快的连接超过就以 1008 关闭。
+4. 世界有变化时，服务端把新的 `state` 放进每个已握手连接的发送队列；各页面按同样的顺序收到更新，地图播放移动动画；行走中的居民按快照中的位置、目标与剩余时间，用真实时间逐帧算出位置（不用 Phaser 补间，它的时钟会随帧率变慢），到达时服务端再推送一次。状态快照是完整的，每个连接只保留最新一份待发，别人移动得再多也不会让它的队列变长；对自己操作的回复最多积压 256 条，发得比读得快的连接超过就以 1008 关闭。
 
 以后加入回合推进时，原语改为在回合结算时统一执行，结算后同样推送 `state`，客户端这一侧的流程不需要改变。
 
@@ -105,7 +105,19 @@ Python 服务端（aiverse-server）
 - `MoveTo` 先按直线距离扣 token（每单位 1，向上取整），不够时以 `not_enough_tokens` 拒绝。
 - `perform` 执行原语后调用 `knock_out_exhausted`：这次原语让其拥有量由正变零的居民按 `leave_game` 出局；判断时进行中的采矿已挖出的 token 也算拥有。
 - 矿池在创建世界时由 `layout.scatter_pools(seed)` 放置，之后不移动、不增减，只有储量下降。`Mine` 要求居民站在矿池半径内，开始时从矿池扣出 token，`MINE_SECONDS` 后发放；期间居民忙碌，除 `LeaveGame` 外以 `busy` 拒绝。出局时 token 退回矿池，游戏结束时任务作废。
-- 游戏时间是 `World.time`。`Game.tick` 在每帧处理前和计时任务醒来时推进它、发放到期的采矿并在到点时结束游戏，有变化就广播；计时任务等待对局结束和最早一个采矿结束中较早的那个。
+- 游戏时间是 `World.time`。`Game.tick` 在每帧处理前和计时任务醒来时推进它，用 `clock.settle_due` 发放到期的采矿、接回到达的行走者并记录活动，到点时结束游戏，有变化就广播；计时任务等待对局结束和最早一个采矿或行走结束中较早的那个。
+
+## 行走
+
+见服务端 `walking.py` 与 [变更 0014](../changes/0014-walking-speed.md)：
+
+- `MoveTo` 出发时按直线距离扣 token，然后开始一次行走（`WalkJob`：目标、出发与到达时刻），速度 `WALK_SPEED` = 每秒 2.5 地图单位。行走期间居民忙碌，除 `LeaveGame` 外以 `busy` 拒绝；`Resident.position` 仍是出发点，`walking.position_at` 给出途中位置，感知与视图都用它。
+- 到达由 `Game.tick` 处理；花光最后一个 token 的行走者到达后才出局（`lifecycle.knock_out_arrivals`），`knock_out_exhausted` 跳过仍在路上的居民。中途出局或游戏结束时停在当时的位置。
+- 视图中行走者的 `position` 是发送时的途中位置，另有 `walking`（`target`、`remainingSeconds`）。
+
+## 每轮开始的感知
+
+AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界推进到此刻，再调用 `perception.begin_turn` 并把更新了记忆的世界存回 `Game`，返回这一轮的感知。记忆不在协议中，所以不广播。见 [变更 0013](../changes/0013-perception.md) 与 [变更 0014](../changes/0014-walking-speed.md)。
 
 ## 协议改动
 

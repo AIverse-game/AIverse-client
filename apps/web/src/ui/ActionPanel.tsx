@@ -17,7 +17,7 @@ export function ActionPanel() {
   const size = world.map.size;
   const ended = world.game.ended;
   const canAct = resident !== null && store.canAct(resident.id);
-  // Mining keeps the resident busy: everything but leaving waits until the job ends.
+  // Mining and walking keep the resident busy: everything but leaving waits until they end.
   const free = resident !== null && store.isFree(resident.id);
   const pool = resident ? store.poolInReach(resident.id) : null;
 
@@ -44,8 +44,12 @@ export function ActionPanel() {
       {resident ? (
         <p className="small selected">
           <span className="swatch" style={{ background: resident.color }} />
-          {resident.name}，现在位于 ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})，持有{' '}
-          {resident.tokens} token
+          {resident.name}，
+          {/* While walking, the snapshot's position is already behind; the status below says where to. */}
+          {resident.walking
+            ? '正在行走'
+            : `现在位于 (${formatCoordinate(resident.position.x)}, ${formatCoordinate(resident.position.y)})`}
+          ，持有 {resident.tokens} token
         </p>
       ) : (
         <p className="muted small">先在居民列表或地图上点选一名居民。</p>
@@ -58,6 +62,11 @@ export function ActionPanel() {
       {resident?.mining && (
         <p className="small" role="status">
           正在矿池 {resident.mining.poolId} 采矿，完成后获得 {resident.mining.amount} token；采矿期间只能退出游戏。
+        </p>
+      )}
+      {resident?.walking && (
+        <p className="small" role="status">
+          正在走向 ({formatCoordinate(resident.walking.target.x)}, {formatCoordinate(resident.walking.target.y)})，到达前只能退出游戏。
         </p>
       )}
       <form className="move-form" onSubmit={submit}>
@@ -88,12 +97,12 @@ export function ActionPanel() {
           />
         </label>
         <button type="submit" disabled={!free}>
-          移动到此坐标
+          走到此坐标
         </button>
       </form>
       <p className="muted small">
-        选中居民后，点击地图上的地面也会让其移动到该点。走路按直线距离消耗 token（向上取整），不够则走不了；token
-        用完即出局。
+        选中居民后，点击地图上的地面也会让其走到该点。居民沿直线匀速走过去，到达前不能做别的；出发时按直线距离扣
+        token（向上取整），不够则走不了；token 用完，到达后出局。
       </p>
       <button type="button" className="mine" disabled={!free || !pool || pool.reserve === 0} onClick={mine}>
         {pool ? `在矿池 ${pool.id} 采矿（剩余 ${pool.reserve}）` : '采矿'}

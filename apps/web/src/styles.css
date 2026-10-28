@@ -288,6 +288,11 @@ h2 {
   color: #9fe3f0;
 }
 
+.tag-walking {
+  border-color: #d9b44f;
+  color: #f0dc9f;
+}
+
 .ranking {
   list-style: none;
   margin: 0 0 8px;

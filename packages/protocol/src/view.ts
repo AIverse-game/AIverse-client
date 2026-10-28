@@ -16,6 +16,7 @@ export const residentSchema = z.object({
   id: z.string(),
   name: z.string(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  /** Where the resident is when the server sent this; on the way while walking. */
   position: positionSchema,
   /** Total coins, including those set aside by pending offers. */
   coins: z.number().int().nonnegative(),
@@ -35,6 +36,17 @@ export const residentSchema = z.object({
       /** Tokens paid out when the job ends. */
       amount: z.number().int().positive(),
       /** Time left in the job when the server sent this. */
+      remainingSeconds: z.number().nonnegative(),
+    })
+    .optional(),
+  /**
+   * Present while the resident is walking: they head straight from `position` to `target` at a
+   * steady pace, arriving after `remainingSeconds`, and are busy until then.
+   */
+  walking: z
+    .object({
+      target: positionSchema,
+      /** Time left until arrival when the server sent this. */
       remainingSeconds: z.number().nonnegative(),
     })
     .optional(),
@@ -88,6 +100,9 @@ export const worldViewSchema = z
       seen.add(resident.id);
       if (resident.mining && !pools.has(resident.mining.poolId)) {
         context.addIssue({ code: 'custom', path: ['residents', index, 'mining'], message: 'unknown pool' });
+      }
+      if (resident.walking && !inside(resident.walking.target)) {
+        context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
       }
     });
   });

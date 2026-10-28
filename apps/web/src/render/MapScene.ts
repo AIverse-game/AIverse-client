@@ -55,8 +55,21 @@ interface Resident {
   color: string;
   /** Latest position from the server. */
   position: Position;
-  /** Where the resident is drawn; trails `position` while a move tween runs. */
+  /** Where the resident is drawn; trails `position` while a move tween runs or along a walk. */
   shown: Position;
+  walk: Walk | null;
+}
+
+/**
+ * A walk the server reported, drawn from the wall clock rather than tweened: Phaser's clock
+ * slows down with the frame rate, and the resident must arrive when the server says.
+ */
+interface Walk {
+  from: Position;
+  to: Position;
+  /** `performance.now()` when the walk was reported from `from`, and the milliseconds left then. */
+  start: number;
+  duration: number;
 }
 
 /** Pools lie on the ground, above the turf and below every resident. */
@@ -284,6 +297,7 @@ export class MapScene extends Phaser.Scene {
         created.root.setAlpha(view.left ? LEFT_ALPHA : 1);
         this.residents.set(view.id, created);
         this.place(created);
+        this.startWalk(created, view);
         continue;
       }
       if (resident.color !== view.color) {
@@ -294,6 +308,13 @@ export class MapScene extends Phaser.Scene {
       resident.root.setAlpha(view.left ? LEFT_ALPHA : 1);
       const moved = resident.position.x !== view.position.x || resident.position.y !== view.position.y;
       resident.position = view.position;
+      if (view.walking) {
+        // Every snapshot restarts the walk from where the server says the resident is.
+        this.tweens.killTweensOf(resident.shown);
+        this.startWalk(resident, view);
+        continue;
+      }
+      resident.walk = null;
       if (resized) {
         this.tweens.killTweensOf(resident.shown);
         resident.shown = { ...view.position };
@@ -320,6 +341,29 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
+  override update(): void {
+    const now = performance.now();
+    for (const resident of this.residents.values()) this.stepWalk(resident, now);
+  }
+
+  private startWalk(resident: Resident, view: ResidentView): void {
+    if (!view.walking) return;
+    const { target, remainingSeconds } = view.walking;
+    const start = performance.now();
+    resident.walk = { from: { ...view.position }, to: target, start, duration: remainingSeconds * 1000 };
+    this.stepWalk(resident, start);
+  }
+
+  /** Puts a walking resident where it is by now: steadily along the line, stopping at the target. */
+  private stepWalk(resident: Resident, now: number): void {
+    const { walk } = resident;
+    if (!walk) return;
+    const share = walk.duration > 0 ? Math.min(Math.max((now - walk.start) / walk.duration, 0), 1) : 1;
+    const { from, to } = walk;
+    resident.shown = { x: from.x + (to.x - from.x) * share, y: from.y + (to.y - from.y) * share };
+    this.place(resident);
+  }
+
   private createResident(view: ResidentView): Resident {
     const ring = this.add.graphics().setVisible(false);
     ring.lineStyle(2, SELECTION_COLOR, 0.9);
@@ -334,7 +378,8 @@ export class MapScene extends Phaser.Scene {
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
       useHandCursor: true,
     });
-    return { root, ring, figure, label, color: view.color, position: view.position, shown: { ...view.position } };
+    const shown = { ...view.position };
+    return { root, ring, figure, label, color: view.color, position: view.position, shown, walk: null };
   }
 
   /** Stands the resident's feet on its shown position, sized and layered by distance. */
@@ -354,7 +399,9 @@ export class MapScene extends Phaser.Scene {
 }
 
 function residentLabel(view: ResidentView): string {
-  return view.mining ? `${view.name} · 采矿中` : view.name;
+  if (view.mining) return `${view.name} · 采矿中`;
+  if (view.walking) return `${view.name} · 行走中`;
+  return view.name;
 }
 
 /** A standing figure with its feet, and the centre of its shadow, at (0, 0). */

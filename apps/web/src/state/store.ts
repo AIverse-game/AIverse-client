@@ -81,10 +81,10 @@ export class GameStore {
     return connection === 'ready' && !world?.game.ended && resident !== undefined && !resident.left;
   }
 
-  /** Like `canAct`, and the resident is not busy mining: then only leaving goes through. */
+  /** Like `canAct`, and the resident is not busy mining or walking: then only leaving goes through. */
   isFree(id: ResidentId): boolean {
     const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
-    return this.canAct(id) && resident?.mining === undefined;
+    return this.canAct(id) && resident?.mining === undefined && resident?.walking === undefined;
   }
 
   /** The pool the resident stands within reach of, the nearest if several; null if none. */

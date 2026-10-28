@@ -40,8 +40,8 @@ describe('GameStore', () => {
   it('greets the server, becomes ready on welcome and keeps the latest world', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    expect(sent).toEqual([{ type: 'hello', protocolVersion: 5 }]);
-    deliver({ type: 'welcome', protocolVersion: 5 });
+    expect(sent).toEqual([{ type: 'hello', protocolVersion: 6 }]);
+    deliver({ type: 'welcome', protocolVersion: 6 });
     deliver({ type: 'state', world });
     expect(store.getState()).toMatchObject({ connection: 'ready', world, error: null, selected: null, lastAction: null });
   });
@@ -85,7 +85,7 @@ describe('GameStore', () => {
     expect(sent).toHaveLength(1);
     expect(store.getState().lastAction).toBeNull();
 
-    deliver({ type: 'welcome', protocolVersion: 5 });
+    deliver({ type: 'welcome', protocolVersion: 6 });
     store.act(move);
     expect(sent.at(-1)).toEqual({ type: 'action', action: move });
     expect(store.getState().lastAction).toEqual({ status: 'pending' });
@@ -115,7 +115,7 @@ describe('GameStore', () => {
     const store = new GameStore(connection);
     deliver({ type: 'state', world });
     expect(store.canAct('a')).toBe(false);
-    deliver({ type: 'welcome', protocolVersion: 5 });
+    deliver({ type: 'welcome', protocolVersion: 6 });
     expect(store.canAct('a')).toBe(true);
     expect(store.canAct('nobody')).toBe(false);
     const [resident] = world.residents;
@@ -128,12 +128,23 @@ describe('GameStore', () => {
   it('allows only leaving while the resident is mining', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    deliver({ type: 'welcome', protocolVersion: 5 });
+    deliver({ type: 'welcome', protocolVersion: 6 });
     deliver({ type: 'state', world });
     expect(store.isFree('a')).toBe(true);
     const [resident] = world.residents;
     const mining = { poolId: 'p1', amount: 30, remainingSeconds: 10 };
     deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, mining }] } });
+    expect(store.canAct('a')).toBe(true);
+    expect(store.isFree('a')).toBe(false);
+  });
+
+  it('allows only leaving while the resident is walking', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver({ type: 'welcome', protocolVersion: 6 });
+    const [resident] = world.residents;
+    const walking = { target: { x: 5, y: 5 }, remainingSeconds: 2 };
+    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, walking }] } });
     expect(store.canAct('a')).toBe(true);
     expect(store.isFree('a')).toBe(false);
   });
@@ -168,7 +179,7 @@ describe('GameStore', () => {
   ])('stops showing a pending action when %s', (_, interrupt) => {
     const test = fakeConnection();
     const store = new GameStore(test.connection);
-    test.deliver({ type: 'welcome', protocolVersion: 5 });
+    test.deliver({ type: 'welcome', protocolVersion: 6 });
     store.act({ type: 'move_to', residentId: 'a', target: { x: 1, y: 1 } });
     interrupt(test);
     expect(store.getState().lastAction).toBeNull();

@@ -30,6 +30,7 @@ export function MapPanel() {
                 <span className="name">{resident.name}</span>
                 {resident.left && <span className="tag">已出局</span>}
                 {resident.mining && <span className="tag tag-mining">采矿中</span>}
+                {resident.walking && <span className="tag tag-walking">行走中</span>}
                 <span className="tokens">{resident.tokens} token</span>
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
