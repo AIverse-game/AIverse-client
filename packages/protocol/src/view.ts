@@ -98,8 +98,8 @@ export const marketSchema = z.object({
 });
 
 /**
- * A line of speech. Pages watch the whole game, so they see whispers too; residents hear only
- * what reached them, which the server settles when it is said.
+ * A line of speech: one spoken aloud, or a whisper to or from the resident the connection views
+ * as (`view_as`). Residents hear only what reached them, which the server settles when it is said.
  */
 export const speechSchema = z.object({
   seq: z.number().int().positive(),
@@ -134,7 +134,7 @@ export const worldViewSchema = z
     game: gameSchema,
     /** Absent on a map without a market. */
     market: marketSchema.optional(),
-    /** The latest lines of speech, oldest first. */
+    /** The latest lines this connection may see, oldest first: everything aloud, its viewer's whispers. */
     speech: z.array(speechSchema),
   })
   .superRefine((world, context) => {

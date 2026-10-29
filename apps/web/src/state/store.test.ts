@@ -205,7 +205,7 @@ describe('GameStore', () => {
   });
 
   it('drops the selection when the selected resident leaves the world', () => {
-    const { connection, deliver } = fakeConnection();
+    const { connection, deliver, sent } = fakeConnection();
     const store = new GameStore(connection);
     deliver({ type: 'state', world });
     store.select('a');
@@ -213,6 +213,21 @@ describe('GameStore', () => {
     expect(store.getState().selected).toBe('a');
     deliver({ type: 'state', world: { ...world, residents: [] } });
     expect(store.getState().selected).toBeNull();
+    expect(sent.at(-1)).toEqual({ type: 'view_as', residentId: null });
+  });
+
+  it('tells the server whom the page views as, so only their whispers arrive', () => {
+    const { connection, deliver, sent } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver({ type: 'state', world });
+    store.select('a');
+    store.select('a');
+    store.select(null);
+    expect(sent.slice(1)).toEqual([
+      { type: 'view_as', residentId: 'a' },
+      { type: 'view_as', residentId: null },
+    ]);
   });
 
   it.each([

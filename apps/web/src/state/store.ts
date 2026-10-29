@@ -17,7 +17,10 @@ export interface ClientState {
   connection: 'connecting' | 'ready' | 'failed';
   world: WorldView | null;
   error: string | null;
-  /** The resident manual operations apply to. Local only; the server never sees it. */
+  /**
+   * The resident manual operations apply to. The server is told, so this page's states carry
+   * that resident's whispers and no one else's.
+   */
   selected: ResidentId | null;
   lastAction: ActionStatus | null;
   /**
@@ -147,7 +150,9 @@ export class GameStore {
   }
 
   select(id: ResidentId | null): void {
-    if (id !== this.state.selected) this.update({ selected: id });
+    if (id === this.state.selected) return;
+    this.connection.send({ type: 'view_as', residentId: id });
+    this.update({ selected: id });
   }
 
   dispose(): void {
@@ -168,6 +173,7 @@ export class GameStore {
       case 'state': {
         const { selected } = this.state;
         const stillThere = message.world.residents.some((resident) => resident.id === selected);
+        if (selected !== null && !stillThere) this.connection.send({ type: 'view_as', residentId: null });
         const receivedAt = this.now();
         const deadline = receivedAt + message.world.game.remainingSeconds * 1000;
         this.update({ world: message.world, selected: stillThere ? selected : null, deadline, receivedAt });

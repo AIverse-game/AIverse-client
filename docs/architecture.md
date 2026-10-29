@@ -128,11 +128,12 @@ Python 服务端（aiverse-server）
 
 ## 对话
 
-见服务端 `speech.py` 与 [变更 0018](../changes/0018-speech.md)：
+见服务端 `speech.py`、[变更 0018](../changes/0018-speech.md) 与 [变更 0019](../changes/0019-speech-cost-and-privacy.md)：
 
 - 原语 `Say` 不带 `to` 时当众说：说话那一刻 `HEARING_RADIUS`（20，与感知半径相同）内仍在局中的其他居民听到，行走者按途中位置；带 `to` 时只有那名居民听到，不论远近。谁听到记在发言的 `listeners` 里，之后走近的人听不到。
-- 说话像退出游戏一样不受忙碌限制，不耗 token，也不进活动日志。世界保留最近 `SPEECH_LIMIT`（200）句，`Memory.speech_seen` 记着居民看过的最后一句。
-- `begin_turn` 的 `Perception.speech` 是自上次查看以来自己说的和听到的话；视图中的 `speech` 是最近 50 句，页面是观战视角，私聊也显示。页面的“对话”面板见 `apps/web/src/ui/SpeechPanel.tsx`。
+- 说话像退出游戏一样不受忙碌限制，不进活动日志。每句从携带的 token 中扣 `SPEECH_COSTS`：当众说 2 个、私聊 1 个，花掉最后一个照常出局。世界保留最近 `SPEECH_LIMIT`（200）句，`Memory.speech_seen` 记着居民看过的最后一句。
+- `begin_turn` 的 `Perception.speech` 是自上次查看以来自己说的和听到的话。
+- 视图因连接而异：每个连接有一个 `view_as` 选择的居民（`Outbox.viewer`），`world_view` 只放进当众说的话和该居民发出或收到的私聊，取其中最近 50 句；`Game.broadcast_world` 按不同的选择各编码一次。页面在 `GameStore.select` 时发送 `view_as`，所以不相关的私聊不会到达浏览器。页面的“对话”面板见 `apps/web/src/ui/SpeechPanel.tsx`。
 
 ## 行走
 

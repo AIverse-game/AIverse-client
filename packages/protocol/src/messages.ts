@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import type { Action } from './actions';
-import { worldViewSchema } from './view';
+import { worldViewSchema, type ResidentId } from './view';
 
 /** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
-export const PROTOCOL_VERSION = 9;
+export const PROTOCOL_VERSION = 10;
 
 // Client -> authority. Validated by the server on arrival.
 export type ClientMessage =
   | { type: 'hello'; protocolVersion: number }
+  /**
+   * Allowed only after `welcome`. Choose whose whispers this connection's states carry: the
+   * resident's, or none for null. The server answers with a `state`.
+   */
+  | { type: 'view_as'; residentId: ResidentId | null }
   /** Allowed only after `welcome`. */
   | { type: 'action'; action: Action };
 

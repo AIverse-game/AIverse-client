@@ -31,7 +31,8 @@ export type BuyChipAction = { type: 'buy_chip'; residentId: ResidentId; model: s
 
 /**
  * Say `text`, at most 100 characters after trimming, aloud to every resident within earshot, or,
- * given `to`, to that one resident wherever they are. Works while walking or mining.
+ * given `to`, to that one resident wherever they are. Costs carried tokens, 2 aloud and 1 to one
+ * resident; spending the last takes the speaker out of the game. Works while walking or mining.
  */
 export type SayAction = { type: 'say'; residentId: ResidentId; text: string; to?: ResidentId };
 

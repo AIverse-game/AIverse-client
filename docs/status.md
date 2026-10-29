@@ -19,7 +19,7 @@
 - token 收购点与市场价（[变更 0016](../changes/0016-token-market.md)）：地图中心有一个收购点，代表镇外买家，是除开局资金外金币唯一的新来源。服务端 `market.py`：居民站在收购点半径 5 内，用原语 `SellTokens`（协议中为 `sell_tokens`）卖出携带的 token 换金币；单价随近期卖出量下跌（卖出 100 个时减半）、按 60 秒半衰期回升到 20 金币，一次卖出的收入是单价的积分，拆单不占便宜；卖光拥有的 token 照常出局。矿池离收购点至少 20 单位。感知附带收购点与现价。页面画出收购点，侧栏显示随时间回升的现价，在范围内可输入数量卖出并看到估算收入，卖光前确认。协议版本为 7。
 - 芯片（[变更 0017](../changes/0017-mining-chips.md)）：采矿必须携带芯片，开局谁都没有，要在收购点用金币按定价买（服务端 `chips.py`，原语 `BuyChip`，协议中为 `buy_chip`）：MK1 300 金币、每次采 30 token，MK2 1200 金币、60 token，MK3 3000 金币、100 token；有几块时自动用最好的一块。采矿期间居民守着芯片，不能走开或卖掉；芯片是以型号命名的物品，可用报价转手，出局时清空。感知附带芯片价目。页面显示价目、购买按钮、每人持有芯片的贴图与所用芯片，没有芯片时提示先买。协议版本为 8。
 - 长期与短期记忆（[变更 0015](../changes/0015-memory.md)）：服务端 `memory.py` 的 `remember` 让驱动居民的 Agent 自己决定记下什么文字、记成长期还是短期，`forget` 忘掉任意一条。长期笔记整局保留，短期笔记写入 120 秒游戏时间后清除；每条最多 300 字符，长期最多 30 条、短期最多 20 条，满了要先忘掉一条。`Game.begin_turn` 的感知结果附带当前的全部笔记。不是原语：不耗 token，行走和采矿中也能写，不广播。尚无调用方，不在协议中。
-- 对话（[变更 0018](../changes/0018-speech.md)）：服务端 `speech.py`，原语 `Say`（协议中为 `say`）。不指定对象时当众说，说话那一刻 20 单位内仍在局中的其他居民听到；指定一名居民时是私聊，不论远近只有对方听到。每句 1～100 字符，不耗 token，行走、采矿中也能说；谁听到在说话时定下。`Game.begin_turn` 的感知附带自上次查看以来自己说的和听到的话，世界保留最近 200 句。页面“对话”面板列出最近 50 句（观战视角，私聊也显示），选中居民后可当众说或私聊。协议版本为 9。
+- 对话（[变更 0018](../changes/0018-speech.md)）：服务端 `speech.py`，原语 `Say`（协议中为 `say`）。不指定对象时当众说，说话那一刻 20 单位内仍在局中的其他居民听到；指定一名居民时是私聊，不论远近只有对方听到。每句 1～100 字符，当众说 2 token、私聊 1 token（[变更 0019](../changes/0019-speech-cost-and-privacy.md)），行走、采矿中也能说；谁听到在说话时定下。`Game.begin_turn` 的感知附带自上次查看以来自己说的和听到的话，世界保留最近 200 句。页面“对话”面板列出最近 50 句当众说的话和选中居民自己的私聊：页面选中居民时以 `view_as` 告诉服务端，服务端只把该居民发出或收到的私聊发给这个页面。选中居民后可当众说或私聊。协议版本为 10。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
 - Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。
 - 本地 Git 仓库，分支为 `main`，未配置远程仓库；`aiverse-server` 是独立的 Git 仓库，同样只在本地。
@@ -40,7 +40,7 @@ python3 scripts/check_repo.py   # 仓库骨架检查
 make verify                     # 仓库检查加 npm run verify
 ```
 
-验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md)、[变更 0008](../changes/0008-resident-inventory.md)、[变更 0009](../changes/0009-event-queue.md)、[变更 0010](../changes/0010-trade-offers.md)、[变更 0011](../changes/0011-coins-leaving-and-game-end.md)、[变更 0012](../changes/0012-tokens-and-mining.md)、[变更 0013](../changes/0013-perception.md)、[变更 0014](../changes/0014-walking-speed.md)、[变更 0015](../changes/0015-memory.md)、[变更 0016](../changes/0016-token-market.md)、[变更 0017](../changes/0017-mining-chips.md) 与 [变更 0018](../changes/0018-speech.md)。
+验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md)、[变更 0008](../changes/0008-resident-inventory.md)、[变更 0009](../changes/0009-event-queue.md)、[变更 0010](../changes/0010-trade-offers.md)、[变更 0011](../changes/0011-coins-leaving-and-game-end.md)、[变更 0012](../changes/0012-tokens-and-mining.md)、[变更 0013](../changes/0013-perception.md)、[变更 0014](../changes/0014-walking-speed.md)、[变更 0015](../changes/0015-memory.md)、[变更 0016](../changes/0016-token-market.md)、[变更 0017](../changes/0017-mining-chips.md)、[变更 0018](../changes/0018-speech.md) 与 [变更 0019](../changes/0019-speech-cost-and-privacy.md)。
 
 ## 尚未实现或未验证
 
@@ -54,7 +54,7 @@ make verify                     # 仓库检查加 npm run verify
 - 芯片的价格与产量未经试玩调参；芯片没有损耗，不能卖回收购点；页面不能发起芯片交易（交易原语不在协议中），地图上也不画芯片。
 - 记忆尚无调用方：要等 AI 循环把 `remember`、`forget` 作为模型的工具；笔记不在协议中，页面看不到。接口只认传入的居民 id，不校验调用方；AI 循环须把每个 Agent 绑定到自己的居民、工具不带居民 id，见变更 0015 的交接。短期时长与上限未经试玩调参。
 - 感知尚无调用方：要等 AI 循环与回合时钟；感知结果与居民记忆不在协议中，页面仍显示全部矿池和居民。感知半径与日志上限未经试玩调参。
-- 对话没有发言冷却或每回合条数限制，等回合时钟与 AI 循环再定；地图上没有对话气泡；听力半径与长度上限未经试玩调参。页面显示所有私聊，有了“玩家拥有哪名居民”后需要决定是否隐藏。
+- 对话没有发言冷却或每回合条数限制，等回合时钟与 AI 循环再定；地图上没有对话气泡；听力半径、长度上限与每句消耗未经试玩调参。私聊按页面选中的居民过滤，但尚无归属，任何页面选中谁就能看到谁的私聊；有了“玩家拥有哪名居民”后，`view_as` 应只允许选自己的居民。
 - 操作权限：任何连接都能操作任何居民，尚无“玩家拥有哪名居民”的概念。
 - 房间、准备流程、身份认证、Origin 检查、消息大小限制、断线重连、真实大模型接入、事件记录与复盘、正式美术（当前地面和居民都是程序绘制，只有侧栏的芯片用了贴图）、镜头旋转与缩放。
 - 尚无自动的跨语言协议契约测试，靠客户端运行时校验和端到端实测发现不一致。
