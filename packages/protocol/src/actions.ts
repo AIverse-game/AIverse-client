@@ -29,4 +29,10 @@ export type SellTokensAction = { type: 'sell_tokens'; residentId: ResidentId; qu
 /** Buy one chip of `model` at the market the resident stands at, for its fixed price in coins. */
 export type BuyChipAction = { type: 'buy_chip'; residentId: ResidentId; model: string };
 
-export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction | BuyChipAction;
+/**
+ * Say `text`, at most 100 characters after trimming, aloud to every resident within earshot, or,
+ * given `to`, to that one resident wherever they are. Works while walking or mining.
+ */
+export type SayAction = { type: 'say'; residentId: ResidentId; text: string; to?: ResidentId };
+
+export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction | BuyChipAction | SayAction;

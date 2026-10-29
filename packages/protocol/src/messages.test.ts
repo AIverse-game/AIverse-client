@@ -19,8 +19,15 @@ const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, ra
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, pools, residents, game: clock },
+  world: { map: { size }, pools, residents, game: clock, speech: [] },
 });
+
+const withSpeech = (speech: unknown[]) => {
+  const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)]);
+  return { ...message, world: { ...message.world, speech } };
+};
+
+const line = { seq: 1, time: 3.5, speakerId: 'a', text: '有人吗？', listeners: ['b'] };
 
 const chips = [
   { model: 'MK1', price: 300, tokensPerJob: 30 },
@@ -60,6 +67,11 @@ describe('parseServerMessage', () => {
     const message = withMarket({ ...market, position: { x: 100, y: 0 }, pressure: 12.5 });
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
     expect(parseServerMessage(state(100, [])).ok).toBe(true);
+  });
+
+  it('accepts speech aloud and to one resident', () => {
+    const message = withSpeech([line, { ...line, seq: 2, to: 'b' }, { ...line, seq: 3, listeners: [] }]);
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
   it('accepts welcome and error messages, including unknown error codes', () => {
@@ -123,6 +135,12 @@ describe('parseServerMessage', () => {
     ['negative market pressure', withMarket({ ...market, pressure: -1 })],
     ['market without a price', withMarket({ ...market, basePrice: undefined })],
     ['market with no reach', withMarket({ ...market, radius: 0 })],
+    ['missing speech', { type: 'state', world: { map: { size: 100 }, pools: [], residents: [], game } }],
+    ['speech by an unknown resident', withSpeech([{ ...line, speakerId: 'z' }])],
+    ['speech heard by an unknown resident', withSpeech([{ ...line, listeners: ['z'] }])],
+    ['speech to an unknown resident', withSpeech([{ ...line, to: 'z' }])],
+    ['speech to the speaker', withSpeech([{ ...line, to: 'a', listeners: [] }])],
+    ['empty speech', withSpeech([{ ...line, text: '' }])],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);
     expect(result.ok).toBe(false);

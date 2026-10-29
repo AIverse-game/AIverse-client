@@ -34,6 +34,7 @@ const world: WorldView = {
     { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, left: false, rank: 1, tokens: 200, chips: {} },
   ],
   game: { ended: false, remainingSeconds: 90 },
+  speech: [],
 };
 
 describe('GameStore', () => {

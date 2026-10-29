@@ -97,6 +97,22 @@ export const marketSchema = z.object({
   chips: z.array(chipModelSchema),
 });
 
+/**
+ * A line of speech. Pages watch the whole game, so they see whispers too; residents hear only
+ * what reached them, which the server settles when it is said.
+ */
+export const speechSchema = z.object({
+  seq: z.number().int().positive(),
+  /** Game seconds since the start when it was said. */
+  time: z.number().nonnegative(),
+  speakerId: z.string(),
+  text: z.string().min(1),
+  /** The one resident spoken to; absent when spoken aloud. */
+  to: z.string().optional(),
+  /** Who heard it, not counting the speaker. */
+  listeners: z.array(z.string()),
+});
+
 export const mapSchema = z.object({
   /** Side length of the square map, in map units. */
   size: z.number().positive(),
@@ -118,6 +134,8 @@ export const worldViewSchema = z
     game: gameSchema,
     /** Absent on a map without a market. */
     market: marketSchema.optional(),
+    /** The latest lines of speech, oldest first. */
+    speech: z.array(speechSchema),
   })
   .superRefine((world, context) => {
     const inside = ({ x, y }: Position) => x >= 0 && y >= 0 && x <= world.map.size && y <= world.map.size;
@@ -150,6 +168,15 @@ export const worldViewSchema = z
         context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
       }
     });
+    world.speech.forEach((line, index) => {
+      const people = [line.speakerId, ...line.listeners, ...(line.to === undefined ? [] : [line.to])];
+      if (people.some((id) => !seen.has(id))) {
+        context.addIssue({ code: 'custom', path: ['speech', index], message: 'unknown resident' });
+      }
+      if (line.to === line.speakerId || line.listeners.includes(line.speakerId)) {
+        context.addIssue({ code: 'custom', path: ['speech', index], message: 'speaker hears themselves' });
+      }
+    });
   });
 
 export type Position = z.infer<typeof positionSchema>;
@@ -159,4 +186,5 @@ export type PoolView = z.infer<typeof poolSchema>;
 export type MarketView = z.infer<typeof marketSchema>;
 export type ChipModelView = z.infer<typeof chipModelSchema>;
 export type GameView = z.infer<typeof gameSchema>;
+export type SpeechView = z.infer<typeof speechSchema>;
 export type WorldView = z.infer<typeof worldViewSchema>;

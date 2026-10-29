@@ -68,12 +68,12 @@ export function ActionPanel() {
         <p className="small" role="status">
           正在用 <ChipIcon model={resident.mining.chip} />
           {resident.mining.chip} 在矿池 {resident.mining.poolId} 采矿，完成后获得 {resident.mining.amount}{' '}
-          token；采矿期间守着芯片，只能退出游戏。
+          token；采矿期间守着芯片，只能说话或退出游戏。
         </p>
       )}
       {resident?.walking && (
         <p className="small" role="status">
-          正在走向 ({formatCoordinate(resident.walking.target.x)}, {formatCoordinate(resident.walking.target.y)})，到达前只能退出游戏。
+          正在走向 ({formatCoordinate(resident.walking.target.x)}, {formatCoordinate(resident.walking.target.y)})，到达前只能说话或退出游戏。
         </p>
       )}
       <form className="move-form" onSubmit={submit}>

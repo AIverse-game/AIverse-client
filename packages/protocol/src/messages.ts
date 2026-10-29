@@ -3,7 +3,7 @@ import type { Action } from './actions';
 import { worldViewSchema } from './view';
 
 /** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
-export const PROTOCOL_VERSION = 8;
+export const PROTOCOL_VERSION = 9;
 
 // Client -> authority. Validated by the server on arrival.
 export type ClientMessage =
