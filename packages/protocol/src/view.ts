@@ -29,12 +29,19 @@ export const residentSchema = z.object({
    * spends them, mining earns them, and a resident who runs out is out of the game.
    */
   tokens: z.number().int().nonnegative(),
-  /** Present while the resident is busy mining. */
+  /**
+   * Chips owned, model to count, including those set aside by pending offers; models
+   * with none are left out. Mining needs one, and the best one carried does the work.
+   */
+  chips: z.record(z.string(), z.number().int().positive()),
+  /** Present while the resident is busy mining; they stay with the chip until it ends. */
   mining: z
     .object({
       poolId: z.string(),
       /** Tokens paid out when the job ends. */
       amount: z.number().int().positive(),
+      /** Model of the chip doing the work. */
+      chip: z.string(),
       /** Time left in the job when the server sent this. */
       remainingSeconds: z.number().nonnegative(),
     })
@@ -62,10 +69,19 @@ export const poolSchema = z.object({
   reserve: z.number().int().nonnegative(),
 });
 
+/** A model of chip on sale at the market. Better models dig more tokens per job. */
+export const chipModelSchema = z.object({
+  model: z.string(),
+  /** Coins one chip costs; fixed. */
+  price: z.number().int().positive(),
+  /** Tokens one mining job digs out while the pool has that many left. */
+  tokensPerJob: z.number().int().positive(),
+});
+
 /**
- * Where residents sell tokens for coins, and what sets its price. One more token fetches
- * `basePrice * depth / (depth + p)` coins, where the pressure p of recent sales halves every
- * `halfLifeSeconds` after the server sent this; selling q tokens pays
+ * Where residents sell tokens for coins and buy chips, and what sets the token price. One more
+ * token fetches `basePrice * depth / (depth + p)` coins, where the pressure p of recent sales
+ * halves every `halfLifeSeconds` after the server sent this; selling q tokens pays
  * `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The server decides each sale.
  */
 export const marketSchema = z.object({
@@ -77,6 +93,8 @@ export const marketSchema = z.object({
   halfLifeSeconds: z.number().positive(),
   /** Recent sales in tokens when the server sent this. */
   pressure: z.number().nonnegative(),
+  /** Chips on sale at fixed prices, worst first. */
+  chips: z.array(chipModelSchema),
 });
 
 export const mapSchema = z.object({
@@ -139,5 +157,6 @@ export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
 export type PoolView = z.infer<typeof poolSchema>;
 export type MarketView = z.infer<typeof marketSchema>;
+export type ChipModelView = z.infer<typeof chipModelSchema>;
 export type GameView = z.infer<typeof gameSchema>;
 export type WorldView = z.infer<typeof worldViewSchema>;

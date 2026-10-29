@@ -10,6 +10,7 @@ const resident = (id: string, x: number, y: number) => ({
   left: false,
   rank: 1,
   tokens: 200,
+  chips: {},
 });
 
 const game = { ended: false, remainingSeconds: 1200 };
@@ -21,7 +22,12 @@ const state = (size: unknown, residents: unknown[], clock: unknown = game, pools
   world: { map: { size }, pools, residents, game: clock },
 });
 
-const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0 };
+const chips = [
+  { model: 'MK1', price: 300, tokensPerJob: 30 },
+  { model: 'MK2', price: 1200, tokensPerJob: 60 },
+];
+
+const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0, chips };
 
 const withMarket = (value: unknown) => {
   const message = state(100, []);
@@ -34,8 +40,12 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
-  it('accepts pools and a resident mining one of them', () => {
-    const miner = { ...resident('a', 1, 1), mining: { poolId: 'p1', amount: 30, remainingSeconds: 9.5 } };
+  it('accepts pools and a resident mining one of them with a chip', () => {
+    const miner = {
+      ...resident('a', 1, 1),
+      chips: { MK1: 2, MK2: 1 },
+      mining: { poolId: 'p1', amount: 60, chip: 'MK2', remainingSeconds: 9.5 },
+    };
     const message = state(100, [miner], game, [pool('p1', 10, 10), pool('p2', 100, 0)]);
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
@@ -89,8 +99,18 @@ describe('parseServerMessage', () => {
     ['negative reserve', state(100, [], game, [{ ...pool('p1', 1, 1), reserve: -1 }])],
     [
       'mining an unknown pool',
-      state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p9', amount: 1, remainingSeconds: 1 } }]),
+      state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p9', amount: 1, chip: 'MK1', remainingSeconds: 1 } }]),
     ],
+    [
+      'mining without saying which chip',
+      state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p1', amount: 1, remainingSeconds: 1 } }], game, [
+        pool('p1', 1, 1),
+      ]),
+    ],
+    ['missing chips', state(100, [{ ...resident('a', 1, 1), chips: undefined }])],
+    ['a chip count of zero', state(100, [{ ...resident('a', 1, 1), chips: { MK1: 0 } }])],
+    ['market without chips on sale', withMarket({ ...market, chips: undefined })],
+    ['a chip without a price', withMarket({ ...market, chips: [{ model: 'MK1', tokensPerJob: 30 }] })],
     [
       'walking off the map',
       state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 100.1, y: 0 }, remainingSeconds: 1 } }]),

@@ -9,6 +9,7 @@ const calm: MarketView = {
   depth: 100,
   halfLifeSeconds: 60,
   pressure: 0,
+  chips: [],
 };
 
 describe('market price', () => {

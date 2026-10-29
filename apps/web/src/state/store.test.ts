@@ -31,7 +31,7 @@ const world: WorldView = {
   map: { size: 100 },
   pools: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
   residents: [
-    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, left: false, rank: 1, tokens: 200 },
+    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, left: false, rank: 1, tokens: 200, chips: {} },
   ],
   game: { ended: false, remainingSeconds: 90 },
 };
@@ -115,7 +115,7 @@ describe('GameStore', () => {
     let now = 5000;
     const store = new GameStore(connection, () => now);
     expect(store.marketPrice()).toBeNull();
-    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 100 };
+    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 100, chips: [] };
     deliver({ type: 'state', world: { ...world, market } });
     expect(store.marketPrice()).toBeCloseTo(10);
     expect(store.atMarket('a')).toBe(true);
@@ -153,8 +153,8 @@ describe('GameStore', () => {
     deliver({ type: 'state', world });
     expect(store.isFree('a')).toBe(true);
     const [resident] = world.residents;
-    const mining = { poolId: 'p1', amount: 30, remainingSeconds: 10 };
-    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, mining }] } });
+    const mining = { poolId: 'p1', amount: 30, chip: 'MK1', remainingSeconds: 10 };
+    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, chips: { MK1: 1 }, mining }] } });
     expect(store.canAct('a')).toBe(true);
     expect(store.isFree('a')).toBe(false);
   });
@@ -180,6 +180,27 @@ describe('GameStore', () => {
     const away = { ...resident!, position: { x: 10, y: 30 } };
     deliver({ type: 'state', world: { ...world, residents: [away] } });
     expect(store.poolInReach('a')).toBeNull();
+  });
+
+  it('names the best chip a resident owns, by what the market lists', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    expect(store.bestChip('a')).toBeNull();
+    const chips = [
+      { model: 'MK1', price: 300, tokensPerJob: 30 },
+      { model: 'MK2', price: 1200, tokensPerJob: 60 },
+      { model: 'MK3', price: 3000, tokensPerJob: 100 },
+    ];
+    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0, chips };
+    const [resident] = world.residents;
+    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, chips: owned }] });
+    deliver({ type: 'state', world: owning({}) });
+    expect(store.bestChip('a')).toBeNull();
+    deliver({ type: 'state', world: owning({ MK1: 3, MK2: 1 }) });
+    expect(store.bestChip('a')?.model).toBe('MK2');
+    deliver({ type: 'state', world: owning({ MK3: 1, MK1: 1 }) });
+    expect(store.bestChip('a')?.model).toBe('MK3');
+    expect(store.bestChip('nobody')).toBeNull();
   });
 
   it('drops the selection when the selected resident leaves the world', () => {

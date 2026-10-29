@@ -190,6 +190,11 @@ h2 {
   color: #9fe3f0;
 }
 
+.residents .chips {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .pools {
   display: grid;
   gap: 4px;
@@ -370,6 +375,29 @@ h2 {
   cursor: pointer;
 }
 
+.buy-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.buy-chips button {
+  padding: 4px 10px;
+  border: 1px solid #4fc3d9;
+  border-radius: 6px;
+  background: transparent;
+  color: #9fe3f0;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.buy-chips button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .mine:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -396,4 +424,31 @@ h2 {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.chip-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 2px;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+/* A busy resident with chips outgrows the side column: wrap between items, never inside one. */
+.residents button {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.residents button > span {
+  white-space: nowrap;
+}
+
+.residents .chip + .chip {
+  margin-left: 2px;
+}
+
+.buy-chips .chip-icon {
+  width: 24px;
+  height: 24px;
 }

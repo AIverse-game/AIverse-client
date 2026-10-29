@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { formatCoordinate } from '../render/layout';
 import { useGameState, useStore } from '../state/react';
 import type { ActionStatus } from '../state/store';
+import { ChipIcon } from './ChipIcon';
 import { formatPrice } from './format';
 import { useSecondTick } from './useSecondTick';
 
@@ -23,6 +24,7 @@ export function ActionPanel() {
   // Mining and walking keep the resident busy: everything but leaving waits until they end.
   const free = resident !== null && store.isFree(resident.id);
   const pool = resident ? store.poolInReach(resident.id) : null;
+  const chip = resident ? store.bestChip(resident.id) : null;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -64,7 +66,9 @@ export function ActionPanel() {
       )}
       {resident?.mining && (
         <p className="small" role="status">
-          正在矿池 {resident.mining.poolId} 采矿，完成后获得 {resident.mining.amount} token；采矿期间只能退出游戏。
+          正在用 <ChipIcon model={resident.mining.chip} />
+          {resident.mining.chip} 在矿池 {resident.mining.poolId} 采矿，完成后获得 {resident.mining.amount}{' '}
+          token；采矿期间守着芯片，只能退出游戏。
         </p>
       )}
       {resident?.walking && (
@@ -107,11 +111,23 @@ export function ActionPanel() {
         选中居民后，点击地图上的地面也会让其走到该点。居民沿直线匀速走过去，到达前不能做别的；出发时按直线距离扣
         token（向上取整），不够则走不了；token 用完，到达后出局。
       </p>
-      <button type="button" className="mine" disabled={!free || !pool || pool.reserve === 0} onClick={mine}>
+      <button type="button" className="mine" disabled={!free || !pool || !chip || pool.reserve === 0} onClick={mine}>
+        {chip && (
+          <>
+            用 <ChipIcon model={chip.model} />
+            {chip.model}{' '}
+          </>
+        )}
         {pool ? `在矿池 ${pool.id} 采矿（剩余 ${pool.reserve}）` : '采矿'}
       </button>
-      {resident && !pool && !resident.left && <p className="muted small">走到矿池的圆圈范围内才能采矿。</p>}
+      {resident && !resident.left && !ended && (!chip || !pool) && (
+        <p className="muted small">
+          {!chip && '没有芯片不能采矿，先到收购点买一块。'}
+          {!pool && '走到矿池的圆圈范围内才能采矿。'}
+        </p>
+      )}
       {resident && world.market && <SellForm resident={resident} free={free} />}
+      {resident && world.market && <BuyChipForm resident={resident} free={free} />}
       <button type="button" className="leave" disabled={!canAct} onClick={leave}>
         退出游戏
       </button>
@@ -175,9 +191,35 @@ function SellForm({ resident, free }: { resident: ResidentView; free: boolean })
           。卖得越多单价越低，等一会儿价格会回升。
         </p>
       ) : (
-        <p className="muted small">走到地图中央收购点的圆圈范围内才能卖 token。</p>
+        <p className="muted small">走到地图中央收购点的圆圈范围内才能卖 token、买芯片。</p>
       )}
     </>
+  );
+}
+
+/** Buying chips at the market, one button per model at its fixed price. */
+function BuyChipForm({ resident, free }: { resident: ResidentView; free: boolean }) {
+  const store = useStore();
+  const { world } = useGameState();
+  const models = world?.market?.chips ?? [];
+  if (models.length === 0) return null;
+  const atMarket = store.atMarket(resident.id);
+
+  return (
+    <div className="buy-chips">
+      {models.map((model) => (
+        <button
+          key={model.model}
+          type="button"
+          // `coins` counts those set aside in offers too; the server refuses if the rest falls short.
+          disabled={!free || !atMarket || resident.coins < model.price}
+          onClick={() => store.act({ type: 'buy_chip', residentId: resident.id, model: model.model })}
+        >
+          买 <ChipIcon model={model.model} />
+          {model.model}：{model.price.toLocaleString('zh-CN')} 金币，每次采 {model.tokensPerJob} token
+        </button>
+      ))}
+    </div>
   );
 }
 

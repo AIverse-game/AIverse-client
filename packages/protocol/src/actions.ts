@@ -14,8 +14,9 @@ export type MoveToAction = { type: 'move_to'; residentId: ResidentId; target: Po
 export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
 
 /**
- * Spend time at a token pool the resident stands within reach of. The tokens arrive when the
- * job ends; until then the resident can do nothing but leave.
+ * Spend time at a token pool the resident stands within reach of, with the best chip
+ * they carry; without one the server refuses. The tokens arrive when the job ends; until then the
+ * resident stays with the chip and can do nothing but leave.
  */
 export type MineAction = { type: 'mine'; residentId: ResidentId; poolId: PoolId };
 
@@ -25,4 +26,7 @@ export type MineAction = { type: 'mine'; residentId: ResidentId; poolId: PoolId 
  */
 export type SellTokensAction = { type: 'sell_tokens'; residentId: ResidentId; quantity: number };
 
-export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction;
+/** Buy one chip of `model` at the market the resident stands at, for its fixed price in coins. */
+export type BuyChipAction = { type: 'buy_chip'; residentId: ResidentId; model: string };
+
+export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction | BuyChipAction;

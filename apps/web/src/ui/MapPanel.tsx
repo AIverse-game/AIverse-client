@@ -1,5 +1,6 @@
 import { formatCoordinate } from '../render/layout';
 import { useGameState, useStore } from '../state/react';
+import { ChipIcon } from './ChipIcon';
 import { formatPrice } from './format';
 import { useSecondTick } from './useSecondTick';
 
@@ -33,6 +34,14 @@ export function MapPanel() {
                 {resident.left && <span className="tag">已出局</span>}
                 {resident.mining && <span className="tag tag-mining">采矿中</span>}
                 {resident.walking && <span className="tag tag-walking">行走中</span>}
+                <span className="chips">
+                  {Object.entries(resident.chips).map(([model, count]) => (
+                    <span key={model} className="chip">
+                      <ChipIcon model={model} alone />
+                      {count > 1 && `×${count}`}
+                    </span>
+                  ))}
+                </span>
                 <span className="tokens">{resident.tokens} token</span>
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
@@ -85,6 +94,23 @@ function MarketInfo() {
       <p className="muted small">
         镇外的买家用金币收购 token：卖得越多价格越低，没人卖时逐渐回升到 {formatPrice(market.basePrice)}。所有人共用一个价格。
       </p>
+      {market.chips.length > 0 && (
+        <>
+          <ul className="pools">
+            {market.chips.map((model) => (
+              <li key={model.model}>
+                <span className="name">
+                  <ChipIcon model={model.model} />
+                  {model.model}
+                </span>
+                <span className="coords">每次采 {model.tokensPerJob} token</span>
+                <span className="tokens">{model.price.toLocaleString('zh-CN')} 金币</span>
+              </li>
+            ))}
+          </ul>
+          <p className="muted small">收购点还按定价出售芯片。没有芯片不能采矿，有几块时用最好的一块。</p>
+        </>
+      )}
     </>
   );
 }

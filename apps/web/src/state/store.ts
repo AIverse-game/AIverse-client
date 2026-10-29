@@ -1,6 +1,7 @@
 import {
   PROTOCOL_VERSION,
   type Action,
+  type ChipModelView,
   type PoolView,
   type ResidentId,
   type ServerMessage,
@@ -109,6 +110,22 @@ export class GameStore {
     const market = world?.market;
     if (!resident || !market) return false;
     return Math.hypot(market.position.x - resident.position.x, market.position.y - resident.position.y) <= market.radius;
+  }
+
+  /**
+   * The model that would do the work if the resident mined now: the best one they own. The
+   * server picks among those they carry, but `chips` counts those set aside in offers too and
+   * the view has no carried count yet, so with a chip set aside this can name one the server
+   * then refuses or passes over. Null without a chip or a market listing the models.
+   */
+  bestChip(id: ResidentId): ChipModelView | null {
+    const { world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    const owned = (world?.market?.chips ?? []).filter((model) => (resident?.chips[model.model] ?? 0) > 0);
+    return owned.reduce<ChipModelView | null>(
+      (best, model) => (best === null || model.tokensPerJob > best.tokensPerJob ? model : best),
+      null,
+    );
   }
 
   /** Coins one more token fetches right now by the local clock, or null without a market. */
