@@ -21,6 +21,7 @@
 - 长期与短期记忆（[变更 0015](../changes/0015-memory.md)）：服务端 `memory.py` 的 `remember` 让驱动居民的 Agent 自己决定记下什么文字、记成长期还是短期，`forget` 忘掉任意一条。长期笔记整局保留，短期笔记写入 120 秒游戏时间后清除；每条最多 300 字符，长期最多 30 条、短期最多 20 条，满了要先忘掉一条。`Game.begin_turn` 的感知结果附带当前的全部笔记。不是原语：不耗 token，行走和采矿中也能写，不广播。尚无调用方，不在协议中。
 - 对话（[变更 0018](../changes/0018-speech.md)）：服务端 `speech.py`，原语 `Say`（协议中为 `say`）。不指定对象时当众说，说话那一刻 20 单位内仍在局中的其他居民听到；指定一名居民时是私聊，不论远近只有对方听到。每句 1～100 字符，当众说 2 token、私聊 1 token（[变更 0019](../changes/0019-speech-cost-and-privacy.md)），行走、采矿中也能说；谁听到在说话时定下。`Game.begin_turn` 的感知附带自上次查看以来自己说的和听到的话，世界保留最近 200 句。页面“对话”面板列出最近 50 句当众说的话和选中居民自己的私聊：页面选中居民时以 `view_as` 告诉服务端，服务端只把该居民发出或收到的私聊发给这个页面。选中居民后可当众说或私聊。协议版本为 10。
 - AI 居民（[设计文档](design/ai-residents.md)，[变更 0020](../changes/0020-agent-loop.md)，[决策 0003](decisions/0003-event-driven-agents-and-openrouter.md)）：服务端 `agents/` 子包。启动时用 `--agent r1=scripted` 或 `--agent r2=openrouter[:模型]` 指定居民由 Agent 驱动，每名居民一个事件驱动的循环：感知 → 大脑经绑定该居民的工具执行原语、记笔记 → 等到行走或采矿结束、收到报价、听到别人说话或空闲 20 秒再醒，两轮至少相隔 3 秒。Agent 与网页的操作经同一个入口 `Game.act`/`Game.commit` 执行并广播。脚本机器人按固定策略买芯片、采矿、卖 token；OpenRouter 大脑默认用 `nvidia/nemotron-3.5-lightning`，key 只从环境变量 `OPENROUTER_API_KEY` 读取，每局最多 400 次请求。大脑或记录出错只记日志，不影响游戏。每轮记录打印到控制台，`--agent-log` 写成 JSONL。协议不变。
+- 服务端代码结构（[变更 0021](../changes/0021-server-subpackages.md)）：`aiverse_server` 按领域分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 子包，`tests/` 同样分组，见 [代码地图](code-map.md)。只移动文件，行为不变。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
 - Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前只有 AI 居民有独立的设计文档。
 - 本地 Git 仓库，分支为 `main`，未配置远程仓库；`aiverse-server` 是独立的 Git 仓库，同样只在本地。
@@ -42,7 +43,7 @@ python3 scripts/check_repo.py   # 仓库骨架检查
 make verify                     # 仓库检查加 npm run verify
 ```
 
-验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md)、[变更 0008](../changes/0008-resident-inventory.md)、[变更 0009](../changes/0009-event-queue.md)、[变更 0010](../changes/0010-trade-offers.md)、[变更 0011](../changes/0011-coins-leaving-and-game-end.md)、[变更 0012](../changes/0012-tokens-and-mining.md)、[变更 0013](../changes/0013-perception.md)、[变更 0014](../changes/0014-walking-speed.md)、[变更 0015](../changes/0015-memory.md)、[变更 0016](../changes/0016-token-market.md)、[变更 0017](../changes/0017-mining-chips.md)、[变更 0018](../changes/0018-speech.md)、[变更 0019](../changes/0019-speech-cost-and-privacy.md) 与 [变更 0020](../changes/0020-agent-loop.md)。
+验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md)、[变更 0008](../changes/0008-resident-inventory.md)、[变更 0009](../changes/0009-event-queue.md)、[变更 0010](../changes/0010-trade-offers.md)、[变更 0011](../changes/0011-coins-leaving-and-game-end.md)、[变更 0012](../changes/0012-tokens-and-mining.md)、[变更 0013](../changes/0013-perception.md)、[变更 0014](../changes/0014-walking-speed.md)、[变更 0015](../changes/0015-memory.md)、[变更 0016](../changes/0016-token-market.md)、[变更 0017](../changes/0017-mining-chips.md)、[变更 0018](../changes/0018-speech.md)、[变更 0019](../changes/0019-speech-cost-and-privacy.md)、[变更 0020](../changes/0020-agent-loop.md) 与 [变更 0021](../changes/0021-server-subpackages.md)。
 
 ## 尚未实现或未验证
 

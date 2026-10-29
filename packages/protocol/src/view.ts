@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Read-only data the authority sends out; mirrors aiverse_server/protocol.py in the
+// Read-only data the authority sends out; mirrors aiverse_server/server/protocol.py in the
 // Python server. Clients render it as-is and never derive game results themselves.
 //
 // Coordinates: the origin (0, 0) is the north-west (top-left) corner of a square map,

@@ -15,20 +15,30 @@
   net/ GameConnection（WebSocket，校验每条消息）
       ↑ JSON 文本帧          ↓ JSON 文本帧
 Python 服务端（aiverse-server）
-  app.py      WebSocket /ws：收消息、回复、向所有连接广播新状态
-  protocol.py 消息模型、输入校验、消息与原语/视图的转换
-  actions.py  操作原语：玩家与 AI 改变世界的唯一入口
-  inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
-  events.py   事件队列：居民之间的请求，等待同意、拒绝或撤回
-  trade.py    购买与出售报价：事件种类，物品换金币
-  tokens.py   token 体力：物品种类、拥有量、走路消耗
-  mining.py   矿池采矿：开始、按游戏时间发放、取消
-  market.py   收购点：按随卖出下跌、随时间回升的市场价用金币收购 token
-  chips.py    芯片：采矿必须携带，三个型号在收购点按定价出售
-  speech.py   对话：当众说给附近的人听，或私聊一名居民
-  lifecycle.py 一局的生命周期：能否行动、出局（含 token 耗尽）、结束、金币排名
-  world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、矿池、收购点、游戏时间）与坐标校验
-  layout.py   固定的地图、居民与地图中心的收购点，按种子随机放置的矿池
+  server/     对外接口
+    app.py      WebSocket /ws：收消息、回复、向所有连接广播新状态，随应用启停 Agent
+    protocol.py 消息模型、输入校验、消息与原语/视图的转换
+  agents/     AI 居民：事件驱动的循环、绑定居民的工具、脚本机器人与模型大脑
+  game/       一局的规则与调度
+    actions.py  操作原语：玩家与 AI 改变世界的唯一入口
+    lifecycle.py 能否行动、出局（含 token 耗尽）、结束、金币排名
+    clock.py    游戏时间到点的事：发放采矿、行走到达
+    layout.py   固定的地图、居民与地图中心的收购点，按种子随机放置的矿池
+  residents/  居民的行动与认知
+    walking.py  行走：速度、途中位置、到达
+    perception.py 感知与发现：每轮开始时看到的周围与新动态
+    memory.py   Agent 自选的长短期笔记
+    speech.py   对话：当众说给附近的人听，或私聊一名居民
+  economy/    经济
+    tokens.py   token 体力：物品种类、拥有量、走路消耗
+    chips.py    芯片：采矿必须携带，三个型号在收购点按定价出售
+    mining.py   矿池采矿：开始、按游戏时间发放、取消
+    market.py   收购点：按随卖出下跌、随时间回升的市场价用金币收购 token
+    trade.py    购买与出售报价：事件种类，物品换金币
+  core/       世界模型与共用机制，只依赖 core/ 内的模块
+    world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、矿池、收购点、游戏时间）与坐标校验
+    inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
+    events.py   事件队列：居民之间的请求，等待同意、拒绝或撤回
 ```
 
 开发与预览时，Vite 把页面的 `/ws` 代理到 `127.0.0.1:8000`，客户端不需要写死地址；其他部署方式可在构建时设置 `VITE_SERVER_URL`。
@@ -45,7 +55,7 @@ Python 服务端（aiverse-server）
 
 | 层 | 位置 | 职责 |
 | --- | --- | --- |
-| 协议 | `packages/protocol` | 客户端与服务端之间的消息与视图类型；对服务端消息做运行时校验。Python 对应定义在 `aiverse_server/protocol.py` |
+| 协议 | `packages/protocol` | 客户端与服务端之间的消息与视图类型；对服务端消息做运行时校验。Python 对应定义在 `aiverse_server/server/protocol.py` |
 | 传输 | `apps/web/src/net` | `GameConnection` 接口与 WebSocket 实现：发送前排队、校验收到的消息、报告连接失败 |
 | 客户端状态 | `apps/web/src/state` | 保存最近一次快照、连接状态、本地选中的居民与最近一次操作结果；发送操作原语 |
 | 渲染 | `apps/web/src/render` | 坐标换算与刻度（`layout.ts`）、Phaser 地图场景（含点选居民、点击地面移动、按真实时间播放行走） |
