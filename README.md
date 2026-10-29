@@ -39,6 +39,7 @@ npm run preview    # 预览生产构建，同样代理 /ws
 | 文件 | 用途 |
 | --- | --- |
 | [总体游戏设计](docs/design/game-overview.md) | 游戏定位、首版规则、经济循环、AI 控制与原型验证顺序 |
+| [设计文档](docs/design/README.md) | 每个功能一份设计文档的规则与索引 |
 | [应用架构](docs/architecture.md) | 分层、依赖方向、坐标系与数据流 |
 | [AGENTS.md](AGENTS.md) | Codex 入口及两个工具共用的开发规则 |
 | [CLAUDE.md](CLAUDE.md) | Claude Code 入口，指向共同规则 |

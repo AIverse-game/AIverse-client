@@ -63,7 +63,9 @@
 | `docs/architecture.md` | 应用分层、坐标系与数据流 |
 | `docs/development.md` | 通用任务闭环、审查与协作流程 |
 | `docs/status.md` | 跨会话交接状态 |
+| `docs/design/README.md` | 设计文档规则：何时新建、何时修改、写什么，以及索引 |
 | `docs/design/game-overview.md` | AIverse 总体设计提案、最小玩法与待验证假设 |
+| `docs/design/ai-residents.md` | AI 居民的设计：事件驱动循环、工具、两种大脑与暂未实现的功能 |
 | `docs/decisions/` | 重要决策的说明与模板 |
 | `changes/` | 单次变更说明、验收与证据 |
 | `scripts/check_repo.py` | 无第三方依赖的仓库骨架检查 |
