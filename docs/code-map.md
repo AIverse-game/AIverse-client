@@ -45,9 +45,10 @@
 | `src/aiverse_server/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
 | `src/aiverse_server/lifecycle.py` | 一局的生命周期：能否行动、出局（含 token 耗尽，行走者到达后出局）、结束（停下采矿与行走）、金币总额与排名、默认时长 |
 | `src/aiverse_server/protocol.py` | 消息模型、客户端消息解析、消息到原语与世界到视图的转换（私聊按连接选择的居民过滤） |
-| `src/aiverse_server/app.py` | FastAPI 应用与 WebSocket `/ws`：共享世界、对局计时（到点的事见 `clock.py`）、每轮开始的 `Game.begin_turn`、写入与忘掉笔记的 `Game.remember`、`Game.forget`、握手、执行原语、广播状态 |
-| `src/aiverse_server/__main__.py` | `uv run aiverse-server` 启动入口（`--host`、`--port`、`--duration`、`--seed`） |
-| `tests/` | 世界模型、操作原语、物品栏与金币、事件、交易、对局生命周期、token、采矿、收购点、行走、感知、记忆、对话与 WebSocket 接口测试 |
+| `src/aiverse_server/app.py` | FastAPI 应用与 WebSocket `/ws`：共享世界、对局计时（到点的事见 `clock.py`）、每轮开始的 `Game.begin_turn`、写入与忘掉笔记的 `Game.remember`、`Game.forget`、Agent 与网页共用的执行入口 `Game.act`、`Game.commit`、唤醒 Agent 的 `Game.subscribe`、握手、执行原语、广播状态，随应用启停 Agent |
+| `src/aiverse_server/agents/` | AI 居民：`runner.py` 事件驱动的循环、唤醒规则与每轮记录，`observation.py` 每轮的观察及其 JSON，`tools.py` 绑定居民的工具（pydantic 参数模型与 JSON Schema），`scripted.py` 脚本机器人，`openrouter.py` OpenRouter 模型大脑，`rules.py` 给模型的规则说明 |
+| `src/aiverse_server/__main__.py` | `uv run aiverse-server` 启动入口（`--host`、`--port`、`--duration`、`--seed`、`--agent`、`--agent-log`） |
+| `tests/` | 世界模型、操作原语、物品栏与金币、事件、交易、对局生命周期、token、采矿、收购点、行走、感知、记忆、对话、AI 居民与 WebSocket 接口测试 |
 | `Makefile` | `dev` 启动；`verify` 检查与测试 |
 
 ## 文档与协作
