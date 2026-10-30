@@ -1,4 +1,4 @@
-import { useGameState, useStore } from '../state/react';
+import { useGameState, useStore } from '../state/storeContext';
 import { formatDuration } from './format';
 import { useSecondTick } from './useSecondTick';
 

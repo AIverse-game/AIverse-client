@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createWebSocketConnection, defaultServerUrl } from './net/websocket';
-import { StoreProvider } from './state/react';
+import { StoreProvider } from './state/storeContext';
 import { GameStore } from './state/store';
 import { App } from './ui/App';
 import './styles.css';

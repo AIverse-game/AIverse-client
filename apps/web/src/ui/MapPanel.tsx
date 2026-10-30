@@ -1,5 +1,5 @@
 import { formatCoordinate } from '../render/layout';
-import { useGameState, useStore } from '../state/react';
+import { useGameState, useStore } from '../state/storeContext';
 import { ChipIcon } from './ChipIcon';
 import { formatPrice } from './format';
 import { useSecondTick } from './useSecondTick';

@@ -1,7 +1,7 @@
 import type { ResidentView } from '@aiverse/protocol';
 import { useState, type FormEvent } from 'react';
 import { formatCoordinate } from '../render/layout';
-import { useGameState, useStore } from '../state/react';
+import { useGameState, useStore } from '../state/storeContext';
 import type { ActionStatus } from '../state/store';
 import { ChipIcon } from './ChipIcon';
 import { formatPrice } from './format';

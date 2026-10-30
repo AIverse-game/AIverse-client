@@ -1,6 +1,6 @@
 import type { ResidentId, ResidentView, SpeechView } from '@aiverse/protocol';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useGameState, useStore } from '../state/react';
+import { useGameState, useStore } from '../state/storeContext';
 import { formatDuration } from './format';
 
 /** Mirrors SPEECH_LENGTH_LIMIT in the server, which counts code points; it trims and checks again. */

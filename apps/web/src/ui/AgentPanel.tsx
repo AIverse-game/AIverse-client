@@ -1,6 +1,6 @@
 import type { LLMSettingName, LLMSettings, ResidentId } from '@aiverse/protocol';
 import { useState, type FormEvent } from 'react';
-import { useGameState, useStore } from '../state/react';
+import { useGameState, useStore } from '../state/storeContext';
 import type { ActionStatus } from '../state/store';
 import { loadLLMSettings, saveLLMSettings } from './savedLLMSettings';
 

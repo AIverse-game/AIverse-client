@@ -1,4 +1,4 @@
-import { useGameState } from '../state/react';
+import { useGameState } from '../state/storeContext';
 
 /** Residents by coins as the server ranks them; final once the game is over. */
 export function RankingPanel() {

@@ -29,3 +29,4 @@
 | [0021-server-subpackages](0021-server-subpackages.md) | 已完成 | 服务端按领域分为 core、economy、residents、game、server 子包，测试同样分组；行为不变 |
 | [0022-llm-config-from-page](0022-llm-config-from-page.md) | 已完成 | 页面配置任意 OpenAI 兼容的大模型接口并交给 AI，服务端 YAML 配置文件可以全局覆盖；协议 11 |
 | [0023-naming-conventions](0023-naming-conventions.md) | 已完成 | 成文的文件命名与目录约定，两个仓库共用；不改现有文件名 |
+| [0024-descriptive-module-names](0024-descriptive-module-names.md) | 已完成 | 改掉看不出内容的模块名：`llm_brain.py`、`scripted_brain.py`、`system_prompt.py`、`storeContext.tsx` |

@@ -60,12 +60,12 @@ Game.start_agent / start_llm_agent / stop_agent（启动参数，或页面的 st
 
 ### 两种大脑
 
-- **脚本机器人**（`scripted.py`）：不花钱的基线和测试对手，不说话也不交易。策略：
+- **脚本机器人**（`scripted_brain.py`）：不花钱的基线和测试对手，不说话也不交易。策略：
   - 在收购点时，卖掉多余 token，买得起的最好芯片；
   - 携带 token 多、没有芯片或临近结束时，回收购点（走路花费不够时不出发）；
   - 站在有储量的矿池里就采矿，否则去最近的已知矿池，或去固定探索点找矿池。
-- **大模型大脑**（`llm.py`，`ChatCompletionsBrain`）：向 `{API 地址}/chat/completions` 发 OpenAI 兼容的请求，不内置任何厂商。每轮是一段独立的对话。
-  - 系统提示给出规则（`rules.py`，数值全部取自代码常量）；
+- **大模型大脑**（`llm_brain.py`，`ChatCompletionsBrain`）：向 `{API 地址}/chat/completions` 发 OpenAI 兼容的请求，不内置任何厂商。每轮是一段独立的对话。
+  - 系统提示给出规则（`system_prompt.py`，数值全部取自代码常量）；
   - 用户消息给出上一轮的行动摘要和本轮观察；
   - 模型可以连续调用工具，直到不再调用；
   - 限制：每轮最多 8 次请求，每局每名居民最多 400 次（停止或更换 Agent 不会重置），每次最多输出 2048 token，超时 60 秒；
