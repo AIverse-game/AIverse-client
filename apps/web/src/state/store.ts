@@ -2,6 +2,7 @@ import {
   PROTOCOL_VERSION,
   type Action,
   type ChipModelView,
+  type LLMSettings,
   type PoolView,
   type ResidentId,
   type ServerMessage,
@@ -23,6 +24,10 @@ export interface ClientState {
    */
   selected: ResidentId | null;
   lastAction: ActionStatus | null;
+  /** Outcome of the latest request to start or stop each resident's agent. */
+  agentRequests: Readonly<Record<ResidentId, ActionStatus>>;
+  /** Language model settings the server's config fixes, so they need not be filled in. */
+  llmOverrides: readonly string[];
   /**
    * When the game ends on this client's clock (see `now`), from the latest snapshot's
    * remaining time; a local time, so the two machines' clocks need not agree.
@@ -38,6 +43,8 @@ const INITIAL_STATE: ClientState = {
   error: null,
   selected: null,
   lastAction: null,
+  agentRequests: {},
+  llmOverrides: [],
   deadline: null,
   receivedAt: null,
 };
@@ -60,7 +67,9 @@ export class GameStore {
     this.detach = [
       connection.onMessage((message) => this.apply(message)),
       // No result can arrive any more, so a pending action is dropped rather than left spinning.
-      connection.onFailure((reason) => this.update({ connection: 'failed', error: reason, lastAction: null })),
+      connection.onFailure((reason) =>
+        this.update({ connection: 'failed', error: reason, lastAction: null, agentRequests: {} }),
+      ),
     ];
     connection.send({ type: 'hello', protocolVersion: PROTOCOL_VERSION });
   }
@@ -77,6 +86,28 @@ export class GameStore {
     if (this.state.connection !== 'ready') return;
     this.connection.send({ type: 'action', action });
     this.update({ lastAction: { status: 'pending' } });
+  }
+
+  /**
+   * Hands the resident to a language model with these settings, replacing any agent driving
+   * them. Blank settings are left out, for the server's config to fill in.
+   */
+  startAgent(residentId: ResidentId, settings: LLMSettings): void {
+    if (this.state.connection !== 'ready') return;
+    const llm: LLMSettings = {};
+    for (const name of ['baseUrl', 'apiKey', 'model'] as const) {
+      const value = settings[name]?.trim();
+      if (value) llm[name] = value;
+    }
+    this.connection.send({ type: 'start_agent', residentId, llm });
+    this.setAgentRequest(residentId, { status: 'pending' });
+  }
+
+  /** Stops the agent driving the resident, leaving them to manual control. */
+  stopAgent(residentId: ResidentId): void {
+    if (this.state.connection !== 'ready') return;
+    this.connection.send({ type: 'stop_agent', residentId });
+    this.setAgentRequest(residentId, { status: 'pending' });
   }
 
   /**
@@ -168,7 +199,7 @@ export class GameStore {
           this.fail(`protocol_mismatch: 服务端协议版本 ${message.protocolVersion}，客户端为 ${PROTOCOL_VERSION}`);
           return;
         }
-        this.update({ connection: 'ready', error: null });
+        this.update({ connection: 'ready', error: null, llmOverrides: message.llmOverrides });
         return;
       case 'state': {
         const { selected } = this.state;
@@ -186,14 +217,30 @@ export class GameStore {
             : { status: 'rejected', reason: `${message.code ?? 'rejected'}: ${message.message ?? ''}` },
         });
         return;
+      case 'agent_result':
+        this.setAgentRequest(
+          message.residentId,
+          message.ok
+            ? { status: 'accepted' }
+            : { status: 'rejected', reason: `${message.code ?? 'rejected'}: ${message.message ?? ''}` },
+        );
+        return;
       case 'error': {
         const error = `${message.code}: ${message.message}`;
         // The server keeps the socket open, but nothing useful can follow a version mismatch.
         if (message.code === 'protocol_mismatch') this.fail(error);
         else {
-          // An error answers the pending action instead of a result; the top bar shows why.
-          const { lastAction } = this.state;
-          this.update({ error, lastAction: lastAction?.status === 'pending' ? null : lastAction });
+          // An error answers a pending request instead of a result; the top bar shows why. Which
+          // one is unknown, so every pending request is given up on; a result still on its way
+          // names its resident and sets it again.
+          const { lastAction, agentRequests } = this.state;
+          this.update({
+            error,
+            lastAction: lastAction?.status === 'pending' ? null : lastAction,
+            agentRequests: Object.fromEntries(
+              Object.entries(agentRequests).filter(([, status]) => status.status !== 'pending'),
+            ),
+          });
         }
         return;
       }
@@ -207,8 +254,12 @@ export class GameStore {
     return (this.now() - receivedAt) / 1000;
   }
 
+  private setAgentRequest(residentId: ResidentId, status: ActionStatus): void {
+    this.update({ agentRequests: { ...this.state.agentRequests, [residentId]: status } });
+  }
+
   private fail(error: string): void {
-    this.update({ connection: 'failed', error, lastAction: null });
+    this.update({ connection: 'failed', error, lastAction: null, agentRequests: {} });
     this.connection.close();
   }
 

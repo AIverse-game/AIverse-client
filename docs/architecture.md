@@ -16,9 +16,10 @@
       ↑ JSON 文本帧          ↓ JSON 文本帧
 Python 服务端（aiverse-server）
   server/     对外接口
-    app.py      WebSocket /ws：收消息、回复、向所有连接广播新状态，随应用启停 Agent
+    app.py      WebSocket /ws：收消息、回复、向所有连接广播新状态，启动、更换与停止 Agent
     protocol.py 消息模型、输入校验、消息与原语/视图的转换
-  agents/     AI 居民：事件驱动的循环、绑定居民的工具、脚本机器人与模型大脑
+    config.py   YAML 配置文件：全局覆盖模型的地址、key、模型
+  agents/     AI 居民：事件驱动的循环、绑定居民的工具、脚本机器人与 OpenAI 兼容接口的模型大脑
   game/       一局的规则与调度
     actions.py  操作原语：玩家与 AI 改变世界的唯一入口
     lifecycle.py 能否行动、出局（含 token 耗尽）、结束、金币排名
@@ -156,6 +157,10 @@ Python 服务端（aiverse-server）
 ## 每轮开始的感知
 
 AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界推进到此刻，再调用 `perception.begin_turn` 并把更新了记忆的世界存回 `Game`，返回这一轮的感知。记忆不在协议中，所以不广播。见 [变更 0013](../changes/0013-perception.md) 与 [变更 0014](../changes/0014-walking-speed.md)。
+
+## 由 AI 驱动居民
+
+页面“AI 驱动”面板把选中的居民交给玩家配置的大模型：发送 `start_agent`（API 地址、key、模型），服务端用配置文件 `llm.override` 中给出的项覆盖页面的值，校验后为该居民启动一个 Agent 循环，回复 `agent_result`，并向所有连接广播带 `agent` 标记的新状态；`stop_agent` 停止它。`welcome` 只告诉页面哪些设置被覆盖，不发送值；key 只在服务端内存中用来调用接口。设置按居民存在本机 localStorage，由 `ui/savedLLMSettings.ts` 读写。设计见 [AI 居民](design/ai-residents.md)，选型见 [决策 0004](decisions/0004-player-configured-llm-endpoints.md)。
 
 ## 协议改动
 

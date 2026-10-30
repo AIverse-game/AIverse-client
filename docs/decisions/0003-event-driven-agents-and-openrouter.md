@@ -1,6 +1,6 @@
 # 0003：事件驱动的 AI 居民与 OpenRouter 模型接入
 
-状态：采用。
+状态：采用，部分已替代：模型接入与 API key 的来源由 [决策 0004](0004-player-configured-llm-endpoints.md) 替代。
 日期：2026-10-29。
 
 ## 背景

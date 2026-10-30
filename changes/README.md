@@ -27,3 +27,4 @@
 | [0019-speech-cost-and-privacy](0019-speech-cost-and-privacy.md) | 已完成 | 发言消耗 token（当众 2、私聊 1）；页面以 `view_as` 告诉服务端选中的居民，服务端只发与其有关的私聊，协议 10 |
 | [0020-agent-loop](0020-agent-loop.md) | 已完成 | AI 居民循环：事件驱动调度、绑定居民的工具、脚本机器人与 OpenRouter 模型大脑（服务端） |
 | [0021-server-subpackages](0021-server-subpackages.md) | 已完成 | 服务端按领域分为 core、economy、residents、game、server 子包，测试同样分组；行为不变 |
+| [0022-llm-config-from-page](0022-llm-config-from-page.md) | 已完成 | 页面配置任意 OpenAI 兼容的大模型接口并交给 AI，服务端 YAML 配置文件可以全局覆盖；协议 11 |

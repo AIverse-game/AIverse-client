@@ -57,6 +57,13 @@ export const residentSchema = z.object({
       remainingSeconds: z.number().nonnegative(),
     })
     .optional(),
+  /** Present while an agent drives the resident rather than the pages. */
+  agent: z
+    .object({
+      /** The language model asking; left out for a scripted brain. */
+      model: z.string().optional(),
+    })
+    .optional(),
 });
 
 /** A token pool on the ground. Placed when the game starts and never moves; only `reserve` drops. */

@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | [0001-web-stack-and-layering](0001-web-stack-and-layering.md) | 采用，部分已替代 | 网页端技术栈、分层与依赖方向 |
 | [0002-python-server-and-coordinate-map](0002-python-server-and-coordinate-map.md) | 采用 | Python 权威服务端与连续坐标地图 |
-| [0003-event-driven-agents-and-openrouter](0003-event-driven-agents-and-openrouter.md) | 采用 | 事件驱动的 AI 居民与 OpenRouter 模型接入 |
+| [0003-event-driven-agents-and-openrouter](0003-event-driven-agents-and-openrouter.md) | 采用，部分已替代 | 事件驱动的 AI 居民与 OpenRouter 模型接入 |
+| [0004-player-configured-llm-endpoints](0004-player-configured-llm-endpoints.md) | 采用 | 玩家在页面配置任意 OpenAI 兼容的模型接口，服务端配置文件可以覆盖 |
 
 仓库检查脚本使用 Python，与服务端使用 Python 无关，两者各自独立。

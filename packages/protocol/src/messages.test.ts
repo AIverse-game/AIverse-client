@@ -74,8 +74,21 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
+  it('accepts residents driven by a model or a scripted brain', () => {
+    const message = state(100, [
+      { ...resident('a', 1, 1), agent: { model: 'vendor/model' } },
+      { ...resident('b', 2, 2), agent: {} },
+    ]);
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
   it('accepts welcome and error messages, including unknown error codes', () => {
-    expect(parseServerMessage({ type: 'welcome', protocolVersion: 6 }).ok).toBe(true);
+    expect(parseServerMessage({ type: 'welcome', protocolVersion: 6 })).toEqual({
+      ok: true,
+      value: { type: 'welcome', protocolVersion: 6, llmOverrides: [] },
+    });
+    const overriding = { type: 'welcome', protocolVersion: 11, llmOverrides: ['apiKey', 'somethingNew'] };
+    expect(parseServerMessage(overriding)).toEqual({ ok: true, value: overriding });
     expect(parseServerMessage({ type: 'error', code: 'something_new', message: 'x' }).ok).toBe(true);
   });
 
@@ -85,8 +98,18 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(rejected)).toEqual({ ok: true, value: rejected });
   });
 
+  it('accepts agent results with and without a rejection reason', () => {
+    expect(parseServerMessage({ type: 'agent_result', residentId: 'a', ok: true }).ok).toBe(true);
+    const rejected = { type: 'agent_result', residentId: 'a', ok: false, code: 'missing_llm_setting', message: 'missing api_key' };
+    expect(parseServerMessage(rejected)).toEqual({ ok: true, value: rejected });
+  });
+
   it.each([
     ['non-object input', 'state'],
+    ['agent result without ok', { type: 'agent_result', residentId: 'a' }],
+    ['agent result without its resident', { type: 'agent_result', ok: true }],
+    ['overrides that are not a list', { type: 'welcome', protocolVersion: 11, llmOverrides: 'apiKey' }],
+    ['agent model that is not text', state(100, [{ ...resident('a', 1, 1), agent: { model: 7 } }])],
     ['action result without ok', { type: 'action_result' }],
     ['unknown message type', { type: 'resolveRound' }],
     ['missing map', { type: 'state', world: { residents: [] } }],

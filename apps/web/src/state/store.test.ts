@@ -27,6 +27,8 @@ function fakeConnection() {
   };
 }
 
+const WELCOME: ServerMessage = { type: 'welcome', protocolVersion: PROTOCOL_VERSION, llmOverrides: [] };
+
 const world: WorldView = {
   map: { size: 100 },
   pools: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
@@ -42,7 +44,7 @@ describe('GameStore', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
     expect(sent).toEqual([{ type: 'hello', protocolVersion: PROTOCOL_VERSION }]);
-    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver(WELCOME);
     deliver({ type: 'state', world });
     expect(store.getState()).toMatchObject({ connection: 'ready', world, error: null, selected: null, lastAction: null });
   });
@@ -56,7 +58,7 @@ describe('GameStore', () => {
 
   it.each([
     ['the server rejects our version', { type: 'error', code: 'protocol_mismatch', message: 'server speaks protocol 3' }],
-    ['the server speaks another version', { type: 'welcome', protocolVersion: 2 }],
+    ['the server speaks another version', { type: 'welcome', protocolVersion: 2, llmOverrides: [] as string[] }],
   ] as const)('fails and closes the connection when %s', (_, message) => {
     const { connection, deliver } = fakeConnection();
     let closed = false;
@@ -86,7 +88,7 @@ describe('GameStore', () => {
     expect(sent).toHaveLength(1);
     expect(store.getState().lastAction).toBeNull();
 
-    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver(WELCOME);
     store.act(move);
     expect(sent.at(-1)).toEqual({ type: 'action', action: move });
     expect(store.getState().lastAction).toEqual({ status: 'pending' });
@@ -137,7 +139,7 @@ describe('GameStore', () => {
     const store = new GameStore(connection);
     deliver({ type: 'state', world });
     expect(store.canAct('a')).toBe(false);
-    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver(WELCOME);
     expect(store.canAct('a')).toBe(true);
     expect(store.canAct('nobody')).toBe(false);
     const [resident] = world.residents;
@@ -150,7 +152,7 @@ describe('GameStore', () => {
   it('allows only leaving while the resident is mining', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver(WELCOME);
     deliver({ type: 'state', world });
     expect(store.isFree('a')).toBe(true);
     const [resident] = world.residents;
@@ -163,7 +165,7 @@ describe('GameStore', () => {
   it('allows only leaving while the resident is walking', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver(WELCOME);
     const [resident] = world.residents;
     const walking = { target: { x: 5, y: 5 }, remainingSeconds: 2 };
     deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, walking }] } });
@@ -219,7 +221,7 @@ describe('GameStore', () => {
   it('tells the server whom the page views as, so only their whispers arrive', () => {
     const { connection, deliver, sent } = fakeConnection();
     const store = new GameStore(connection);
-    deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    deliver(WELCOME);
     deliver({ type: 'state', world });
     store.select('a');
     store.select('a');
@@ -237,9 +239,51 @@ describe('GameStore', () => {
   ])('stops showing a pending action when %s', (_, interrupt) => {
     const test = fakeConnection();
     const store = new GameStore(test.connection);
-    test.deliver({ type: 'welcome', protocolVersion: PROTOCOL_VERSION });
+    test.deliver(WELCOME);
     store.act({ type: 'move_to', residentId: 'a', target: { x: 1, y: 1 } });
     interrupt(test);
     expect(store.getState().lastAction).toBeNull();
+  });
+
+  it('hands a resident to a model with the settings filled in, blanks left out', () => {
+    const { connection, sent, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    store.startAgent('a', { baseUrl: 'https://x/v1', apiKey: 'k' });
+    expect(sent).toHaveLength(1);
+    deliver({ ...WELCOME, llmOverrides: ['model'] });
+    expect(store.getState().llmOverrides).toEqual(['model']);
+    store.startAgent('a', { baseUrl: ' https://x/v1 ', apiKey: 'k', model: '  ' });
+    expect(sent.at(-1)).toEqual({ type: 'start_agent', residentId: 'a', llm: { baseUrl: 'https://x/v1', apiKey: 'k' } });
+    expect(store.getState().agentRequests).toEqual({ a: { status: 'pending' } });
+    deliver({ type: 'agent_result', residentId: 'a', ok: false, code: 'missing_llm_setting', message: 'missing model' });
+    expect(store.getState().agentRequests).toEqual({ a: { status: 'rejected', reason: 'missing_llm_setting: missing model' } });
+    store.stopAgent('a');
+    expect(sent.at(-1)).toEqual({ type: 'stop_agent', residentId: 'a' });
+    deliver({ type: 'agent_result', residentId: 'a', ok: true });
+    expect(store.getState().agentRequests).toEqual({ a: { status: 'accepted' } });
+  });
+
+  it('shows each agent result on the resident it names', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+    store.startAgent('a', { model: 'm' });
+    store.stopAgent('b');
+    deliver({ type: 'agent_result', residentId: 'b', ok: true });
+    expect(store.getState().agentRequests).toEqual({ a: { status: 'pending' }, b: { status: 'accepted' } });
+  });
+
+  it('gives up on pending agent requests that an error may have answered', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+    store.stopAgent('a');
+    deliver({ type: 'agent_result', residentId: 'a', ok: true });
+    store.stopAgent('b');
+    deliver({ type: 'error', code: 'bad_message', message: 'x' });
+    expect(store.getState().agentRequests).toEqual({ a: { status: 'accepted' } });
+    // A result still on its way names its resident.
+    deliver({ type: 'agent_result', residentId: 'b', ok: true });
+    expect(store.getState().agentRequests.b).toEqual({ status: 'accepted' });
   });
 });

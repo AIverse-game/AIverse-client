@@ -1,6 +1,6 @@
 # 当前项目状态
 
-更新：2026-10-29。阶段：权威逻辑改由 Python 服务端负责，已实现正方形坐标地图的生成与渲染、移动与退出游戏的原语、居民之间的买卖报价（服务端内部）、定时结束的一局与金币排名、token 体力、按速度行走与矿池采矿，以及每轮开始时的感知与发现、由 Agent 自选的长短期记忆（服务端内部）、按市场价收购 token 的收购点、采矿必须用的芯片，以及居民之间的对话；居民已可由服务端里的 Agent（脚本机器人或 OpenRouter 上的模型）驱动；生产等其余玩法规则尚未在新服务端中实现。
+更新：2026-10-29。阶段：权威逻辑改由 Python 服务端负责，已实现正方形坐标地图的生成与渲染、移动与退出游戏的原语、居民之间的买卖报价（服务端内部）、定时结束的一局与金币排名、token 体力、按速度行走与矿池采矿，以及每轮开始时的感知与发现、由 Agent 自选的长短期记忆（服务端内部）、按市场价收购 token 的收购点、采矿必须用的芯片，以及居民之间的对话；居民已可由服务端里的 Agent（脚本机器人，或玩家在页面上配置的任意 OpenAI 兼容模型接口）驱动；生产等其余玩法规则尚未在新服务端中实现。
 
 ## 已具备
 
@@ -20,7 +20,8 @@
 - 芯片（[变更 0017](../changes/0017-mining-chips.md)）：采矿必须携带芯片，开局谁都没有，要在收购点用金币按定价买（服务端 `chips.py`，原语 `BuyChip`，协议中为 `buy_chip`）：MK1 300 金币、每次采 30 token，MK2 1200 金币、60 token，MK3 3000 金币、100 token；有几块时自动用最好的一块。采矿期间居民守着芯片，不能走开或卖掉；芯片是以型号命名的物品，可用报价转手，出局时清空。感知附带芯片价目。页面显示价目、购买按钮、每人持有芯片的贴图与所用芯片，没有芯片时提示先买。协议版本为 8。
 - 长期与短期记忆（[变更 0015](../changes/0015-memory.md)）：服务端 `memory.py` 的 `remember` 让驱动居民的 Agent 自己决定记下什么文字、记成长期还是短期，`forget` 忘掉任意一条。长期笔记整局保留，短期笔记写入 120 秒游戏时间后清除；每条最多 300 字符，长期最多 30 条、短期最多 20 条，满了要先忘掉一条。`Game.begin_turn` 的感知结果附带当前的全部笔记。不是原语：不耗 token，行走和采矿中也能写，不广播。尚无调用方，不在协议中。
 - 对话（[变更 0018](../changes/0018-speech.md)）：服务端 `speech.py`，原语 `Say`（协议中为 `say`）。不指定对象时当众说，说话那一刻 20 单位内仍在局中的其他居民听到；指定一名居民时是私聊，不论远近只有对方听到。每句 1～100 字符，当众说 2 token、私聊 1 token（[变更 0019](../changes/0019-speech-cost-and-privacy.md)），行走、采矿中也能说；谁听到在说话时定下。`Game.begin_turn` 的感知附带自上次查看以来自己说的和听到的话，世界保留最近 200 句。页面“对话”面板列出最近 50 句当众说的话和选中居民自己的私聊：页面选中居民时以 `view_as` 告诉服务端，服务端只把该居民发出或收到的私聊发给这个页面。选中居民后可当众说或私聊。协议版本为 10。
-- AI 居民（[设计文档](design/ai-residents.md)，[变更 0020](../changes/0020-agent-loop.md)，[决策 0003](decisions/0003-event-driven-agents-and-openrouter.md)）：服务端 `agents/` 子包。启动时用 `--agent r1=scripted` 或 `--agent r2=openrouter[:模型]` 指定居民由 Agent 驱动，每名居民一个事件驱动的循环：感知 → 大脑经绑定该居民的工具执行原语、记笔记 → 等到行走或采矿结束、收到报价、听到别人说话或空闲 20 秒再醒，两轮至少相隔 3 秒。Agent 与网页的操作经同一个入口 `Game.act`/`Game.commit` 执行并广播。脚本机器人按固定策略买芯片、采矿、卖 token；OpenRouter 大脑默认用 `nvidia/nemotron-3.5-lightning`，key 只从环境变量 `OPENROUTER_API_KEY` 读取，每局最多 400 次请求。大脑或记录出错只记日志，不影响游戏。每轮记录打印到控制台，`--agent-log` 写成 JSONL。协议不变。
+- AI 居民（[设计文档](design/ai-residents.md)，[变更 0020](../changes/0020-agent-loop.md)，[决策 0003](decisions/0003-event-driven-agents-and-openrouter.md)）：服务端 `agents/` 子包。启动时用 `--agent r1=scripted` 或 `--agent r2=llm[:模型]` 指定居民由 Agent 驱动，每名居民一个事件驱动的循环：感知 → 大脑经绑定该居民的工具执行原语、记笔记 → 等到行走或采矿结束、收到报价、听到别人说话或空闲 20 秒再醒，两轮至少相隔 3 秒。Agent 与网页的操作经同一个入口 `Game.act`/`Game.commit` 执行并广播。脚本机器人按固定策略买芯片、采矿、卖 token；大模型大脑每局每名居民最多 400 次请求（停止或更换 Agent 不重置），接入方式见下一条。大脑或记录出错只记日志，不影响游戏。每轮记录打印到控制台，`--agent-log` 写成 JSONL。协议不变。
+- 页面配置大模型（[变更 0022](../changes/0022-llm-config-from-page.md)，[决策 0004](decisions/0004-player-configured-llm-endpoints.md)）：不内置任何厂商，接口须兼容 OpenAI 的 Chat Completions 并支持工具调用。页面“AI 驱动”面板选中居民，填写 API 地址、key 和模型后“交给 AI”，可随时按新配置替换或“停止 AI，改为手动”；所有页面的居民列表标出“AI”。设置按居民记在本机 localStorage。服务端 YAML 配置文件（`--config`，默认读 `aiverse.yml`）的 `llm.override` 可以全局覆盖地址、key、模型，页面上对应的输入框置灰；`--agent r2=llm[:模型]` 的地址和 key 来自配置文件。key 不进状态、日志与记录。协议版本为 11。
 - 服务端代码结构（[变更 0021](../changes/0021-server-subpackages.md)）：`aiverse_server` 按领域分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 子包，`tests/` 同样分组，见 [代码地图](code-map.md)。只移动文件，行为不变。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
 - Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前只有 AI 居民有独立的设计文档。
@@ -32,7 +33,7 @@
 # aiverse-server 目录
 uv sync
 uv run aiverse-server           # 启动服务端，127.0.0.1:8000；一局 20 分钟，--duration 秒数可改，--seed 固定矿池布局
-uv run aiverse-server --agent r1=scripted --agent r2=openrouter   # 由 Agent 驱动居民；openrouter 需要 OPENROUTER_API_KEY
+uv run aiverse-server --agent r1=scripted --agent r2=llm:模型名   # 由 Agent 驱动居民；llm 的地址和 key 来自 aiverse.yml（见服务端 README）
 make verify                     # ruff、mypy、pytest
 
 # 本仓库
@@ -43,7 +44,7 @@ python3 scripts/check_repo.py   # 仓库骨架检查
 make verify                     # 仓库检查加 npm run verify
 ```
 
-验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md)、[变更 0008](../changes/0008-resident-inventory.md)、[变更 0009](../changes/0009-event-queue.md)、[变更 0010](../changes/0010-trade-offers.md)、[变更 0011](../changes/0011-coins-leaving-and-game-end.md)、[变更 0012](../changes/0012-tokens-and-mining.md)、[变更 0013](../changes/0013-perception.md)、[变更 0014](../changes/0014-walking-speed.md)、[变更 0015](../changes/0015-memory.md)、[变更 0016](../changes/0016-token-market.md)、[变更 0017](../changes/0017-mining-chips.md)、[变更 0018](../changes/0018-speech.md)、[变更 0019](../changes/0019-speech-cost-and-privacy.md)、[变更 0020](../changes/0020-agent-loop.md) 与 [变更 0021](../changes/0021-server-subpackages.md)。
+验证证据见 [变更 0005](../changes/0005-coordinate-map.md)、[变更 0006](../changes/0006-perspective-map.md)、[变更 0007](../changes/0007-action-primitives.md)、[变更 0008](../changes/0008-resident-inventory.md)、[变更 0009](../changes/0009-event-queue.md)、[变更 0010](../changes/0010-trade-offers.md)、[变更 0011](../changes/0011-coins-leaving-and-game-end.md)、[变更 0012](../changes/0012-tokens-and-mining.md)、[变更 0013](../changes/0013-perception.md)、[变更 0014](../changes/0014-walking-speed.md)、[变更 0015](../changes/0015-memory.md)、[变更 0016](../changes/0016-token-market.md)、[变更 0017](../changes/0017-mining-chips.md)、[变更 0018](../changes/0018-speech.md)、[变更 0019](../changes/0019-speech-cost-and-privacy.md)、[变更 0020](../changes/0020-agent-loop.md)、[变更 0021](../changes/0021-server-subpackages.md) 与 [变更 0022](../changes/0022-llm-config-from-page.md)。
 
 ## 尚未实现或未验证
 
@@ -56,7 +57,7 @@ make verify                     # 仓库检查加 npm run verify
 - 收购点的基准价、深度、半衰期、位置和半径都是按全场 token 总量估的，未经试玩调参；卖出不进活动日志，附近的居民看不到别人在卖（价格变化对所有人可见）。页面的现价与估算收入按本地时钟推算，与服务端可能差 1 金币的取整。
 - 芯片的价格与产量未经试玩调参；芯片没有损耗，不能卖回收购点；页面不能发起芯片交易（交易原语不在协议中），地图上也不画芯片。
 - 笔记与感知结果不在协议中，页面看不到 Agent 的观察、笔记和每轮的决策；要看只能读控制台或 `--agent-log`。页面上的 AI 行动日志面板是下一步。短期笔记时长与上限、感知半径与日志上限未经试玩调参。
-- AI 居民：OpenRouter 大脑只用模拟的 HTTP 测试过，尚未用真实 key 跑过一局；规则提示、每轮请求数、唤醒间隔都未经试玩。事件驱动下响应快的模型能更早行动，影响有多大待观察。Agent 只能由启动参数指定，没有玩家配置界面、玩家自带 key 与经营方针；速度未加速，模拟一局也要等真实的 20 分钟（测试里的快进模拟只用于脚本机器人）。
+- AI 居民：大模型大脑只用模拟的 HTTP 和本地模拟的 OpenAI 兼容服务测试过，尚未用真实的模型服务跑过一局；规则提示、每轮请求数、唤醒间隔都未经试玩。事件驱动下响应快的模型能更早行动，影响有多大待观察。页面已能配置模型和 key，但没有玩家归属与鉴权（任何页面都能接管任何居民，key 在 WebSocket 上明文传输），也不能填经营方针或从页面启动脚本机器人；速度未加速，模拟一局也要等真实的 20 分钟（测试里的快进模拟只用于脚本机器人）。
 - 经济数值：脚本机器人在快进模拟中（种子 1、2、7、42，各 20 分钟）6 个矿池全部被挖空，买 MK3 的机器人多数以低于开局的金币结束（7000～10372），芯片价格相对矿池总储量偏高；待模型试玩后一并调参。
 - 对话没有发言冷却或条数限制，只受 token 消耗与 Agent 两轮间隔约束；地图上没有对话气泡；听力半径、长度上限与每句消耗未经试玩调参。私聊按页面选中的居民过滤，但尚无归属，任何页面选中谁就能看到谁的私聊；有了“玩家拥有哪名居民”后，`view_as` 应只允许选自己的居民。
 - 操作权限：任何连接都能操作任何居民，尚无“玩家拥有哪名居民”的概念。
@@ -73,4 +74,4 @@ make verify                     # 仓库检查加 npm run verify
 
 ## 后续工作
 
-建议顺序：先用真实 key 让 OpenRouter 模型与脚本机器人打几局，读 `--agent-log` 看模型是否理解规则、常犯哪些错，调整规则提示和工具说明；再在页面上加 AI 行动日志面板（每轮的观察摘要、模型的话、工具调用与结果，需要协议改动）；然后根据试玩调经济数值（芯片价格、矿池储量、收购点参数）。生产链与地点设计等 AI 玩过现有经济再定。这是建议，尚未执行。
+建议顺序：先在页面上用真实的模型服务让模型与脚本机器人打几局，读 `--agent-log` 看模型是否理解规则、常犯哪些错，调整规则提示和工具说明；再在页面上加 AI 行动日志面板（每轮的观察摘要、模型的话、工具调用与结果，需要协议改动）；然后根据试玩调经济数值（芯片价格、矿池储量、收购点参数）。生产链与地点设计等 AI 玩过现有经济再定。这是建议，尚未执行。

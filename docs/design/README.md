@@ -38,4 +38,4 @@
 | 文档 | 状态 | 功能 |
 | --- | --- | --- |
 | [game-overview](game-overview.md) | 提案，部分已调整 | 总体游戏设计 |
-| [ai-residents](ai-residents.md) | 首版已实现 | AI 居民：事件驱动循环、工具、脚本机器人与 OpenRouter 大脑 |
+| [ai-residents](ai-residents.md) | 首版已实现 | AI 居民：事件驱动循环、工具、脚本机器人与 OpenAI 兼容接口的模型大脑，页面配置与服务端覆盖 |
