@@ -36,8 +36,9 @@ Python 服务端（aiverse-server）
     mining.py   矿池采矿：开始、按游戏时间发放、取消
     market.py   收购点：按随卖出下跌、随时间回升的市场价用金币收购 token
     trade.py    购买与出售报价：事件种类，物品换金币
+    contracts.py 合约：约定未来每次交付自动付款，签订时托管买方货款
   core/       世界模型与共用机制，只依赖 core/ 内的模块
-    world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、矿池、收购点、游戏时间）与坐标校验
+    world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、生效的合约、矿池、收购点、游戏时间）与坐标校验
     inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
     events.py   事件队列：居民之间的请求，等待同意、拒绝或撤回
 ```
@@ -93,14 +94,16 @@ Python 服务端（aiverse-server）
 
 第一批具体种类是交易，见服务端 `trade.py` 与 [变更 0010](../changes/0010-trade-offers.md)：买方用原语 `OfferToBuy` 向卖方发出 `PurchaseOffer`，或卖方用 `OfferToSell` 向买方发出 `SaleOffer`。发件人承诺的那一份（买方的金币或卖方的物品）在发送时预留，收件人同意时交出自己的一份并完成互换；拒绝或撤回时预留退回。金币是居民的独立余额，价格是整批的总价。
 
+第二种是合约提议 `ContractProposal`，见服务端 `contracts.py` 与 [合约设计](design/contracts.md)：同意后生成 `World.contracts` 中的一份合约，买方的全部货款托管在合约里，供货方每次 `Deliver` 从中得到一批的价款；到期由 `settle_due` 处理，出局和结束时终止，余款退回买方。
+
 ## 一局的生命周期
 
 见服务端 `lifecycle.py` 与 [变更 0011](../changes/0011-coins-leaving-and-game-end.md)：
 
 - `perform` 先调用 `check_can_act`：游戏结束后一律 `game_over`，出局的居民一律 `resident_left`。
-- 出局（原语 `LeaveGame`，或服务端直接调用 `leave_game`）：撤销与该居民有关的报价并退回双方预留，清空物品，保留金币，标记 `left`。居民留在世界和排名中，游戏照常进行。
-- 结束：`app.py` 的 `Game` 在创建时记下开局时刻（单调时钟，一局默认 `GAME_DURATION` 即 20 分钟）。应用 lifespan 中的计时任务到点调用 `end_game` 并广播；每帧处理前也检查一次（`Game.tick`）。`end_game` 停止所有采矿、撤销所有报价并设 `World.ended`，世界从此不变。
-- 视图：每名居民带公开的金币总额（余额加待处理购买报价中的预留）、`left` 与 `rank`（相同并列）；世界带 `game.ended` 与发送时的 `remainingSeconds`。客户端以收到状态的本地时刻为起点倒计时，不比较两台机器的时钟。
+- 出局（原语 `LeaveGame`，或服务端直接调用 `leave_game`）：撤销与该居民有关的报价并退回双方预留，终止其合约并把余款退回买方，清空物品，保留金币，标记 `left`。居民留在世界和排名中，游戏照常进行。
+- 结束：`app.py` 的 `Game` 在创建时记下开局时刻（单调时钟，一局默认 `GAME_DURATION` 即 20 分钟）。应用 lifespan 中的计时任务到点调用 `end_game` 并广播；每帧处理前也检查一次（`Game.tick`）。`end_game` 停止所有采矿、撤销所有报价、终止所有合约并设 `World.ended`，世界从此不变。
+- 视图：每名居民带公开的金币总额（余额加待处理购买报价和合约中的预留）、`left` 与 `rank`（相同并列）；世界带 `game.ended` 与发送时的 `remainingSeconds`。客户端以收到状态的本地时刻为起点倒计时，不比较两台机器的时钟。
 
 一次手动操作：
 

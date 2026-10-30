@@ -39,3 +39,4 @@
 | --- | --- | --- |
 | [game-overview](game-overview.md) | 提案，部分已调整 | 总体游戏设计 |
 | [ai-residents](ai-residents.md) | 首版已实现 | AI 居民：事件驱动循环、工具、脚本机器人与 OpenAI 兼容接口的模型大脑，页面配置与服务端覆盖 |
+| [contracts](contracts.md) | 首版已实现 | 合约：约定未来每次交付自动付款，单次或多次，买方货款托管 |

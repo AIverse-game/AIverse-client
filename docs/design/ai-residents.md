@@ -1,7 +1,7 @@
 # AI 居民
 
 状态：首版已实现，尚未用真实模型试玩。
-更新：2026-10-29。
+更新：2026-10-30。
 相关：[决策 0003](../decisions/0003-event-driven-agents-and-openrouter.md)、[决策 0004](../decisions/0004-player-configured-llm-endpoints.md)、[变更 0020](../../changes/0020-agent-loop.md)、[变更 0022](../../changes/0022-llm-config-from-page.md)；代码在服务端 `src/aiverse_server/agents/`。
 
 ## 问题背景
@@ -38,10 +38,11 @@ Game.start_agent / start_llm_agent / stop_agent（启动参数，或页面的 st
    - 收购点：现价、芯片价目、距离和走路花费；
    - 已知矿池（按距离排序）、感知范围内的居民；
    - 所有居民的金币和名次；
-   - 收到的报价、听到的话、附近动态、自己的笔记。
-2. **决策**：大脑通过工具行动。工具共 11 个：
+   - 收到和发出的报价与合约提议、自己参与的合约（见 [合约](contracts.md)）、听到的话、附近动态、自己的笔记。
+2. **决策**：大脑通过工具行动。工具共 14 个：
    - 行动：`move_to`、`mine`、`sell_tokens`、`buy_chip`、`say`；
-   - 交易：`offer_to_buy`、`offer_to_sell`、`respond_to_offer`、`withdraw_offer`；
+   - 交易：`offer_to_buy`、`offer_to_sell`、`respond_to_offer`、`withdraw_offer`（后两个也用于合约提议）；
+   - 合约：`propose_contract`、`deliver`、`cancel_contract`；
    - 笔记：`remember`、`forget`。
 
    参数用严格模式的 pydantic 模型校验，同一份模型也生成给模型看的 JSON Schema。工具返回成功与否、拒绝代码和原因，以及执行后自己的简要状态。参数出错或被拒绝时只返回错误，世界不变。
