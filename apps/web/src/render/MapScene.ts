@@ -1,5 +1,6 @@
 import type { MarketView, PoolView, Position, ResidentId, ResidentView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
+import marketSprite from '../assets/market/market-sprite.png';
 import type { GameStore } from '../state/store';
 import {
   axisTicks,
@@ -40,12 +41,18 @@ const POOL_CRYSTAL = 0xdff8fc;
 /** Pools with nothing left stay on the map, faded. */
 const EMPTY_POOL_ALPHA = 0.35;
 const POOL_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#dff8fc', stroke: '#1d1a16', strokeThickness: 3 };
-/** The market: a patch of ground the size of its reach, with a stall in the middle. */
+/** The market: a patch of ground the size of its reach, with a machine standing in the middle. */
 const MARKET_FILL = 0xe0a93b;
 const MARKET_EDGE = 0xf7dc8a;
-const MARKET_WALL = 0x8a5a33;
-const MARKET_ROOF = 0xc8462f;
-const MARKET_COIN = 0xf7dc8a;
+const MARKET_TEXTURE = 'market';
+/**
+ * Height of the machine in canvas pixels at the map centre, a little taller than a resident.
+ * Its picture (market-sprite.png) is the user's market.png beside it trimmed to the visible
+ * pixels (alpha above 8) and scaled to 192 px high.
+ */
+const MARKET_HEIGHT = 72;
+/** Across the picture, where the front corner of its base touches the ground. */
+const MARKET_FOOT_X = 0.65;
 const MARKET_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#f7dc8a', stroke: '#1d1a16', strokeThickness: 3 };
 
 /** Height of a resident's figure, in the units `drawFigure` uses. */
@@ -101,6 +108,7 @@ export class MapScene extends Phaser.Scene {
   private pools: Phaser.GameObjects.Graphics | null = null;
   private poolLabels: Phaser.GameObjects.Text[] = [];
   private market: Phaser.GameObjects.Graphics | null = null;
+  private marketMachine: Phaser.GameObjects.Image | null = null;
   private marketLabel: Phaser.GameObjects.Text | null = null;
   /** Where the market was last drawn, so it is redrawn only when that changes. */
   private drawnMarket = '';
@@ -113,6 +121,10 @@ export class MapScene extends Phaser.Scene {
 
   constructor(private readonly store: GameStore) {
     super('map');
+  }
+
+  preload(): void {
+    this.load.image(MARKET_TEXTURE, marketSprite);
   }
 
   create(): void {
@@ -164,8 +176,11 @@ export class MapScene extends Phaser.Scene {
         return;
       }
     }
-    const { selected } = this.store.getState();
-    const target = this.projection?.toMap(pointer.x, pointer.y);
+    const { selected, world } = this.store.getState();
+    // The machine stands up off the ground, so the ground behind it can lie outside the
+    // market's reach; clicking the machine means walking to the market.
+    const onMachine = this.marketMachine !== null && over.includes(this.marketMachine);
+    const target = onMachine ? world?.market?.position : this.projection?.toMap(pointer.x, pointer.y);
     if (selected && target && this.store.isFree(selected)) {
       this.store.act({ type: 'move_to', residentId: selected, target });
     }
@@ -309,6 +324,8 @@ export class MapScene extends Phaser.Scene {
     const projection = this.projection!;
     const graphics = this.market!;
     graphics.clear();
+    this.marketMachine?.destroy();
+    this.marketMachine = null;
     this.marketLabel?.destroy();
     this.marketLabel = null;
     if (!market) return;
@@ -325,24 +342,14 @@ export class MapScene extends Phaser.Scene {
     graphics.lineStyle(2, MARKET_EDGE, 0.85);
     graphics.strokePoints(rim, true);
 
-    // A stall: a wall with a coin sign under a pitched roof, standing on the centre.
+    // The machine stands on the centre and is sorted with the residents, so one walking
+    // behind it is hidden and one in front covers it; one standing on the centre is in front.
     const { x, y } = projection.toScreen(market.position);
-    const unit = 6 * projection.scaleAt(market.position);
-    graphics.fillStyle(MARKET_WALL, 1);
-    graphics.fillRect(x - 2 * unit, y - 2.4 * unit, 4 * unit, 2.4 * unit);
-    graphics.lineStyle(1.5, INK, 0.9);
-    graphics.strokeRect(x - 2 * unit, y - 2.4 * unit, 4 * unit, 2.4 * unit);
-    const roof = [
-      new Phaser.Math.Vector2(x - 2.6 * unit, y - 2.4 * unit),
-      new Phaser.Math.Vector2(x, y - 4 * unit),
-      new Phaser.Math.Vector2(x + 2.6 * unit, y - 2.4 * unit),
-    ];
-    graphics.fillStyle(MARKET_ROOF, 1);
-    graphics.fillPoints(roof, true);
-    graphics.strokePoints(roof, true);
-    graphics.fillStyle(MARKET_COIN, 1);
-    graphics.fillCircle(x, y - 1.2 * unit, 0.7 * unit);
-    graphics.strokeCircle(x, y - 1.2 * unit, 0.7 * unit);
+    const machine = this.add.image(x, y, MARKET_TEXTURE).setOrigin(MARKET_FOOT_X, 1);
+    this.marketMachine = machine
+      .setScale((MARKET_HEIGHT * projection.scaleAt(market.position)) / machine.height)
+      .setDepth(RESIDENT_DEPTH + y / CANVAS_HEIGHT - 1e-6)
+      .setInteractive({ pixelPerfect: true, useHandCursor: true });
 
     this.marketLabel = this.add
       .text(x, y + 4, '收购点', MARKET_LABEL_STYLE)
