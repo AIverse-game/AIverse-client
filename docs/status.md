@@ -24,7 +24,7 @@
 - 页面配置大模型（[变更 0022](../changes/0022-llm-config-from-page.md)，[决策 0004](decisions/0004-player-configured-llm-endpoints.md)）：不内置任何厂商，接口须兼容 OpenAI 的 Chat Completions 并支持工具调用。页面“AI 驱动”面板选中居民，填写 API 地址、key 和模型后“交给 AI”，可随时按新配置替换或“停止 AI，改为手动”；所有页面的居民列表标出“AI”。设置按居民记在本机 localStorage。服务端 YAML 配置文件（`--config`，默认读 `aiverse.yml`）的 `llm.override` 可以全局覆盖地址、key、模型，页面上对应的输入框置灰；`--agent r2=llm[:模型]` 的地址和 key 来自配置文件。key 不进状态、日志与记录。协议版本为 11。
 - 服务端代码结构（[变更 0021](../changes/0021-server-subpackages.md)）：`aiverse_server` 按领域分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 子包，`tests/` 同样分组，见 [代码地图](code-map.md)。只移动文件，行为不变。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
-- Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前只有 AI 居民有独立的设计文档。
+- Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前只有 AI 居民有独立的设计文档。文件命名与放置按 [文件命名与目录约定](conventions.md)（[变更 0023](../changes/0023-naming-conventions.md)），尚无自动检查。
 - 本地 Git 仓库，分支为 `main`，未配置远程仓库；`aiverse-server` 是独立的 Git 仓库，同样只在本地。
 
 ## 当前可用命令

@@ -28,3 +28,4 @@
 | [0020-agent-loop](0020-agent-loop.md) | 已完成 | AI 居民循环：事件驱动调度、绑定居民的工具、脚本机器人与 OpenRouter 模型大脑（服务端） |
 | [0021-server-subpackages](0021-server-subpackages.md) | 已完成 | 服务端按领域分为 core、economy、residents、game、server 子包，测试同样分组；行为不变 |
 | [0022-llm-config-from-page](0022-llm-config-from-page.md) | 已完成 | 页面配置任意 OpenAI 兼容的大模型接口并交给 AI，服务端 YAML 配置文件可以全局覆盖；协议 11 |
+| [0023-naming-conventions](0023-naming-conventions.md) | 已完成 | 成文的文件命名与目录约定，两个仓库共用；不改现有文件名 |

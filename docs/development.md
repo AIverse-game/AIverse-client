@@ -10,6 +10,7 @@
 | 审查工作方法 | `.agents/skills/review-change/SKILL.md` | 默认只读的问题发现与修复复核 |
 | 当前状态 | `docs/status.md` | 已完成、实际命令、下一步与阻塞 |
 | 文件导航 | `docs/code-map.md` | 真实存在的代码和文档职责 |
+| 命名与目录 | `docs/conventions.md` | 文件命名、放置位置、新增与重命名规则 |
 | 功能设计 | `docs/design/` | 每个功能的问题背景、设计思路、争议与决定、暂未实现 |
 | 单次任务 | `changes/` | 目标、范围、验收与实际证据 |
 | 重要决定 | `docs/decisions/` | 选项、理由、影响与替代关系 |
