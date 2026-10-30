@@ -68,7 +68,7 @@ Python 服务端（aiverse-server）
 ## 一次连接如何进行
 
 1. 页面创建 WebSocket 连接，`GameStore` 立即发送 `hello`（连接打开前排队）。
-2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、矿池、收购点（位置、半径与定价参数、卖出压力）、居民（含金币、出局、名次、token、采矿与行走状态）、对局状态（是否结束、剩余时间）和最近的发言。
+2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、矿池、收购点（位置、半径与定价参数、卖出压力）、居民（含金币、出局、名次、token、采矿与行走状态）、对局状态（是否结束、剩余时间）、最近的发言，以及所选居民的报价、合约提议与合约。
 3. 连接层用 zod 校验每条消息；不合协议时断开并在界面报错。
 4. `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
 
@@ -90,7 +90,7 @@ Python 服务端（aiverse-server）
 2. 收件人从 `pending_for` 看到发给自己的事件，用原语 `RespondToEvent` 同意或拒绝；发件人可以用 `WithdrawEvent` 撤回尚未答复的事件。只有收件人能答复、只有发件人能撤回，对别人的事件一律报告 `unknown_event`。
 3. 同意时事件离开队列并执行 `on_accept`；拒绝或撤回时执行 `on_decline`，释放预留。钩子失败时世界与队列整体不变，事件仍待处理。
 
-每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。事件尚未进入协议。
+每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。待答复的报价与合约提议以只读视图进入协议 12，只发给当事人（见变更 0026）；答复原语尚未进入协议。
 
 第一批具体种类是交易，见服务端 `trade.py` 与 [变更 0010](../changes/0010-trade-offers.md)：买方用原语 `OfferToBuy` 向卖方发出 `PurchaseOffer`，或卖方用 `OfferToSell` 向买方发出 `SaleOffer`。发件人承诺的那一份（买方的金币或卖方的物品）在发送时预留，收件人同意时交出自己的一份并完成互换；拒绝或撤回时预留退回。金币是居民的独立余额，价格是整批的总价。
 
@@ -147,7 +147,7 @@ Python 服务端（aiverse-server）
 - 原语 `Say` 不带 `to` 时当众说：说话那一刻 `HEARING_RADIUS`（20，与感知半径相同）内仍在局中的其他居民听到，行走者按途中位置；带 `to` 时只有那名居民听到，不论远近。谁听到记在发言的 `listeners` 里，之后走近的人听不到。
 - 说话像退出游戏一样不受忙碌限制，不进活动日志。每句从携带的 token 中扣 `SPEECH_COSTS`：当众说 2 个、私聊 1 个，花掉最后一个照常出局。世界保留最近 `SPEECH_LIMIT`（200）句，`Memory.speech_seen` 记着居民看过的最后一句。
 - `begin_turn` 的 `Perception.speech` 是自上次查看以来自己说的和听到的话。
-- 视图因连接而异：每个连接有一个 `view_as` 选择的居民（`Outbox.viewer`），`world_view` 只放进当众说的话和该居民发出或收到的私聊，取其中最近 50 句；`Game.broadcast_world` 按不同的选择各编码一次。页面在 `GameStore.select` 时发送 `view_as`，所以不相关的私聊不会到达浏览器。页面的“对话”面板见 `apps/web/src/ui/SpeechPanel.tsx`。
+- 视图因连接而异：每个连接有一个 `view_as` 选择的居民（`Outbox.viewer`），`world_view` 只放进当众说的话和该居民发出或收到的私聊，取其中最近 50 句；`Game.broadcast_world` 按不同的选择各编码一次。页面在 `GameStore.select` 时发送 `view_as`，所以不相关的私聊不会到达浏览器。页面的“对话”面板见 `apps/web/src/ui/SpeechPanel.tsx`。报价、合约提议与合约按同样的方式只发给以参与者身份查看的连接，页面的“交易与合约”面板见 `apps/web/src/ui/DealsPanel.tsx`。
 
 ## 行走
 

@@ -10,15 +10,15 @@
 | `tsconfig.base.json` | 各包共享的 TypeScript 严格配置；共享包不含 DOM 类型 |
 | `eslint.config.js` | 代码检查与分层规则 |
 | `vitest.config.ts` | 测试入口，收集各包 `src/**/*.test.ts` |
-| `packages/protocol/src/` | `view.ts` 地图、矿池、收购点、居民（含金币、出局、名次、token、采矿、行走、驱动它的 Agent 及模型）、对局、发言与坐标视图及校验；`actions.ts` 操作原语类型；`messages.ts` 客户端与服务端消息（含交给 AI 的 `start_agent`、`stop_agent`、`agent_result` 与 `welcome` 中服务端覆盖的模型设置）、协议版本 |
+| `packages/protocol/src/` | `view.ts` 地图、矿池、收购点、居民（含金币、出局、名次、token、采矿、行走、驱动它的 Agent 及模型）、对局、发言、报价、合约提议、合约与坐标视图及校验；`actions.ts` 操作原语类型；`messages.ts` 客户端与服务端消息（含交给 AI 的 `start_agent`、`stop_agent`、`agent_result` 与 `welcome` 中服务端覆盖的模型设置）、协议版本 |
 | `apps/web/index.html`、`apps/web/vite.config.ts` | 网页入口与构建配置（相对资源路径、`/ws` 代理到服务端） |
 | `apps/web/src/main.tsx` | 组装连接、状态与界面；唯一选择传输方式和服务端地址的地方 |
 | `apps/web/src/vite-env.d.ts` | `VITE_SERVER_URL` 环境变量类型 |
 | `apps/web/src/net/` | `GameConnection` 接口与 WebSocket 实现 |
-| `apps/web/src/state/` | `GameStore` 客户端状态（快照、选中居民（选中时以 `view_as` 告诉服务端）、操作结果、交给或停止 AI 的结果、服务端覆盖的模型设置、本地截止时刻与收到快照的时刻）、发送原语、交给或停止 AI、能否行动、所在矿池与是否在收购点的判断、居民持有的最好芯片、当前收购价与估算收入；`market.ts` 按本地时钟推算市场价；`storeContext.tsx` 把 `GameStore` 交给 React 组件的 context（`StoreProvider`）与 hook（`useStore`、`useGameState`） |
+| `apps/web/src/state/` | `GameStore` 客户端状态（快照、选中居民（选中时以 `view_as` 告诉服务端）、操作结果、交给或停止 AI 的结果、服务端覆盖的模型设置、本地截止时刻与收到快照的时刻）、按本地时钟的倒计时 `countdown`、发送原语、交给或停止 AI、能否行动、所在矿池与是否在收购点的判断、居民持有的最好芯片、当前收购价与估算收入；`market.ts` 按本地时钟推算市场价；`storeContext.tsx` 把 `GameStore` 交给 React 组件的 context（`StoreProvider`）与 hook（`useStore`、`useGameState`） |
 | `apps/web/src/render/` | `layout.ts` 2.5D 透视投影及其反算、刻度与格式；`MapScene.ts` Phaser 地图场景（地块、矿池、收购点、居民、按真实时间的行走动画、指针坐标、点选与点击移动） |
 | `apps/web/src/assets/` | 贴图：`chips/` 中用户提供的芯片原图 `mk*.png` 与页面使用的 64 px 小图 `mk*-icon.png`；`market/` 中用户提供的收购点原图 `market.png` 与地图使用的小图 `market-sprite.png`（裁到可见像素，高 192 px） |
-| `apps/web/src/ui/` | React：顶栏（含倒计时）、地图容器、`RankingPanel.tsx` 金币排名、地图、居民（含 token 与芯片）、矿池与收购点（含随时间回升的现价与芯片价目）信息面板（可点选居民）、`ActionPanel.tsx` 手动操作面板（行走、采矿、卖 token、买芯片、退出游戏）、`AgentPanel.tsx` 把选中居民交给玩家配置的大模型（API 地址、key、模型，服务端覆盖的项置灰）或停止、`savedLLMSettings.ts` 按居民把模型设置记在 localStorage、`SpeechPanel.tsx` 对话记录（当众说的话与选中居民的私聊）与发言（当众说或私聊，显示消耗）、`ChipIcon.tsx` 按型号显示芯片贴图、`format.ts` 时长与价格格式、`useSecondTick.ts` 每秒重绘 |
+| `apps/web/src/ui/` | React：顶栏（含倒计时）、地图容器、`RankingPanel.tsx` 金币排名、地图、居民（含 token 与芯片）、矿池与收购点（含随时间回升的现价与芯片价目）信息面板（可点选居民）、`ActionPanel.tsx` 手动操作面板（行走、采矿、卖 token、买芯片、退出游戏）、`AgentPanel.tsx` 把选中居民交给玩家配置的大模型（API 地址、key、模型，服务端覆盖的项置灰）或停止、`savedLLMSettings.ts` 按居民把模型设置记在 localStorage、`SpeechPanel.tsx` 对话记录（当众说的话与选中居民的私聊）与发言（当众说或私聊，显示消耗）、`DealsPanel.tsx` 选中居民的报价、合约提议与合约（只读，合约到期倒计时）、`dealText.ts` 报价与合约条款的中文描述、`ChipIcon.tsx` 按型号显示芯片贴图、`format.ts` 时长与价格格式、`useSecondTick.ts` 每秒重绘 |
 | `.github/workflows/ci.yml` | 推送 `main` 或提交 PR 时运行仓库检查与 `npm run verify` |
 
 测试与源码同目录，命名为 `*.test.ts`。命名与放置规则见 [文件命名与目录约定](conventions.md)。

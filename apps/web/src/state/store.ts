@@ -180,6 +180,14 @@ export class GameStore {
     return deadline === null ? null : Math.max(0, (deadline - this.now()) / 1000);
   }
 
+  /**
+   * Seconds left by the local clock on a timer the latest snapshot gave as `remainingSeconds`,
+   * such as a contract's; only for display, the server decides when it runs out.
+   */
+  countdown(remainingSeconds: number): number {
+    return Math.max(0, remainingSeconds - this.sinceSnapshot());
+  }
+
   select(id: ResidentId | null): void {
     if (id === this.state.selected) return;
     this.connection.send({ type: 'view_as', residentId: id });

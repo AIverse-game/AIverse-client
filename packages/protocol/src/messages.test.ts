@@ -19,12 +19,44 @@ const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, ra
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, pools, residents, game: clock, speech: [] },
+  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [] },
 });
 
 const withSpeech = (speech: unknown[]) => {
   const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)]);
   return { ...message, world: { ...message.world, speech } };
+};
+
+const withDeals = (deals: Record<string, unknown[]>) => {
+  const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)]);
+  return { ...message, world: { ...message.world, ...deals } };
+};
+
+const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'token', quantity: 5, price: 80 };
+
+const proposal = {
+  eventId: 2,
+  fromId: 'a',
+  toId: 'b',
+  supplierId: 'b',
+  buyerId: 'a',
+  item: 'token',
+  quantity: 10,
+  price: 100,
+  deliveries: 3,
+  durationSeconds: 60,
+};
+
+const contract = {
+  id: 1,
+  supplierId: 'b',
+  buyerId: 'a',
+  item: 'token',
+  quantity: 10,
+  price: 100,
+  deliveriesLeft: 2,
+  escrow: 200,
+  remainingSeconds: 42.5,
 };
 
 const line = { seq: 1, time: 3.5, speakerId: 'a', text: '有人吗？', listeners: ['b'] };
@@ -79,6 +111,11 @@ describe('parseServerMessage', () => {
       { ...resident('a', 1, 1), agent: { model: 'vendor/model' } },
       { ...resident('b', 2, 2), agent: {} },
     ]);
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
+  it('accepts the viewed resident\'s offers, contract proposals and contracts', () => {
+    const message = withDeals({ offers: [offer], contractProposals: [proposal], contracts: [contract] });
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
@@ -164,6 +201,27 @@ describe('parseServerMessage', () => {
     ['speech to an unknown resident', withSpeech([{ ...line, to: 'z' }])],
     ['speech to the speaker', withSpeech([{ ...line, to: 'a', listeners: [] }])],
     ['empty speech', withSpeech([{ ...line, text: '' }])],
+    ['missing offers', { type: 'state', world: { map: { size: 100 }, pools: [], residents: [], game, speech: [] } }],
+    ['an offer from an unknown resident', withDeals({ offers: [{ ...offer, fromId: 'z' }] })],
+    ['an offer to oneself', withDeals({ offers: [{ ...offer, toId: 'b' }] })],
+    ['an offer of no items', withDeals({ offers: [{ ...offer, quantity: 0 }] })],
+    ['an offer on an unknown side', withDeals({ offers: [{ ...offer, side: 'swap' }] })],
+    ['a proposal between others than its parties', withDeals({ contractProposals: [{ ...proposal, supplierId: 'a', buyerId: 'a' }] })],
+    [
+      'a proposal whose parties are not its sender and recipient',
+      {
+        ...withDeals({ contractProposals: [{ ...proposal, supplierId: 'a', buyerId: 'c' }] }),
+        world: {
+          ...withDeals({}).world,
+          residents: [resident('a', 1, 1), resident('b', 2, 2), resident('c', 3, 3)],
+          contractProposals: [{ ...proposal, supplierId: 'a', buyerId: 'c' }],
+        },
+      },
+    ],
+    ['a proposal without a duration', withDeals({ contractProposals: [{ ...proposal, durationSeconds: undefined }] })],
+    ['a contract with an unknown buyer', withDeals({ contracts: [{ ...contract, buyerId: 'z' }] })],
+    ['a contract holding the wrong escrow', withDeals({ contracts: [{ ...contract, escrow: 300 }] })],
+    ['a contract with negative time left', withDeals({ contracts: [{ ...contract, remainingSeconds: -1 }] })],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);
     expect(result.ok).toBe(false);

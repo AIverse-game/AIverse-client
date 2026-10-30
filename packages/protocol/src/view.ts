@@ -18,7 +18,7 @@ export const residentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   /** Where the resident is when the server sent this; on the way while walking. */
   position: positionSchema,
-  /** Total coins, including those set aside by pending offers. */
+  /** Total coins, including those set aside by pending offers and contracts. */
   coins: z.number().int().nonnegative(),
   /** Left the game: still shown and ranked, but can no longer act. */
   left: z.boolean(),
@@ -120,6 +120,56 @@ export const speechSchema = z.object({
   listeners: z.array(z.string()),
 });
 
+const count = z.number().int().positive();
+
+/** A trade offer waiting for an answer: items for coins, the whole lot at once. */
+export const offerSchema = z.object({
+  eventId: z.number().int().positive(),
+  /** `buy` when the sender offers to buy, `sell` when the sender offers to sell. */
+  side: z.enum(['buy', 'sell']),
+  fromId: z.string(),
+  toId: z.string(),
+  /** Item kind, such as `token` or a chip model. */
+  item: z.string().min(1),
+  quantity: count,
+  /** Coins for the whole lot. */
+  price: count,
+});
+
+/**
+ * A contract proposal waiting for an answer: each time the supplier delivers `quantity` of
+ * `item`, the buyer pays `price` coins, up to `deliveries` times within `durationSeconds` of
+ * the recipient accepting.
+ */
+export const contractProposalSchema = z.object({
+  eventId: z.number().int().positive(),
+  fromId: z.string(),
+  toId: z.string(),
+  supplierId: z.string(),
+  buyerId: z.string(),
+  item: z.string().min(1),
+  quantity: count,
+  /** Coins for each delivery. */
+  price: count,
+  deliveries: count,
+  durationSeconds: count,
+});
+
+/** A contract in force; the buyer's coins for the deliveries left wait set aside in it. */
+export const contractSchema = z.object({
+  id: z.number().int().positive(),
+  supplierId: z.string(),
+  buyerId: z.string(),
+  item: z.string().min(1),
+  quantity: count,
+  price: count,
+  deliveriesLeft: count,
+  /** Coins set aside: `price` times `deliveriesLeft`. */
+  escrow: count,
+  /** Time until it lapses when the server sent this. */
+  remainingSeconds: z.number().nonnegative(),
+});
+
 export const mapSchema = z.object({
   /** Side length of the square map, in map units. */
   size: z.number().positive(),
@@ -143,6 +193,13 @@ export const worldViewSchema = z
     market: marketSchema.optional(),
     /** The latest lines this connection may see, oldest first: everything aloud, its viewer's whispers. */
     speech: z.array(speechSchema),
+    /**
+     * Deals of the resident the connection views as (`view_as`), oldest first; empty when it views
+     * as nobody. Like whispers, the server sends no one else's.
+     */
+    offers: z.array(offerSchema),
+    contractProposals: z.array(contractProposalSchema),
+    contracts: z.array(contractSchema),
   })
   .superRefine((world, context) => {
     const inside = ({ x, y }: Position) => x >= 0 && y >= 0 && x <= world.map.size && y <= world.map.size;
@@ -184,6 +241,26 @@ export const worldViewSchema = z
         context.addIssue({ code: 'custom', path: ['speech', index], message: 'speaker hears themselves' });
       }
     });
+    const checkParties = (path: (string | number)[], ...pairs: [ResidentId, ResidentId][]) => {
+      for (const [one, other] of pairs) {
+        if (!seen.has(one) || !seen.has(other)) context.addIssue({ code: 'custom', path, message: 'unknown resident' });
+        else if (one === other) context.addIssue({ code: 'custom', path, message: 'a deal with oneself' });
+      }
+    };
+    world.offers.forEach((offer, index) => checkParties(['offers', index], [offer.fromId, offer.toId]));
+    world.contractProposals.forEach((proposal, index) => {
+      checkParties(['contractProposals', index], [proposal.fromId, proposal.toId], [proposal.supplierId, proposal.buyerId]);
+      const parties = [proposal.fromId, proposal.toId].sort().join();
+      if ([proposal.supplierId, proposal.buyerId].sort().join() !== parties) {
+        context.addIssue({ code: 'custom', path: ['contractProposals', index], message: 'parties differ from sender and recipient' });
+      }
+    });
+    world.contracts.forEach((contract, index) => {
+      checkParties(['contracts', index], [contract.supplierId, contract.buyerId]);
+      if (contract.escrow !== contract.price * contract.deliveriesLeft) {
+        context.addIssue({ code: 'custom', path: ['contracts', index, 'escrow'], message: 'not price times deliveries left' });
+      }
+    });
   });
 
 export type Position = z.infer<typeof positionSchema>;
@@ -194,4 +271,7 @@ export type MarketView = z.infer<typeof marketSchema>;
 export type ChipModelView = z.infer<typeof chipModelSchema>;
 export type GameView = z.infer<typeof gameSchema>;
 export type SpeechView = z.infer<typeof speechSchema>;
+export type OfferView = z.infer<typeof offerSchema>;
+export type ContractProposalView = z.infer<typeof contractProposalSchema>;
+export type ContractView = z.infer<typeof contractSchema>;
 export type WorldView = z.infer<typeof worldViewSchema>;

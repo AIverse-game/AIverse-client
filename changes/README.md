@@ -31,3 +31,4 @@
 | [0023-naming-conventions](0023-naming-conventions.md) | 已完成 | 成文的文件命名与目录约定，两个仓库共用；不改现有文件名 |
 | [0024-descriptive-module-names](0024-descriptive-module-names.md) | 已完成 | 改掉看不出内容的模块名：`llm_brain.py`、`scripted_brain.py`、`system_prompt.py`、`storeContext.tsx` |
 | [0025-delivery-contracts](0025-delivery-contracts.md) | 已完成 | 交付合约：每次交付自动付款，单次或多次，签订时托管买方货款；只在服务端与 Agent 工具中 |
+| [0026-deals-on-page](0026-deals-on-page.md) | 已完成 | 页面只读显示所选居民的报价、合约提议与合约，只给当事人看；协议 12 |

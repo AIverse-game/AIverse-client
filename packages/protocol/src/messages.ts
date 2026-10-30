@@ -3,7 +3,7 @@ import type { Action } from './actions';
 import { worldViewSchema, type ResidentId } from './view';
 
 /** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
-export const PROTOCOL_VERSION = 11;
+export const PROTOCOL_VERSION = 12;
 
 /**
  * Where and what a language model is asked: an OpenAI-compatible chat completions API at
@@ -22,8 +22,8 @@ export type LLMSettingName = keyof LLMSettings;
 export type ClientMessage =
   | { type: 'hello'; protocolVersion: number }
   /**
-   * Allowed only after `welcome`. Choose whose whispers this connection's states carry: the
-   * resident's, or none for null. The server answers with a `state`.
+   * Allowed only after `welcome`. Choose whose whispers, offers and contracts this connection's
+   * states carry: the resident's, or none for null. The server answers with a `state`.
    */
   | { type: 'view_as'; residentId: ResidentId | null }
   /** Allowed only after `welcome`. */

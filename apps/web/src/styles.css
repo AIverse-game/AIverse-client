@@ -494,6 +494,46 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.deals-heading {
+  margin: 10px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.deals-heading:first-of-type {
+  margin-top: 0;
+}
+
+.deals {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deals li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--surface-strong);
+  font-size: 12px;
+}
+
+.deals li.incoming {
+  border-left: 3px solid var(--accent);
+}
+
+.deals .text {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
 .speech-form {
   display: flex;
   flex-wrap: wrap;

@@ -37,6 +37,9 @@ const world: WorldView = {
   ],
   game: { ended: false, remainingSeconds: 90 },
   speech: [],
+  offers: [],
+  contractProposals: [],
+  contracts: [],
 };
 
 describe('GameStore', () => {
@@ -111,6 +114,18 @@ describe('GameStore', () => {
     expect(store.remainingSeconds()).toBe(0);
     deliver({ type: 'state', world: { ...world, game: { ended: true, remainingSeconds: 0 } } });
     expect(store.remainingSeconds()).toBe(0);
+  });
+
+  it('counts other timers, such as a contract lapsing, down from the latest snapshot', () => {
+    const { connection, deliver } = fakeConnection();
+    let now = 5000;
+    const store = new GameStore(connection, () => now);
+    deliver({ type: 'state', world });
+    now += 10_000;
+    expect(store.countdown(45)).toBe(35);
+    expect(store.countdown(5)).toBe(0);
+    deliver({ type: 'state', world });
+    expect(store.countdown(45)).toBe(45);
   });
 
   it('follows the market price on the local clock and knows who stands at the market', () => {
