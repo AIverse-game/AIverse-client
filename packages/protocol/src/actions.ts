@@ -36,4 +36,10 @@ export type BuyChipAction = { type: 'buy_chip'; residentId: ResidentId; model: s
  */
 export type SayAction = { type: 'say'; residentId: ResidentId; text: string; to?: ResidentId };
 
-export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction | BuyChipAction | SayAction;
+export type BuildRigAction = { type: 'build_rig'; residentId: ResidentId; poolId: PoolId };
+export type InstallChipAction = { type: 'install_chip'; residentId: ResidentId; rigId: number; chip: string; deposit: number };
+export type FundRigAction = { type: 'fund_rig'; residentId: ResidentId; rigId: number; slotId: number; amount: number };
+export type RemoveChipAction = { type: 'remove_chip'; residentId: ResidentId; rigId: number; slotId: number };
+
+export type Action = MoveToAction | LeaveGameAction | MineAction | SellTokensAction | BuyChipAction | SayAction
+  | BuildRigAction | InstallChipAction | FundRigAction | RemoveChipAction;

@@ -1,4 +1,4 @@
-import type { MarketView, PoolView, Position, ResidentId, ResidentView } from '@aiverse/protocol';
+import type { MarketView, PoolView, Position, ResidentId, ResidentView, RigView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import marketSprite from '../assets/market/market-sprite.png';
 import type { GameStore } from '../state/store';
@@ -114,6 +114,8 @@ export class MapScene extends Phaser.Scene {
   private drawnMarket = '';
   /** What the pools were last drawn from, so they are redrawn only when that changes. */
   private drawnPools = '';
+  private drawnRigs = '';
+  private rigMarkers: { root: Phaser.GameObjects.Container; position: Position }[] = [];
   private axisLabels: Phaser.GameObjects.Text[] = [];
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
@@ -163,6 +165,11 @@ export class MapScene extends Phaser.Scene {
       this.drawnMarket = market;
     }
     this.syncResidents(world.residents, resized);
+    const rigs = JSON.stringify([world.map.size, world.rigs, world.game.ended]);
+    if (rigs !== this.drawnRigs) {
+      this.drawRigs(world.rigs, world.pools);
+      this.drawnRigs = rigs;
+    }
     for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
   }
 
@@ -177,6 +184,11 @@ export class MapScene extends Phaser.Scene {
       }
     }
     const { selected, world } = this.store.getState();
+    const rig = this.rigMarkers.find((marker) => over.includes(marker.root));
+    if (rig && selected && this.store.isFree(selected)) {
+      this.store.act({ type: 'move_to', residentId: selected, target: rig.position });
+      return;
+    }
     // The machine stands up off the ground, so the ground behind it can lie outside the
     // market's reach; clicking the machine means walking to the market.
     const onMachine = this.marketMachine !== null && over.includes(this.marketMachine);
@@ -355,6 +367,31 @@ export class MapScene extends Phaser.Scene {
       .text(x, y + 4, '收购点', MARKET_LABEL_STYLE)
       .setOrigin(0.5, 0)
       .setDepth(POOL_DEPTH);
+  }
+
+  private drawRigs(rigs: RigView[], pools: PoolView[]): void {
+    for (const marker of this.rigMarkers) marker.root.destroy();
+    this.rigMarkers = [];
+    const counts = new Map<string, number>();
+    for (const rig of rigs) {
+      const pool = pools.find((candidate) => candidate.id === rig.poolId)!;
+      const index = counts.get(pool.id) ?? 0;
+      counts.set(pool.id, index + 1);
+      const point = this.projection!.toScreen(pool.position);
+      const figure = this.add.graphics();
+      figure.fillStyle(0x29323a).fillRoundedRect(-15, -36, 30, 36, 4);
+      figure.lineStyle(2, 0xf7dc8a).strokeRoundedRect(-15, -36, 30, 36, 4);
+      for (let slot = 0; slot < 4; slot++) {
+        const occupied = rig.slots[slot];
+        const color = !occupied ? 0x56616b : occupied.status === 'running' ? 0x9cdbb2 : 0xe0a93b;
+        figure.fillStyle(color).fillRect(-9, -29 + slot * 7, 18, 4);
+      }
+      const label = this.add.text(0, 4, `矿机 #${rig.id}`, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
+      const root = this.add.container(point.x + 30 + index * 45, point.y - 4, [figure, label])
+        .setDepth(RESIDENT_DEPTH + point.y / CANVAS_HEIGHT)
+        .setSize(36, 80).setInteractive({ useHandCursor: true });
+      this.rigMarkers.push({ root, position: pool.position });
+    }
   }
 
   private syncResidents(views: ResidentView[], resized: boolean): void {

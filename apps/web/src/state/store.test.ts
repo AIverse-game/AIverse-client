@@ -33,16 +33,37 @@ const world: WorldView = {
   map: { size: 100 },
   pools: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
   residents: [
-    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, left: false, rank: 1, tokens: 200, chips: {} },
+    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, rigBalance: 0, carriedChips: {}, left: false, rank: 1, tokens: 200, chips: {} },
   ],
   game: { ended: false, remainingSeconds: 90 },
   speech: [],
   offers: [],
   contractProposals: [],
   contracts: [],
+  rigs: [],
+  rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, rentPer100: 300, energyPer100: 20 },
 };
 
 describe('GameStore', () => {
+  it('sends rig actions and keeps installed chips out of manual mining', () => {
+    const { connection, sent, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    const message = { ...world, market: {
+      position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0,
+      chips: [{ model: 'MK1', price: 300, tokensPerJob: 30 }],
+    }, residents: [{ ...world.residents[0]!, chips: {}, carriedChips: {}, rigBalance: 500, spendableCoins: 9500 }] };
+
+    deliver(WELCOME);
+    deliver({ type: 'state', world: message });
+    store.act({ type: 'install_chip', residentId: 'a', rigId: 1, chip: 'MK1', deposit: 500 });
+    deliver({ type: 'action_result', ok: false, code: 'not_enough_items', message: 'no carried chip' });
+
+    expect(store.bestChip('a')).toBeNull();
+    expect(store.isFree('a')).toBe(true);
+    expect(sent.at(-1)).toMatchObject({ type: 'action', action: { type: 'install_chip', deposit: 500 } });
+    expect(store.getState().lastAction?.status).toBe('rejected');
+    expect(store.getState().world?.residents[0]?.rigBalance).toBe(500);
+  });
   it('greets the server, becomes ready on welcome and keeps the latest world', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
@@ -211,7 +232,7 @@ describe('GameStore', () => {
     ];
     const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0, chips };
     const [resident] = world.residents;
-    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, chips: owned }] });
+    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, chips: owned, carriedChips: owned }] });
     deliver({ type: 'state', world: owning({}) });
     expect(store.bestChip('a')).toBeNull();
     deliver({ type: 'state', world: owning({ MK1: 3, MK2: 1 }) });

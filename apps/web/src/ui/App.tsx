@@ -5,6 +5,7 @@ import { DealsPanel } from './DealsPanel';
 import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
 import { RankingPanel } from './RankingPanel';
+import { RigPanel } from './RigPanel';
 import { SpeechPanel } from './SpeechPanel';
 import { TopBar } from './TopBar';
 
@@ -23,6 +24,7 @@ export function App() {
           <RankingPanel />
           <MapPanel />
           <ActionPanel />
+          <RigPanel />
           <DealsPanel />
           <AgentPanel />
           <SpeechPanel />

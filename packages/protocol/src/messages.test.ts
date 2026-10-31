@@ -7,6 +7,9 @@ const resident = (id: string, x: number, y: number) => ({
   color: '#e4572e',
   position: { x, y },
   coins: 10000,
+  spendableCoins: 10000,
+  rigBalance: 0,
+  carriedChips: {},
   left: false,
   rank: 1,
   tokens: 200,
@@ -15,11 +18,43 @@ const resident = (id: string, x: number, y: number) => ({
 
 const game = { ended: false, remainingSeconds: 1200 };
 
+const rig = { id: 1, ownerId: 'a', poolId: 'p1', slots: [{
+  id: 1, residentId: 'b', chip: 'MK1', balance: 404, mined: 30, rentPaid: 90,
+  status: 'running', remainingSeconds: 20, tokensPerCycle: 30, rentPerCycle: 90, energyPerCycle: 6,
+}] };
+
 const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, radius: 4, reserve: 300 });
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [] },
+  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], rigs: [], rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, rentPer100: 300, energyPer100: 20 } },
+});
+
+const withRig = (equipment: unknown, clock: unknown = game) => {
+  const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)], clock, [pool('p1', 10, 10)]);
+  return { ...message, world: { ...message.world, rigs: [equipment] } };
+};
+
+it('accepts prepaid automatic mining slots', () => {
+  const parsed = parseServerMessage(withRig(rig));
+
+  expect(parsed.ok).toBe(true);
+});
+
+it.each([
+  ['unknown owner', { ...rig, ownerId: 'missing' }],
+  ['unknown pool', { ...rig, poolId: 'missing' }],
+  ['unknown renter', { ...rig, slots: [{ ...rig.slots[0], residentId: 'missing' }] }],
+  ['negative balance', { ...rig, slots: [{ ...rig.slots[0], balance: -1 }] }],
+  ['unknown chip', { ...rig, slots: [{ ...rig.slots[0], chip: 'MK4' }] }],
+  ['duplicate slot', { ...rig, slots: [...rig.slots, ...rig.slots] }],
+  ['over capacity', { ...rig, slots: Array.from({ length: 5 }, (_, id) => ({ ...rig.slots[0], id: id + 1 })) }],
+])('refuses a rig with %s', (_, equipment) => {
+  expect(parseServerMessage(withRig(equipment)).ok).toBe(false);
+});
+
+it('refuses occupied slots after the game ends', () => {
+  expect(parseServerMessage(withRig(rig, { ended: true, remainingSeconds: 0 })).ok).toBe(false);
 });
 
 const withSpeech = (speech: unknown[]) => {

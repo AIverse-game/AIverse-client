@@ -211,8 +211,7 @@ function BuyChipForm({ resident, free }: { resident: ResidentView; free: boolean
         <button
           key={model.model}
           type="button"
-          // `coins` counts those set aside in offers too; the server refuses if the rest falls short.
-          disabled={!free || !atMarket || resident.coins < model.price}
+          disabled={!free || !atMarket || resident.spendableCoins < model.price}
           onClick={() => store.act({ type: 'buy_chip', residentId: resident.id, model: model.model })}
         >
           买 <ChipIcon model={model.model} />
@@ -223,7 +222,7 @@ function BuyChipForm({ resident, free }: { resident: ResidentView; free: boolean
   );
 }
 
-function ActionStatusLine({ status }: { status: ActionStatus }) {
+export function ActionStatusLine({ status }: { status: ActionStatus }) {
   switch (status.status) {
     case 'pending':
       return <p className="muted small" role="status">执行中…</p>;

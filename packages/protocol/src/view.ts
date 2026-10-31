@@ -20,6 +20,8 @@ export const residentSchema = z.object({
   position: positionSchema,
   /** Total coins, including those set aside by pending offers and contracts. */
   coins: z.number().int().nonnegative(),
+  spendableCoins: z.number().int().nonnegative(),
+  rigBalance: z.number().int().nonnegative(),
   /** Left the game: still shown and ranked, but can no longer act. */
   left: z.boolean(),
   /** Place by coins, 1 for the most; equal totals share a place. Final once the game ends. */
@@ -34,6 +36,7 @@ export const residentSchema = z.object({
    * with none are left out. Mining needs one, and the best one carried does the work.
    */
   chips: z.record(z.string(), z.number().int().positive()),
+  carriedChips: z.record(z.string(), z.number().int().positive()),
   /** Present while the resident is busy mining; they stay with the chip until it ends. */
   mining: z
     .object({
@@ -216,12 +219,46 @@ export const agentTurnSchema = z.object({
 
 export type AgentTurnView = z.infer<typeof agentTurnSchema>;
 
+export const rigSlotSchema = z.object({
+  id: z.number().int().positive(),
+  residentId: z.string(),
+  chip: z.enum(['MK1', 'MK2', 'MK3']),
+  balance: z.number().int().nonnegative(),
+  mined: z.number().int().nonnegative(),
+  rentPaid: z.number().int().nonnegative(),
+  status: z.enum(['running', 'no_funds', 'pool_empty']),
+  remainingSeconds: z.number().nonnegative(),
+  tokensPerCycle: z.number().int().nonnegative(),
+  rentPerCycle: z.number().int().nonnegative(),
+  energyPerCycle: z.number().int().nonnegative(),
+});
+
+export const rigSchema = z.object({
+  id: z.number().int().positive(),
+  ownerId: z.string(),
+  poolId: z.string(),
+  slots: z.array(rigSlotSchema),
+});
+
+export const rigRulesSchema = z.object({
+  price: z.number().int().positive(),
+  capacity: z.number().int().positive(),
+  cycleSeconds: z.number().positive(),
+  rentPer100: z.number().int().nonnegative(),
+  energyPer100: z.number().int().nonnegative(),
+});
+
+export type RigView = z.infer<typeof rigSchema>;
+export type RigSlotView = z.infer<typeof rigSlotSchema>;
+
 export const worldViewSchema = z
   .object({
     map: mapSchema,
     pools: z.array(poolSchema),
     residents: z.array(residentSchema),
     game: gameSchema,
+    rigs: z.array(rigSchema),
+    rigRules: rigRulesSchema,
     /** Absent on a map without a market. */
     market: marketSchema.optional(),
     /** The latest lines this connection may see, oldest first: everything aloud, its viewer's whispers. */
@@ -272,6 +309,22 @@ export const worldViewSchema = z
     if (world.agentTimeline && !seen.has(world.agentTimeline.residentId)) {
       context.addIssue({ code: 'custom', path: ['agentTimeline', 'residentId'], message: 'unknown resident' });
     }
+    const rigs = new Set<number>();
+    world.rigs.forEach((rig, index) => {
+      const owner = world.residents.find((resident) => resident.id === rig.ownerId);
+      if (rigs.has(rig.id) || !pools.has(rig.poolId) || !owner || owner.left || rig.slots.length > world.rigRules.capacity) {
+        context.addIssue({ code: 'custom', path: ['rigs', index], message: 'invalid rig or owner' });
+      }
+      rigs.add(rig.id);
+      const slots = new Set<number>();
+      rig.slots.forEach((slot, slotIndex) => {
+        const resident = world.residents.find((person) => person.id === slot.residentId);
+        if (slots.has(slot.id) || !resident || resident.left || world.game.ended) {
+          context.addIssue({ code: 'custom', path: ['rigs', index, 'slots', slotIndex], message: 'invalid slot or resident' });
+        }
+        slots.add(slot.id);
+      });
+    });
     world.speech.forEach((line, index) => {
       const people = [line.speakerId, ...line.listeners, ...(line.to === undefined ? [] : [line.to])];
       if (people.some((id) => !seen.has(id))) {

@@ -687,3 +687,13 @@ h2 {
 .agent-calls details { font-size: 12px; }
 .agent-calls summary { cursor: pointer; color: var(--muted); }
 .agent-calls pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
+
+.rig-card { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.rig-card h3 { margin: 0 0 8px; font-size: 15px; }
+.rig-slot { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 4px; }
+.rig-form { display: grid; gap: 8px; margin-top: 12px; }
+.rig-form label { display: grid; gap: 4px; font-size: 13px; }
+.rig-form input, .rig-form select { min-width: 0; padding: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; font: inherit; }
+.rig-panel button { padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-strong); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.rig-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
+.rig-buttons { display: flex; flex-wrap: wrap; gap: 6px; }

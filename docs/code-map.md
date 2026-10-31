@@ -86,3 +86,7 @@
 AI 行动时间线入口：`apps/web/src/ui/AgentTimelinePanel.tsx`；经营方针输入在 `ui/AgentPanel.tsx`，保存由 `ui/savedLLMSettings.ts` 负责。
 
 角色日志：服务端 `agents/turn_logger.py` 负责按居民写入当前对局 JSONL；对应单元测试为 `tests/unit/agents/test_turn_logger.py`，联动测试为 `tests/integration/agents/test_turn_logging.py`。
+
+矿机入口：`apps/web/src/ui/RigPanel.tsx` 提供建造、安装、预存充值、拆回退款、产量和费用估算；`render/MapScene.ts` 在矿池旁绘制可点击的矿机与插槽灯。协议 `view.ts` 校验矿机、槽位与仍在局内的当事人；`carriedChips` 为手动采矿的可用芯片。
+
+服务端新增 `core/rigs.py`（不可变矿机与槽位）、`economy/rigs.py`（建造、安装、生产、预存和清理）；`game/clock.py` 按实际事件时刻结算矿机、手动采矿、行走与合约。验证分别在 `tests/unit/economy/test_rigs.py`、`tests/unit/agents/test_rig_tools.py` 与 `tests/integration/server/test_rig_websocket.py`。设计见 [矿机与芯片租用](design/mining-rigs.md)，本次记录见 [变更 0034](../changes/0034-mining-rigs.md)。

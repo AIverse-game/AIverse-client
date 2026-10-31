@@ -172,3 +172,7 @@ AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界�
 ## AI 行动时间线
 
 协议 14 的 `state.world.agentTimeline` 包含所选居民 id 和最近 30 个完成的 AI 轮次。`Game` 保存有界页面投影，`world_view` 按 `view_as` 选取；完整观察与异常不进协议。客户端 `ui/AgentTimelinePanel.tsx` 在地图下展示，并核对居民 id 避免切换期间显示旧记录。经营方针通过 `start_agent.strategy` 传入模型，最多 1000 个 Unicode 字符，修改后需重新交给 AI。
+
+## 矿机与预存结算
+
+见 [矿机设计](design/mining-rigs.md)。协议 15 增加 `build_rig`、`install_chip`、`fund_rig`、`remove_chip`，网页及 Agent 同用服务端原语。矿机、槽位与预存属于不可变世界，安装从背包取出芯片；按实际产量从槽位余额同时支付租金、电费并从有限矿池给 token，预存计入排名。居民携带芯片和可用金币由独立视图字段提供。`clock.settle_due` 按实际到点时刻依次处理，出局与结束先清理槽位和退款；角色出局后的未来周期不产生 token 或租金。矿机公开列表进入 AI 观察，便于发现租用机会。
