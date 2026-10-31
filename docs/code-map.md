@@ -48,11 +48,11 @@
 | `src/aiverse_server/game/clock.py` | 游戏时间到点的事：`settle_due` 发放采矿、接回到达的行走者（花光 token 的出局）并记录活动、合约到期，`next_due` 下一个到点时刻 |
 | `src/aiverse_server/game/layout.py` | 固定的初始地图与居民，初始金币与 token，地图中心的收购点，按种子随机放置矿池（离收购点至少 `MARKET_CLEARANCE`） |
 | `src/aiverse_server/server/protocol.py` | 消息模型、客户端消息解析（错误信息不回显输入）、消息到原语与世界到视图的转换（私聊按连接选择的居民过滤，标出由 Agent 驱动的居民），`start_agent` 的模型设置 |
-| `src/aiverse_server/server/config.py` | YAML 配置文件：`llm.override` 全局覆盖模型的地址、key、模型（`Config.llm_override`），拒绝未知的键，错误信息不含设置的值 |
+| `src/aiverse_server/server/config.py` | 读取大模型的 YAML 配置文件：`override` 全局覆盖模型的地址、key、模型（`Config.llm_override`），拒绝未知的键，错误信息不含设置的值 |
 | `src/aiverse_server/server/app.py` | FastAPI 应用与 WebSocket `/ws`：共享世界、对局计时（到点的事见 `clock.py`）、每轮开始的 `Game.begin_turn`、写入与忘掉笔记的 `Game.remember`、`Game.forget`、Agent 与网页共用的执行入口 `Game.act`、`Game.commit`、唤醒 Agent 的 `Game.subscribe`、运行中启动、更换与停止 Agent（`Game.start_agent`、`Game.start_llm_agent` 合并配置文件的覆盖项、`Game.stop_agent`）、握手、执行原语、回答 `start_agent`/`stop_agent`、广播状态 |
 | `src/aiverse_server/agents/` | AI 居民：`runner.py` 事件驱动的循环、唤醒规则与每轮记录，`observation.py` 每轮的观察及其 JSON，`tools.py` 绑定居民的工具（pydantic 参数模型与 JSON Schema），`scripted_brain.py` 脚本机器人，`llm_brain.py` OpenAI 兼容接口的大模型大脑 `ChatCompletionsBrain` 与设置 `LLMSettings` 的合并和校验，`system_prompt.py` 给模型的系统提示（规则说明） |
+| `src/aiverse_server/agents/config/` | 大模型配置示例 `llm.example.yml`；本地的 `llm.yml` 可能含 key，被 Git 忽略，也不打进构建产物 |
 | `src/aiverse_server/__main__.py` | `uv run aiverse-server` 启动入口（`--host`、`--port`、`--duration`、`--seed`、`--config`、`--agent`、`--agent-log`） |
-| `aiverse.example.yml` | 配置文件示例；本地的 `aiverse.yml` 可能含 key，被 Git 忽略 |
 | `tests/` | 世界模型、操作原语、物品栏与金币、事件、交易、合约、对局生命周期、token、采矿、收购点、行走、感知、记忆、对话、AI 居民、配置文件、交给与停止 AI 与 WebSocket 接口测试 |
 | `Makefile` | `dev` 启动；`verify` 检查与测试 |
 

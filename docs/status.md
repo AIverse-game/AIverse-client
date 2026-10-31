@@ -21,7 +21,7 @@
 - 长期与短期记忆（[变更 0015](../changes/0015-memory.md)）：服务端 `memory.py` 的 `remember` 让驱动居民的 Agent 自己决定记下什么文字、记成长期还是短期，`forget` 忘掉任意一条。长期笔记整局保留，短期笔记写入 120 秒游戏时间后清除；每条最多 300 字符，长期最多 30 条、短期最多 20 条，满了要先忘掉一条。`Game.begin_turn` 的感知结果附带当前的全部笔记。不是原语：不耗 token，行走和采矿中也能写，不广播。尚无调用方，不在协议中。
 - 对话（[变更 0018](../changes/0018-speech.md)）：服务端 `speech.py`，原语 `Say`（协议中为 `say`）。不指定对象时当众说，说话那一刻 20 单位内仍在局中的其他居民听到；指定一名居民时是私聊，不论远近只有对方听到。每句 1～100 字符，当众说 2 token、私聊 1 token（[变更 0019](../changes/0019-speech-cost-and-privacy.md)），行走、采矿中也能说；谁听到在说话时定下。`Game.begin_turn` 的感知附带自上次查看以来自己说的和听到的话，世界保留最近 200 句。页面“对话”面板列出最近 50 句当众说的话和选中居民自己的私聊：页面选中居民时以 `view_as` 告诉服务端，服务端只把该居民发出或收到的私聊发给这个页面。选中居民后可当众说或私聊。协议版本为 10。
 - AI 居民（[设计文档](design/ai-residents.md)，[变更 0020](../changes/0020-agent-loop.md)，[决策 0003](decisions/0003-event-driven-agents-and-openrouter.md)）：服务端 `agents/` 子包。启动时用 `--agent r1=scripted` 或 `--agent r2=llm[:模型]` 指定居民由 Agent 驱动，每名居民一个事件驱动的循环：感知 → 大脑经绑定该居民的工具执行原语、记笔记 → 等到行走或采矿结束、收到报价、听到别人说话或空闲 20 秒再醒，两轮至少相隔 3 秒。Agent 与网页的操作经同一个入口 `Game.act`/`Game.commit` 执行并广播。脚本机器人按固定策略买芯片、采矿、卖 token；大模型大脑每局每名居民最多 400 次请求（停止或更换 Agent 不重置），接入方式见下一条。大脑或记录出错只记日志，不影响游戏。每轮记录打印到控制台，`--agent-log` 写成 JSONL。协议不变。
-- 页面配置大模型（[变更 0022](../changes/0022-llm-config-from-page.md)，[决策 0004](decisions/0004-player-configured-llm-endpoints.md)）：不内置任何厂商，接口须兼容 OpenAI 的 Chat Completions 并支持工具调用。页面“AI 驱动”面板选中居民，填写 API 地址、key 和模型后“交给 AI”，可随时按新配置替换或“停止 AI，改为手动”；所有页面的居民列表标出“AI”。设置按居民记在本机 localStorage。服务端 YAML 配置文件（`--config`，默认读 `aiverse.yml`）的 `llm.override` 可以全局覆盖地址、key、模型，页面上对应的输入框置灰；`--agent r2=llm[:模型]` 的地址和 key 来自配置文件。key 不进状态、日志与记录。协议版本为 11。
+- 页面配置大模型（[变更 0022](../changes/0022-llm-config-from-page.md)，[决策 0004](decisions/0004-player-configured-llm-endpoints.md)）：不内置任何厂商，接口须兼容 OpenAI 的 Chat Completions 并支持工具调用。页面“AI 驱动”面板选中居民，填写 API 地址、key 和模型后“交给 AI”，可随时按新配置替换或“停止 AI，改为手动”；所有页面的居民列表标出“AI”。设置按居民记在本机 localStorage。服务端 YAML 配置文件（`--config`，默认读 `agents/config/llm.yml`）的 `override` 可以全局覆盖地址、key、模型，页面上对应的输入框置灰；`--agent r2=llm[:模型]` 的地址和 key 来自配置文件。key 不进状态、日志与记录。协议版本为 11。
 - 合约（[设计文档](design/contracts.md)，[变更 0025](../changes/0025-delivery-contracts.md)）：居民可以约定未来的交付与付款。供货方每交付一批物品，买方就付约定的金币，可以是一次或多次（最多 100 次），签订后到期（最长 3600 秒）。任一方提议，对方同意后生效；签订时买方的全部货款托管在合约里，每次交付自动付款，买方不能拒付。只有供货方能取消；到期、出局、游戏结束时合约终止，余款退回买方。托管金币计入排名。供货方可以为每次交付押押金（[变更 0027](../changes/0027-supplier-deposits.md)，数额自由填写，默认 0）：交付一次退一次；到期、取消或供货方出局时没交付的押金赔给买方，买方出局或游戏结束时退回。合约不是因自己的行动而结束时唤醒空闲的一方，观察里有最近结束的合约。服务端原语为 `ProposeContract`、`Deliver`、`CancelContract`，Agent 工具为 `propose_contract`、`deliver`、`cancel_contract`。页面只读显示，见下一条。
 - 页面显示报价与合约（[变更 0026](../changes/0026-deals-on-page.md)，[交易报价设计](design/trade-offers.md)）：“交易与合约”面板列出所选居民的生效合约（角色、条款、还要交付的次数、托管的货款和押金、到期倒计时），以及收到和发出的报价与合约提议。和私聊一样，状态只带所选居民参与的部分。页面还不能发起或答复。协议版本为 13（变更 0027 加入押金）。
 - 服务端代码结构（[变更 0021](../changes/0021-server-subpackages.md)）：`aiverse_server` 按领域分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 子包，`tests/` 同样分组，见 [代码地图](code-map.md)。只移动文件，行为不变。
@@ -35,7 +35,7 @@
 # aiverse-server 目录
 uv sync
 uv run aiverse-server           # 启动服务端，127.0.0.1:8000；一局 20 分钟，--duration 秒数可改，--seed 固定矿池布局
-uv run aiverse-server --agent r1=scripted --agent r2=llm:模型名   # 由 Agent 驱动居民；llm 的地址和 key 来自 aiverse.yml（见服务端 README）
+uv run aiverse-server --agent r1=scripted --agent r2=llm:模型名   # 由 Agent 驱动居民；llm 的地址和 key 来自 agents/config/llm.yml（见服务端 README）
 make verify                     # ruff、mypy、pytest
 
 # 本仓库

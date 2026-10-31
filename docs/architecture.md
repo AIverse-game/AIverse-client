@@ -163,7 +163,7 @@ AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界�
 
 ## 由 AI 驱动居民
 
-页面“AI 驱动”面板把选中的居民交给玩家配置的大模型：发送 `start_agent`（API 地址、key、模型），服务端用配置文件 `llm.override` 中给出的项覆盖页面的值，校验后为该居民启动一个 Agent 循环，回复 `agent_result`，并向所有连接广播带 `agent` 标记的新状态；`stop_agent` 停止它。`welcome` 只告诉页面哪些设置被覆盖，不发送值；key 只在服务端内存中用来调用接口。设置按居民存在本机 localStorage，由 `ui/savedLLMSettings.ts` 读写。设计见 [AI 居民](design/ai-residents.md)，选型见 [决策 0004](decisions/0004-player-configured-llm-endpoints.md)。
+页面“AI 驱动”面板把选中的居民交给玩家配置的大模型：发送 `start_agent`（API 地址、key、模型），服务端用配置文件 `override` 中给出的项覆盖页面的值，校验后为该居民启动一个 Agent 循环，回复 `agent_result`，并向所有连接广播带 `agent` 标记的新状态；`stop_agent` 停止它。`welcome` 只告诉页面哪些设置被覆盖，不发送值；key 只在服务端内存中用来调用接口。设置按居民存在本机 localStorage，由 `ui/savedLLMSettings.ts` 读写。设计见 [AI 居民](design/ai-residents.md)，选型见 [决策 0004](decisions/0004-player-configured-llm-endpoints.md)。
 
 ## 协议改动
 

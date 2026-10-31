@@ -56,3 +56,4 @@
 
 - 替代 [决策 0003](0003-event-driven-agents-and-openrouter.md) 中“模型接入用 OpenRouter”和“API key 只从环境变量读取”的部分；事件驱动调度等其余部分仍然有效。
 - [变更 0022](../../changes/0022-llm-config-from-page.md)、[AI 居民设计](../design/ai-residents.md)。
+- 后来配置文件改放在服务端的 `src/aiverse_server/agents/config/llm.yml`，顶层直接是 `override`，示例为同目录的 `llm.example.yml`，见服务端 `README.md`；本记录的决定不变。
