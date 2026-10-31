@@ -26,7 +26,7 @@
 - 页面显示报价与合约（[变更 0026](../changes/0026-deals-on-page.md)，[交易报价设计](design/trade-offers.md)）：“交易与合约”面板列出所选居民的生效合约（角色、条款、还要交付的次数、托管的货款和押金、到期倒计时），以及收到和发出的报价与合约提议。和私聊一样，状态只带所选居民参与的部分。页面还不能发起或答复。协议版本为 13（变更 0027 加入押金）。
 - 服务端代码结构（[变更 0021](../changes/0021-server-subpackages.md)）：`aiverse_server` 按领域分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 子包，`tests/` 同样分组，见 [代码地图](code-map.md)。只移动文件，行为不变。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
-- Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。规则与 Skill 在 `.agents/rules/`、`.agents/skills/`，两个仓库各存一份相同的副本，客户端检查比较两边（[决策 0005](decisions/0005-shared-agent-rules-in-each-repo.md)，[变更 0029](../changes/0029-agent-rules-in-both-repos.md)）；状态、设计、变更说明与决策记录仍只在本仓库。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前 AI 居民、交易报价与合约有独立的设计文档。文件命名与放置按 [文件命名与目录约定](../.agents/rules/conventions.md)（[变更 0023](../changes/0023-naming-conventions.md)，看不出内容的模块名已在 [变更 0024](../changes/0024-descriptive-module-names.md) 改名），尚无自动检查。测试的分层与写法按 [测试约定](../.agents/rules/testing.md)（[变更 0028](../changes/0028-testing-conventions.md)）；端到端仍靠浏览器人工实测。
+- Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。规则与 Skill 在 `.agents/rules/`、`.agents/skills/`；服务端仓库有自己的一套，只描述服务端（[决策 0006](decisions/0006-independent-agent-rules-per-repo.md)，[变更 0030](../changes/0030-independent-agent-rules.md)）。状态、设计、变更说明与决策记录只在本仓库。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前 AI 居民、交易报价与合约有独立的设计文档。文件命名与放置按 [文件命名与目录约定](../.agents/rules/conventions.md)（[变更 0023](../changes/0023-naming-conventions.md)，看不出内容的模块名已在 [变更 0024](../changes/0024-descriptive-module-names.md) 改名），尚无自动检查。测试的分层与写法按 [测试约定](../.agents/rules/testing.md)（[变更 0028](../changes/0028-testing-conventions.md)）；端到端仍靠浏览器人工实测。
 - 两个独立的 Git 仓库，分支均为 `main`，远程在 GitHub 的 AIverse-game 组织下（`AIverse-client`、`AIverse-server`）。
 
 ## 当前可用命令
@@ -42,7 +42,7 @@ make verify                     # ruff、mypy、pytest
 npm install
 npm run dev                     # 网页开发服务器，/ws 代理到服务端
 npm run verify                  # 类型检查、ESLint（含分层规则）、Vitest、生产构建
-python3 scripts/check_repo.py   # 仓库骨架检查；同级有 aiverse-server 时比较共用规则
+python3 scripts/check_repo.py   # 仓库骨架检查
 make verify                     # 仓库检查加 npm run verify
 ```
 

@@ -34,4 +34,5 @@
 | [0026-deals-on-page](0026-deals-on-page.md) | 已完成 | 页面只读显示所选居民的报价、合约提议与合约，只给当事人看；协议 12 |
 | [0027-supplier-deposits](0027-supplier-deposits.md) | 已完成 | 供货方押金：没交付的押金按责任赔给买方；合约结束记录与唤醒；协议 13 |
 | [0028-testing-conventions](0028-testing-conventions.md) | 已完成 | 成文的测试约定：单元、集成、端到端分层，单个测试按准备、执行、断言三段写；不改现有测试 |
-| [0029-agent-rules-in-both-repos](0029-agent-rules-in-both-repos.md) | 已完成 | 规则移到 `.agents/rules/`，两个仓库各存一份相同的规则与 Skill，客户端检查比较两边 |
+| [0029-agent-rules-in-both-repos](0029-agent-rules-in-both-repos.md) | 已完成 | 规则移到 `.agents/rules/`，两个仓库各存一份相同的规则与 Skill，客户端检查比较两边（已由 0030 改为各自独立） |
+| [0030-independent-agent-rules](0030-independent-agent-rules.md) | 已完成 | 两个仓库的规则与 Skill 各自只描述本仓库，去掉跨仓库比较 |

@@ -66,8 +66,8 @@
 | `.agents/skills/implement-change/SKILL.md` | 开发实现、验证与独立审查交接 |
 | `.agents/skills/review-change/SKILL.md` | 默认只读的代码审查与修复复核 |
 | `.agents/rules/development.md` | 通用任务闭环、审查与协作流程 |
-| `.agents/rules/conventions.md` | 文件命名与目录约定（两个仓库共用） |
-| `.agents/rules/testing.md` | 测试约定：分层与单个测试的结构（两个仓库共用） |
+| `.agents/rules/conventions.md` | 文件命名与目录约定 |
+| `.agents/rules/testing.md` | 测试约定：分层与单个测试的结构 |
 | `docs/architecture.md` | 应用分层、坐标系与数据流 |
 | `docs/status.md` | 跨会话交接状态 |
 | `docs/design/README.md` | 设计文档规则：何时新建、何时修改、写什么，以及索引 |
@@ -75,7 +75,7 @@
 | `docs/design/ai-residents.md` | AI 居民的设计：事件驱动循环、工具、两种大脑与暂未实现的功能 |
 | `docs/decisions/` | 重要决策的说明与模板 |
 | `changes/` | 单次变更说明、验收与证据 |
-| `scripts/check_repo.py` | 无第三方依赖的仓库骨架检查；同级有 `aiverse-server` 时逐字比较两边的 `.agents/rules/` 与 `.agents/skills/` |
+| `scripts/check_repo.py` | 无第三方依赖的仓库骨架检查 |
 | `Makefile` | `check` 仓库检查；`verify` 仓库与应用检查 |
 | `.editorconfig` | 基础文本编辑约定 |
 | `.gitignore` | 本地环境、私密配置和生成产物的忽略规则 |
