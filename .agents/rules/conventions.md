@@ -1,6 +1,6 @@
 # 文件命名与目录约定
 
-适用于本仓库和同级的 `aiverse-server`。规则从现有代码整理而来，不符合的文件已在 [变更 0024](../../changes/0024-descriptive-module-names.md) 中改名；新增、移动或重命名文件时遵循本文。分层与依赖方向见 [应用架构](../../docs/architecture.md)，本文只管文件叫什么、放在哪里。
+适用于 `aiverse-client` 与 `aiverse-server` 两个仓库，两边的 `.agents/rules/` 各有一份相同的副本。规则从现有代码整理而来，不符合的文件已在客户端变更 0024 中改名；新增、移动或重命名文件时遵循本文。分层与依赖方向见客户端 `docs/architecture.md`，本文只管文件叫什么、放在哪里。
 
 ## 通用原则
 
@@ -33,7 +33,7 @@
 
 缩写在名字中保持全大写（`LLMSettings`、`savedLLMSettings`）；位于 camelCase 开头时整体小写（`llmSettings`）。
 
-### Python（`aiverse-server`、`scripts/`）
+### Python（服务端仓库，以及客户端的 `scripts/`）
 
 | 内容 | 规则 | 示例 |
 | --- | --- | --- |
@@ -41,7 +41,7 @@
 | 子包 | 按领域划分，一个单词；职责见服务端 `README.md` 的“代码结构” | `economy/`、`residents/` |
 | 启动入口 | `__main__.py` | `aiverse_server/__main__.py` |
 | 测试 | 镜像源码子包：`tests/<子包>/test_<模块>.py`；覆盖多个模块的一项功能时用 `test_<功能>.py` | `tests/economy/test_market.py`、`tests/server/test_agent_control.py` |
-| 仓库脚本 | snake_case，动词开头 | `scripts/check_repo.py` |
+| 仓库脚本 | snake_case，动词开头 | 客户端 `scripts/check_repo.py` |
 
 测试目录不加 `__init__.py`，沿用 pytest 默认导入方式，所以**测试文件名在整个 `tests/` 中必须唯一**；重名时在名字里加上子包或功能区分。
 
@@ -69,6 +69,8 @@
 
 ### 顶层
 
+客户端仓库 `aiverse-client`：
+
 | 位置 | 内容 |
 | --- | --- |
 | `apps/<应用>/` | 可运行的应用，目前只有 `apps/web` |
@@ -76,21 +78,30 @@
 | `docs/` | 长期文档；`docs/design/` 功能设计，`docs/decisions/` 决策记录 |
 | `changes/` | 单次变更说明与证据 |
 | `scripts/` | 仓库工具脚本，不放应用代码 |
-| `.agents/skills/` | Codex 与 Claude Code 共用的 Skill |
-| `aiverse-server/src/aiverse_server/` | 服务端源码，按领域分子包 |
-| `aiverse-server/tests/` | 服务端测试，按同样的子包分组 |
+| `.agents/rules/` | 给 Agent 的工作规则：开发流程、命名与目录、测试；与服务端相同 |
+| `.agents/skills/` | Codex 与 Claude Code 共用的 Skill；与服务端相同 |
+
+服务端仓库 `aiverse-server`：
+
+| 位置 | 内容 |
+| --- | --- |
+| `src/aiverse_server/` | 服务端源码，按领域分子包 |
+| `tests/` | 服务端测试，按同样的子包分组 |
+| `.agents/rules/`、`.agents/skills/` | 与客户端相同的规则与 Skill |
+
+`docs/` 只放项目本身的知识：架构、设计、决策、状态与代码地图；Agent 怎么工作写进 `.agents/`。
 
 ### 新文件放在哪里
 
-1. **先找已有目录**：客户端按层放进 `apps/web/src/` 的 `net/`、`state/`、`render/`、`ui/`、`assets/`；客户端与服务端之间的消息与视图类型只放 `packages/protocol`；服务端按领域放进对应子包，`core/` 只放世界模型与共用机制，且只依赖 `core/`。归属以 [应用架构](../../docs/architecture.md) 为准。
-2. **新建目录要有理由**：已有目录的职责明显不符，且新主题会有不止一个文件时才新建，不为单个文件建目录。新建应用、共享包或服务端子包时，同时更新 [应用架构](../../docs/architecture.md)、[代码地图](../../docs/code-map.md) 和服务端 `README.md` 的“代码结构”；改变分层或依赖方向时先写决策记录。
+1. **先找已有目录**：客户端按层放进 `apps/web/src/` 的 `net/`、`state/`、`render/`、`ui/`、`assets/`；客户端与服务端之间的消息与视图类型只放 `packages/protocol`；服务端按领域放进对应子包，`core/` 只放世界模型与共用机制，且只依赖 `core/`。归属以客户端 `docs/architecture.md` 为准。
+2. **新建目录要有理由**：已有目录的职责明显不符，且新主题会有不止一个文件时才新建，不为单个文件建目录。新建应用、共享包或服务端子包时，同时更新客户端 `docs/architecture.md`、`docs/code-map.md` 和服务端 `README.md` 的“代码结构”；改变分层或依赖方向时先写决策记录。
 3. **测试跟着源码**：TypeScript 测试与源码同目录；Python 测试放进与源码同名的 `tests/<子包>/`。
-4. **有索引的文档目录**：`changes/`、`docs/decisions/`、`docs/design/` 各有 `README.md`（规则与索引）和 `TEMPLATE.md`；新增文档时在同一次改动中更新索引。
+4. **有索引的文档目录**：客户端的 `changes/`、`docs/decisions/`、`docs/design/` 各有 `README.md`（规则与索引）和 `TEMPLATE.md`；新增文档时在同一次改动中更新索引。
 5. **不进仓库的东西**：构建产物（`dist/`、`build/`）、缓存、日志、本地配置与密钥，由 `.gitignore` 排除；新增此类产物时同步补忽略规则。
 
 ## 新增、移动与重命名
 
-- 新增、移动或重命名文件时，在同一次改动中更新 [代码地图](../../docs/code-map.md)，以及引用该路径的架构说明、README 和文档字符串；`python3 scripts/check_repo.py` 会报告失效的本地链接，但不检查行内代码中的路径。
+- 新增、移动或重命名文件时，在同一次改动中更新代码地图（客户端 `docs/code-map.md`，服务端 `README.md` 的“代码结构”），以及引用该路径的架构说明、README 和文档字符串；客户端的 `python3 scripts/check_repo.py` 会报告失效的本地链接，但不检查行内代码中的路径。
 - 重命名属于重构：单独成一次提交，不与功能或缺陷修复混在一起；用 `git mv` 保留历史，导入与引用一并改完，检查照常通过。
 - 不为符合本文而批量改名现有文件；确有必要时作为单独的重构任务处理。
 

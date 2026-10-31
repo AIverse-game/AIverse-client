@@ -75,7 +75,7 @@
 | `docs/design/ai-residents.md` | AI 居民的设计：事件驱动循环、工具、两种大脑与暂未实现的功能 |
 | `docs/decisions/` | 重要决策的说明与模板 |
 | `changes/` | 单次变更说明、验收与证据 |
-| `scripts/check_repo.py` | 无第三方依赖的仓库骨架检查 |
+| `scripts/check_repo.py` | 无第三方依赖的仓库骨架检查；同级有 `aiverse-server` 时逐字比较两边的 `.agents/rules/` 与 `.agents/skills/` |
 | `Makefile` | `check` 仓库检查；`verify` 仓库与应用检查 |
 | `.editorconfig` | 基础文本编辑约定 |
 | `.gitignore` | 本地环境、私密配置和生成产物的忽略规则 |

@@ -14,6 +14,7 @@
 - 先理解现有实现和约束，再修改；不预设业务需求、产品设计或应用架构。工具脚本使用的语言不约束应用语言。
 - 优先简单、清晰且符合现有结构的实现，控制改动范围，不夹带无关重构或依赖升级。
 - 新增、移动或重命名文件遵循 [文件命名与目录约定](.agents/rules/conventions.md)，并同步更新代码地图。
+- `.agents/rules/` 与 `.agents/skills/` 与服务端仓库逐字相同；修改时两边同步，见 [规则如何同步](.agents/rules/development.md#规则如何同步)。只适用于本仓库的约定写在本文件。
 - 编写或修改测试遵循 [测试约定](.agents/rules/testing.md)：按分层选择测在哪一层，每个测试按准备、执行、断言三段写。
 - 重要技术选择记录在 `docs/decisions/`；普通可逆实现细节自主处理，无需逐项审批。
 - 功能设计记录在 `docs/design/`：新功能新建一份设计文档；调整或补充已有功能时修改原设计文档，不另建。设计文档简要写出问题背景、设计思路、争议讨论与决定、暂未实现的功能，见 [设计文档规则](docs/design/README.md)。
@@ -41,7 +42,7 @@ Skill 只在适用时读取。未自动发现 Skill 时，直接读取上述文�
 ## 当前可用检查
 
 ```sh
-python3 scripts/check_repo.py   # 仓库骨架：链接与文本格式
+python3 scripts/check_repo.py   # 仓库骨架：链接、文本格式，以及与服务端共用的规则是否一致
 npm run verify                  # 应用：类型检查、ESLint、测试、生产构建
 make verify                     # 在同级 aiverse-server 目录：ruff、mypy、pytest
 ```
