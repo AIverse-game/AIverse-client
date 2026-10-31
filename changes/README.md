@@ -36,3 +36,4 @@
 | [0028-testing-conventions](0028-testing-conventions.md) | 已完成 | 成文的测试约定：单元、集成、端到端分层，单个测试按准备、执行、断言三段写；不改现有测试 |
 | [0029-agent-rules-in-both-repos](0029-agent-rules-in-both-repos.md) | 已完成 | 规则移到 `.agents/rules/`，两个仓库各存一份相同的规则与 Skill，客户端检查比较两边（已由 0030 改为各自独立） |
 | [0030-independent-agent-rules](0030-independent-agent-rules.md) | 已完成 | 两个仓库的规则与 Skill 各自只描述本仓库，去掉跨仓库比较 |
+| [0031-server-test-layers](0031-server-test-layers.md) | 已完成 | 服务端测试分到 `tests/unit/` 与 `tests/integration/`，现有测试按测试约定改写 |

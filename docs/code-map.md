@@ -25,7 +25,7 @@
 
 ## Python 服务端（`aiverse-server`）
 
-源码分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 六个子包，`tests/` 按同样的子包分组，各子包的职责见服务端 `README.md` 的“代码结构”。
+源码分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 六个子包。`tests/` 先按层分为 `unit/` 与 `integration/`，层内按同样的子包分组（[变更 0031](../changes/0031-server-test-layers.md)），各子包的职责见服务端 `README.md` 的“代码结构”。
 
 | 文件 | 用途 |
 | --- | --- |
@@ -53,7 +53,8 @@
 | `src/aiverse_server/agents/` | AI 居民：`runner.py` 事件驱动的循环、唤醒规则与每轮记录，`observation.py` 每轮的观察及其 JSON，`tools.py` 绑定居民的工具（pydantic 参数模型与 JSON Schema），`scripted_brain.py` 脚本机器人，`llm_brain.py` OpenAI 兼容接口的大模型大脑 `ChatCompletionsBrain` 与设置 `LLMSettings` 的合并和校验，`system_prompt.py` 给模型的系统提示（规则说明） |
 | `src/aiverse_server/agents/config/` | 大模型配置示例 `llm.example.yml`；本地的 `llm.yml` 可能含 key，被 Git 忽略，也不打进构建产物 |
 | `src/aiverse_server/__main__.py` | `uv run aiverse-server` 启动入口（`--host`、`--port`、`--duration`、`--seed`、`--config`、`--agent`、`--agent-log`） |
-| `tests/` | 世界模型、操作原语、物品栏与金币、事件、交易、合约、对局生命周期、token、采矿、收购点、行走、感知、记忆、对话、AI 居民、配置文件、交给与停止 AI 与 WebSocket 接口测试 |
+| `tests/unit/` | 单元测试：世界模型、操作原语、物品栏与金币、事件、交易、合约、对局生命周期、token、采矿、芯片、收购点、行走、感知、记忆、对话、AI 居民的工具、观察与设置、`Game` 的执行入口与发件箱、协议视图、配置文件、命令行参数 |
+| `tests/integration/` | 集成测试：WebSocket 接口、交给与停止 AI、Agent 循环的唤醒、模拟 HTTP 的大模型大脑、脚本机器人的快进对局 |
 | `Makefile` | `dev` 启动；`verify` 检查与测试 |
 
 ## 文档与协作

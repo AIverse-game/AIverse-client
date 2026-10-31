@@ -1,6 +1,6 @@
 # 当前项目状态
 
-更新：2026-10-30。阶段：权威逻辑改由 Python 服务端负责，已实现正方形坐标地图的生成与渲染、移动与退出游戏的原语、居民之间的买卖报价（服务端内部）、定时结束的一局与金币排名、token 体力、按速度行走与矿池采矿，以及每轮开始时的感知与发现、由 Agent 自选的长短期记忆（服务端内部）、按市场价收购 token 的收购点、采矿必须用的芯片，以及居民之间的对话和由服务端执行的交付合约（服务端内部）；居民已可由服务端里的 Agent（脚本机器人，或玩家在页面上配置的任意 OpenAI 兼容模型接口）驱动；生产等其余玩法规则尚未在新服务端中实现。
+更新：2026-10-31。阶段：权威逻辑改由 Python 服务端负责，已实现正方形坐标地图的生成与渲染、移动与退出游戏的原语、居民之间的买卖报价（服务端内部）、定时结束的一局与金币排名、token 体力、按速度行走与矿池采矿，以及每轮开始时的感知与发现、由 Agent 自选的长短期记忆（服务端内部）、按市场价收购 token 的收购点、采矿必须用的芯片，以及居民之间的对话和由服务端执行的交付合约（服务端内部）；居民已可由服务端里的 Agent（脚本机器人，或玩家在页面上配置的任意 OpenAI 兼容模型接口）驱动；生产等其余玩法规则尚未在新服务端中实现。
 
 ## 已具备
 
@@ -25,6 +25,7 @@
 - 合约（[设计文档](design/contracts.md)，[变更 0025](../changes/0025-delivery-contracts.md)）：居民可以约定未来的交付与付款。供货方每交付一批物品，买方就付约定的金币，可以是一次或多次（最多 100 次），签订后到期（最长 3600 秒）。任一方提议，对方同意后生效；签订时买方的全部货款托管在合约里，每次交付自动付款，买方不能拒付。只有供货方能取消；到期、出局、游戏结束时合约终止，余款退回买方。托管金币计入排名。供货方可以为每次交付押押金（[变更 0027](../changes/0027-supplier-deposits.md)，数额自由填写，默认 0）：交付一次退一次；到期、取消或供货方出局时没交付的押金赔给买方，买方出局或游戏结束时退回。合约不是因自己的行动而结束时唤醒空闲的一方，观察里有最近结束的合约。服务端原语为 `ProposeContract`、`Deliver`、`CancelContract`，Agent 工具为 `propose_contract`、`deliver`、`cancel_contract`。页面只读显示，见下一条。
 - 页面显示报价与合约（[变更 0026](../changes/0026-deals-on-page.md)，[交易报价设计](design/trade-offers.md)）：“交易与合约”面板列出所选居民的生效合约（角色、条款、还要交付的次数、托管的货款和押金、到期倒计时），以及收到和发出的报价与合约提议。和私聊一样，状态只带所选居民参与的部分。页面还不能发起或答复。协议版本为 13（变更 0027 加入押金）。
 - 服务端代码结构（[变更 0021](../changes/0021-server-subpackages.md)）：`aiverse_server` 按领域分为 `core/`、`economy/`、`residents/`、`game/`、`server/`、`agents/` 子包，`tests/` 同样分组，见 [代码地图](code-map.md)。只移动文件，行为不变。
+- 服务端测试分层（[变更 0031](../changes/0031-server-test-layers.md)）：测试分在 `tests/unit/` 与 `tests/integration/` 两个目录，`uv run pytest tests/unit` 只跑单元测试（约 1 秒）。现有测试已按服务端测试约定改为准备、执行、断言三段，约定补充了“什么算执行”等几条澄清。
 - 只做检查的 CI 工作流（仓库检查与 `npm run verify`）。
 - Codex 与 Claude Code 共用开发规则、开发与审查 Skill、变更与决策模板。规则与 Skill 在 `.agents/rules/`、`.agents/skills/`；服务端仓库有自己的一套，只描述服务端（[决策 0006](decisions/0006-independent-agent-rules-per-repo.md)，[变更 0030](../changes/0030-independent-agent-rules.md)）。状态、设计、变更说明与决策记录只在本仓库。功能设计按 [设计文档规则](design/README.md)：新功能新建设计文档，调整已有功能时修改原文档；目前 AI 居民、交易报价与合约有独立的设计文档。文件命名与放置按 [文件命名与目录约定](../.agents/rules/conventions.md)（[变更 0023](../changes/0023-naming-conventions.md)，看不出内容的模块名已在 [变更 0024](../changes/0024-descriptive-module-names.md) 改名），尚无自动检查。测试的分层与写法按 [测试约定](../.agents/rules/testing.md)（[变更 0028](../changes/0028-testing-conventions.md)）；端到端仍靠浏览器人工实测。
 - 两个独立的 Git 仓库，分支均为 `main`，远程在 GitHub 的 AIverse-game 组织下（`AIverse-client`、`AIverse-server`）。
