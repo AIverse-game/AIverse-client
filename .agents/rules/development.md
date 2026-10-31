@@ -10,8 +10,8 @@
 | 审查工作方法 | `.agents/skills/review-change/SKILL.md` | 默认只读的问题发现与修复复核 |
 | 当前状态 | `docs/status.md` | 已完成、实际命令、下一步与阻塞 |
 | 文件导航 | `docs/code-map.md` | 真实存在的代码和文档职责 |
-| 命名与目录 | `docs/conventions.md` | 文件命名、放置位置、新增与重命名规则 |
-| 测试 | `docs/testing.md` | 测试分层，单个测试的准备、执行、断言结构 |
+| 命名与目录 | `.agents/rules/conventions.md` | 文件命名、放置位置、新增与重命名规则 |
+| 测试 | `.agents/rules/testing.md` | 测试分层，单个测试的准备、执行、断言结构 |
 | 功能设计 | `docs/design/` | 每个功能的问题背景、设计思路、争议与决定、暂未实现 |
 | 单次任务 | `changes/` | 目标、范围、验收与实际证据 |
 | 重要决定 | `docs/decisions/` | 选项、理由、影响与替代关系 |
@@ -21,8 +21,8 @@
 ## 一次任务的闭环
 
 1. **理解**：读取规则与状态，检查工作区和相关实现，明确目标与完成条件。
-2. **界定**：小修直接推进；较大任务使用 [变更模板](../changes/TEMPLATE.md)，列出范围和关键验收。
-3. **决定**：新功能新建设计文档，调整已有功能时修改原设计文档，见 [设计文档规则](design/README.md)；存在重要选型或兼容性取舍时，使用 [决策模板](decisions/TEMPLATE.md) 记录依据。
+2. **界定**：小修直接推进；较大任务使用 [变更模板](../../changes/TEMPLATE.md)，列出范围和关键验收。
+3. **决定**：新功能新建设计文档，调整已有功能时修改原设计文档，见 [设计文档规则](../../docs/design/README.md)；存在重要选型或兼容性取舍时，使用 [决策模板](../../docs/decisions/TEMPLATE.md) 记录依据。
 4. **实现**：按小步推进，遵循现有结构，不扩充未请求的需求。
 5. **验证**：执行与风险相称的格式、类型、测试或构建检查，修复本次引入的问题。
 6. **审查**：阅读最终差异，确认行为满足目标，检查无关修改和遗漏。
@@ -46,7 +46,7 @@ Skill 提供工作方法，不会自行启动 Agent。本仓库的调用约定�
 
 ## 独立审查调用约定
 
-代码、可执行脚本或构建配置改动完成并验证后，主 Agent 应调用一个独立审查子 Agent，使用 [review-change](../.agents/skills/review-change/SKILL.md)。这项委派由根目录规则明确要求；纯文档小修默认自查，较大的规则或 Skill 改动按风险决定。只要求审查时不进入开发流程，不递归委派。
+代码、可执行脚本或构建配置改动完成并验证后，主 Agent 应调用一个独立审查子 Agent，使用 [review-change](../skills/review-change/SKILL.md)。这项委派由根目录规则明确要求；纯文档小修默认自查，较大的规则或 Skill 改动按风险决定。只要求审查时不进入开发流程，不递归委派。
 
 给审查 Agent 提供最少必要上下文：
 
@@ -122,4 +122,4 @@ and confirmed retry recovers.
 
 ## 技术栈与分层
 
-应用技术栈与分层已在 [决策 0001](decisions/0001-web-stack-and-layering.md) 与 [决策 0002](decisions/0002-python-server-and-coordinate-map.md) 确定，结构说明见 [应用架构](architecture.md)。新增依赖、改变层间依赖方向或引入服务端、数据库时，先补充或替代决策记录。
+应用技术栈与分层已在 [决策 0001](../../docs/decisions/0001-web-stack-and-layering.md) 与 [决策 0002](../../docs/decisions/0002-python-server-and-coordinate-map.md) 确定，结构说明见 [应用架构](../../docs/architecture.md)。新增依赖、改变层间依赖方向或引入服务端、数据库时，先补充或替代决策记录。

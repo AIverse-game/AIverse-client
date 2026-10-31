@@ -17,7 +17,7 @@ SKIP_DIRS = {
 REQUIRED = (
     "README.md", "AGENTS.md", "CLAUDE.md",
     ".gitignore", ".editorconfig", "Makefile", "scripts/check_repo.py",
-    "docs/development.md", "docs/status.md", "docs/code-map.md",
+    ".agents/rules/development.md", "docs/status.md", "docs/code-map.md",
     "docs/decisions/README.md", "docs/decisions/TEMPLATE.md", "changes/README.md",
     "changes/TEMPLATE.md", "changes/0001-agent-preparation.md",
     ".agents/skills/implement-change/SKILL.md",

@@ -45,7 +45,7 @@ npm run preview    # 预览生产构建，同样代理 /ws
 | [CLAUDE.md](CLAUDE.md) | Claude Code 入口，指向共同规则 |
 | [开发 Skill](.agents/skills/implement-change/SKILL.md) | 实现、验证、审查交接与修复 |
 | [审查 Skill](.agents/skills/review-change/SKILL.md) | 默认只读的代码审查与修复复核 |
-| [开发流程](docs/development.md) | 理解任务、实现、验证、审查与交接 |
+| [开发流程](.agents/rules/development.md) | 理解任务、实现、验证、审查与交接 |
 | [项目状态](docs/status.md) | 当前进展、实际可用命令与后续工作 |
 | [代码地图](docs/code-map.md) | 文件职责与导航 |
 | [变更模板](changes/TEMPLATE.md) | 单次任务的范围、验收条件与证据 |
@@ -75,7 +75,7 @@ make verify                     # 以上两者
 
 > 阅读 AGENTS.md 和 .agents/skills/review-change/SKILL.md，只审查［文件或差异范围］。基线：［引用或快照］。需求：［预期行为］。报告有证据的问题、实际验证及限制，不修改文件。
 
-Codex 可发现 `.agents/skills/`；未发现时可显式读取文件。Claude Code 通过入口和明确文件路径使用同一份指令。独立审查由主 Agent 调用；工具不支持时会明确报告降级为自查。纯文档小修默认自查。详见 [调用约定](docs/development.md)。
+Codex 可发现 `.agents/skills/`；未发现时可显式读取文件。Claude Code 通过入口和明确文件路径使用同一份指令。独立审查由主 Agent 调用；工具不支持时会明确报告降级为自查。纯文档小修默认自查。详见 [调用约定](.agents/rules/development.md)。
 
 除 CI 工作流外，没有定时或后台 Agent 自动化；创建 Skill 不会自行触发任务。
 

@@ -21,7 +21,7 @@
 | `apps/web/src/ui/` | React：顶栏（含倒计时）、地图容器、`RankingPanel.tsx` 金币排名、地图、居民（含 token 与芯片）、矿池与收购点（含随时间回升的现价与芯片价目）信息面板（可点选居民）、`ActionPanel.tsx` 手动操作面板（行走、采矿、卖 token、买芯片、退出游戏）、`AgentPanel.tsx` 把选中居民交给玩家配置的大模型（API 地址、key、模型，服务端覆盖的项置灰）或停止、`savedLLMSettings.ts` 按居民把模型设置记在 localStorage、`SpeechPanel.tsx` 对话记录（当众说的话与选中居民的私聊）与发言（当众说或私聊，显示消耗）、`DealsPanel.tsx` 选中居民的报价、合约提议与合约（只读，合约到期倒计时）、`dealText.ts` 报价与合约条款的中文描述、`ChipIcon.tsx` 按型号显示芯片贴图、`format.ts` 时长与价格格式、`useSecondTick.ts` 每秒重绘 |
 | `.github/workflows/ci.yml` | 推送 `main` 或提交 PR 时运行仓库检查与 `npm run verify` |
 
-测试与源码同目录，命名为 `*.test.ts`。命名与放置规则见 [文件命名与目录约定](conventions.md)，写法见 [测试约定](testing.md)。
+测试与源码同目录，命名为 `*.test.ts`。命名与放置规则见 [文件命名与目录约定](../.agents/rules/conventions.md)，写法见 [测试约定](../.agents/rules/testing.md)。
 
 ## Python 服务端（`aiverse-server`）
 
@@ -65,10 +65,10 @@
 | `CLAUDE.md` | Claude Code 入口，指向共同规则 |
 | `.agents/skills/implement-change/SKILL.md` | 开发实现、验证与独立审查交接 |
 | `.agents/skills/review-change/SKILL.md` | 默认只读的代码审查与修复复核 |
+| `.agents/rules/development.md` | 通用任务闭环、审查与协作流程 |
+| `.agents/rules/conventions.md` | 文件命名与目录约定（两个仓库共用） |
+| `.agents/rules/testing.md` | 测试约定：分层与单个测试的结构（两个仓库共用） |
 | `docs/architecture.md` | 应用分层、坐标系与数据流 |
-| `docs/development.md` | 通用任务闭环、审查与协作流程 |
-| `docs/conventions.md` | 文件命名与目录约定（两个仓库共用） |
-| `docs/testing.md` | 测试约定：分层与单个测试的结构（两个仓库共用） |
 | `docs/status.md` | 跨会话交接状态 |
 | `docs/design/README.md` | 设计文档规则：何时新建、何时修改、写什么，以及索引 |
 | `docs/design/game-overview.md` | AIverse 总体设计提案、最小玩法与待验证假设 |

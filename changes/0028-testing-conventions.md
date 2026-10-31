@@ -8,7 +8,7 @@
 
 ## 范围
 
-- 新增 [测试约定](../docs/testing.md)：每层测什么、怎么测、如何选层，协议改动与缺陷修复的测法；单个测试的三段结构、准备数据、替身边界与断言方式。
+- 新增 [测试约定](../.agents/rules/testing.md)：每层测什么、怎么测、如何选层，协议改动与缺陷修复的测法；单个测试的三段结构、准备数据、替身边界与断言方式。
 - 在 `AGENTS.md`、`docs/development.md`、`docs/code-map.md`、`docs/status.md`、`implement-change` 与 `review-change` Skill、`aiverse-server/AGENTS.md` 中引用它，不复制内容。
 - 不改现有测试，不加自动检查，不引入端到端测试工具。
 

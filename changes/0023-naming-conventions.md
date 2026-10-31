@@ -8,7 +8,7 @@
 
 ## 范围
 
-- 新增 [文件命名与目录约定](../docs/conventions.md)，覆盖 TypeScript、Python、资源与配置、文档的命名，顶层结构、新文件的放置、新增与重命名流程，以及代码标识的摘要。
+- 新增 [文件命名与目录约定](../.agents/rules/conventions.md)，覆盖 TypeScript、Python、资源与配置、文档的命名，顶层结构、新文件的放置、新增与重命名流程，以及代码标识的摘要。
 - 在 `AGENTS.md`、`docs/development.md`、`docs/code-map.md`、`review-change` Skill 和 `aiverse-server/AGENTS.md` 中引用它，不复制内容。
 - 不改现有文件名，不加自动检查。
 
