@@ -11,6 +11,7 @@
 | 当前状态 | `docs/status.md` | 已完成、实际命令、下一步与阻塞 |
 | 文件导航 | `docs/code-map.md` | 真实存在的代码和文档职责 |
 | 命名与目录 | `docs/conventions.md` | 文件命名、放置位置、新增与重命名规则 |
+| 测试 | `docs/testing.md` | 测试分层，单个测试的准备、执行、断言结构 |
 | 功能设计 | `docs/design/` | 每个功能的问题背景、设计思路、争议与决定、暂未实现 |
 | 单次任务 | `changes/` | 目标、范围、验收与实际证据 |
 | 重要决定 | `docs/decisions/` | 选项、理由、影响与替代关系 |
@@ -71,7 +72,7 @@ Skill 提供工作方法，不会自行启动 Agent。本仓库的调用约定�
 | 界面 | 实际用户流程、交互反馈及适用的可访问性检查 |
 | 性能改动 | 可重复的基线和前后测量 |
 
-`make check` 只检查仓库骨架；`npm run verify` 依次执行类型检查、ESLint（含分层规则）、Vitest 和生产构建，`make verify` 两者都跑。CI 复用同一组命令。服务端改动在 `aiverse-server` 目录运行 `make verify`（ruff、mypy、pytest），CI 不包含这一项。不要添加占位命令、强制覆盖率数字或无效测试来制造通过结果。
+`make check` 只检查仓库骨架；`npm run verify` 依次执行类型检查、ESLint（含分层规则）、Vitest 和生产构建，`make verify` 两者都跑。CI 复用同一组命令。服务端改动在 `aiverse-server` 目录运行 `make verify`（ruff、mypy、pytest），CI 不包含这一项。不要添加占位命令、强制覆盖率数字或无效测试来制造通过结果。测试放在哪一层、怎么写见 [测试约定](testing.md)。
 
 界面改动除自动检查外，应先启动服务端（`uv run aiverse-server`），再在浏览器实际操作一次：`npm run dev` 或 `npm run build && npm run preview`。
 

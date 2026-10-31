@@ -33,3 +33,4 @@
 | [0025-delivery-contracts](0025-delivery-contracts.md) | 已完成 | 交付合约：每次交付自动付款，单次或多次，签订时托管买方货款；只在服务端与 Agent 工具中 |
 | [0026-deals-on-page](0026-deals-on-page.md) | 已完成 | 页面只读显示所选居民的报价、合约提议与合约，只给当事人看；协议 12 |
 | [0027-supplier-deposits](0027-supplier-deposits.md) | 已完成 | 供货方押金：没交付的押金按责任赔给买方；合约结束记录与唤醒；协议 13 |
+| [0028-testing-conventions](0028-testing-conventions.md) | 已完成 | 成文的测试约定：单元、集成、端到端分层，单个测试按准备、执行、断言三段写；不改现有测试 |
