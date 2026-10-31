@@ -38,3 +38,4 @@
 | [0030-independent-agent-rules](0030-independent-agent-rules.md) | 已完成 | 两个仓库的规则与 Skill 各自只描述本仓库，去掉跨仓库比较 |
 | [0031-server-test-layers](0031-server-test-layers.md) | 已完成 | 服务端测试分到 `tests/unit/` 与 `tests/integration/`，现有测试按测试约定改写 |
 | [0032-agent-timeline-and-strategy](0032-agent-timeline-and-strategy.md) | 已完成 | AI 行动时间线、真实资源变化与可选经营方针；协议 14 |
+| [0033-per-resident-logs](0033-per-resident-logs.md) | 已完成 | 默认按角色记录当前对局的操作、时间、记忆与模型输出，每局覆盖 |

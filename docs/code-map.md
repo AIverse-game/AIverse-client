@@ -84,3 +84,5 @@
 只记录真实存在的文件和命令。
 
 AI 行动时间线入口：`apps/web/src/ui/AgentTimelinePanel.tsx`；经营方针输入在 `ui/AgentPanel.tsx`，保存由 `ui/savedLLMSettings.ts` 负责。
+
+角色日志：服务端 `agents/turn_logger.py` 负责按居民写入当前对局 JSONL；对应单元测试为 `tests/unit/agents/test_turn_logger.py`，联动测试为 `tests/integration/agents/test_turn_logging.py`。
