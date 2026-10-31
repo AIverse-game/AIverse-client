@@ -1,6 +1,6 @@
 import type { ContractProposalView, OfferView } from '@aiverse/protocol';
 import { describe, expect, it } from 'vitest';
-import { describeOffer, describeProposal, describeTerms, formatItems } from './dealText';
+import { describeDeposit, describeOffer, describeProposal, describeTerms, formatItems } from './dealText';
 
 const names: Record<string, string> = { a: '甲', b: '乙' };
 const nameOf = (id: string) => names[id] ?? id;
@@ -18,6 +18,7 @@ const proposal: ContractProposalView = {
   price: 100,
   deliveries: 3,
   durationSeconds: 90,
+  deposit: 20,
 };
 
 describe('deal text', () => {
@@ -33,10 +34,15 @@ describe('deal text', () => {
 
   it('states contract terms from the supplier and buyer, whoever proposed them', () => {
     expect(describeTerms(proposal, nameOf)).toBe('乙 每交付 10 token，甲 付 100 金币');
-    expect(describeProposal(proposal, nameOf)).toBe('乙 每交付 10 token，甲 付 100 金币，最多 3 次，签订后 1:30 内有效');
-    expect(describeProposal({ ...proposal, deliveries: 1, item: 'MK2', quantity: 1 }, nameOf)).toBe(
-      '乙 每交付 1 个 MK2，甲 付 100 金币，一次性，签订后 1:30 内有效',
+    expect(describeProposal(proposal, nameOf)).toBe('乙 每交付 10 token，甲 付 100 金币，共 3 次，签订后 1:30 内交完，乙 每次押 20 金币');
+    expect(describeProposal({ ...proposal, deliveries: 1, item: 'MK2', quantity: 1, deposit: 0 }, nameOf)).toBe(
+      '乙 每交付 1 个 MK2，甲 付 100 金币，一次性，签订后 1:30 内交完，无押金',
     );
+  });
+
+  it('names the supplier staking a deposit, or says there is none', () => {
+    expect(describeDeposit({ supplierId: 'a', deposit: 5 }, nameOf)).toBe('甲 每次押 5 金币');
+    expect(describeDeposit({ supplierId: 'a', deposit: 0 }, nameOf)).toBe('无押金');
   });
 
   it('falls back to the id of a resident it does not know', () => {

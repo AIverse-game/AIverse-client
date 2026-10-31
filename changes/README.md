@@ -32,3 +32,4 @@
 | [0024-descriptive-module-names](0024-descriptive-module-names.md) | 已完成 | 改掉看不出内容的模块名：`llm_brain.py`、`scripted_brain.py`、`system_prompt.py`、`storeContext.tsx` |
 | [0025-delivery-contracts](0025-delivery-contracts.md) | 已完成 | 交付合约：每次交付自动付款，单次或多次，签订时托管买方货款；只在服务端与 Agent 工具中 |
 | [0026-deals-on-page](0026-deals-on-page.md) | 已完成 | 页面只读显示所选居民的报价、合约提议与合约，只给当事人看；协议 12 |
+| [0027-supplier-deposits](0027-supplier-deposits.md) | 已完成 | 供货方押金：没交付的押金按责任赔给买方；合约结束记录与唤醒；协议 13 |

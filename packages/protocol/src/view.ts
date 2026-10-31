@@ -121,6 +121,7 @@ export const speechSchema = z.object({
 });
 
 const count = z.number().int().positive();
+const coins = z.number().int().nonnegative();
 
 /** A trade offer waiting for an answer: items for coins, the whole lot at once. */
 export const offerSchema = z.object({
@@ -137,9 +138,9 @@ export const offerSchema = z.object({
 });
 
 /**
- * A contract proposal waiting for an answer: each time the supplier delivers `quantity` of
- * `item`, the buyer pays `price` coins, up to `deliveries` times within `durationSeconds` of
- * the recipient accepting.
+ * A contract proposal waiting for an answer: the supplier is to deliver `quantity` of `item`
+ * `deliveries` times within `durationSeconds` of the recipient accepting, each delivery paying
+ * them `price` coins and staking `deposit` coins that go to the buyer if it is not made.
  */
 export const contractProposalSchema = z.object({
   eventId: z.number().int().positive(),
@@ -153,9 +154,11 @@ export const contractProposalSchema = z.object({
   price: count,
   deliveries: count,
   durationSeconds: count,
+  /** Coins the supplier stakes on each delivery; 0 for none. */
+  deposit: coins,
 });
 
-/** A contract in force; the buyer's coins for the deliveries left wait set aside in it. */
+/** A contract in force; the buyer's coins and the supplier's deposit for the deliveries left wait set aside in it. */
 export const contractSchema = z.object({
   id: z.number().int().positive(),
   supplierId: z.string(),
@@ -166,6 +169,10 @@ export const contractSchema = z.object({
   deliveriesLeft: count,
   /** Coins set aside: `price` times `deliveriesLeft`. */
   escrow: count,
+  /** Coins the supplier stakes on each delivery; 0 for none. */
+  deposit: coins,
+  /** The supplier's coins set aside: `deposit` times `deliveriesLeft`, the buyer's if not delivered. */
+  depositHeld: coins,
   /** Time until it lapses when the server sent this. */
   remainingSeconds: z.number().nonnegative(),
 });
@@ -259,6 +266,9 @@ export const worldViewSchema = z
       checkParties(['contracts', index], [contract.supplierId, contract.buyerId]);
       if (contract.escrow !== contract.price * contract.deliveriesLeft) {
         context.addIssue({ code: 'custom', path: ['contracts', index, 'escrow'], message: 'not price times deliveries left' });
+      }
+      if (contract.depositHeld !== contract.deposit * contract.deliveriesLeft) {
+        context.addIssue({ code: 'custom', path: ['contracts', index, 'depositHeld'], message: 'not deposit times deliveries left' });
       }
     });
   });

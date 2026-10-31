@@ -67,7 +67,8 @@ export function DealsPanel() {
         </>
       )}
       <p className="muted small">
-        合约签订时，买方的全部货款托管在合约里，供货方每交付一次就自动得到一次的价款；到期、取消、出局或游戏结束时余款退回买方。
+        合约签订时，买方的全部货款和供货方的押金都托管在合约里。供货方每交付一次，就自动得到这一次的价款并拿回这一次的押金。
+        合约结束时余款退回买方；到期或供货方取消、出局时还没交付的，押金赔给买方，买方出局或游戏结束时押金退回供货方。
         页面还不能发起或答复报价与合约，目前只有 AI 居民能用。这里只显示所选居民参与的部分。
       </p>
     </section>
@@ -95,7 +96,9 @@ function ContractItem({
       <span className="tag">{supplies ? '供货方' : '买方'}</span>
       <p className="text">{describeTerms(contract, nameOf)}</p>
       <span className="muted">
-        还剩 {contract.deliveriesLeft} 次 · 托管 {contract.escrow.toLocaleString('zh-CN')} 金币 · {formatDuration(remaining)} 后到期
+        还要交付 {contract.deliveriesLeft} 次 · 货款 {contract.escrow.toLocaleString('zh-CN')} 金币 ·{' '}
+        {contract.deposit > 0 ? `押金 ${contract.depositHeld.toLocaleString('zh-CN')} 金币` : '无押金'} ·{' '}
+        {formatDuration(remaining)} 后到期
       </span>
     </li>
   );

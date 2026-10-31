@@ -45,6 +45,7 @@ const proposal = {
   price: 100,
   deliveries: 3,
   durationSeconds: 60,
+  deposit: 0,
 };
 
 const contract = {
@@ -56,6 +57,8 @@ const contract = {
   price: 100,
   deliveriesLeft: 2,
   escrow: 200,
+  deposit: 20,
+  depositHeld: 40,
   remainingSeconds: 42.5,
 };
 
@@ -221,6 +224,8 @@ describe('parseServerMessage', () => {
     ['a proposal without a duration', withDeals({ contractProposals: [{ ...proposal, durationSeconds: undefined }] })],
     ['a contract with an unknown buyer', withDeals({ contracts: [{ ...contract, buyerId: 'z' }] })],
     ['a contract holding the wrong escrow', withDeals({ contracts: [{ ...contract, escrow: 300 }] })],
+    ['a contract holding the wrong deposit', withDeals({ contracts: [{ ...contract, depositHeld: 20 }] })],
+    ['a proposal with a negative deposit', withDeals({ contractProposals: [{ ...proposal, deposit: -1 }] })],
     ['a contract with negative time left', withDeals({ contracts: [{ ...contract, remainingSeconds: -1 }] })],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);

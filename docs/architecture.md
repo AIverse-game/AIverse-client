@@ -36,7 +36,7 @@ Python 服务端（aiverse-server）
     mining.py   矿池采矿：开始、按游戏时间发放、取消
     market.py   收购点：按随卖出下跌、随时间回升的市场价用金币收购 token
     trade.py    购买与出售报价：事件种类，物品换金币
-    contracts.py 合约：约定未来每次交付自动付款，签订时托管买方货款
+    contracts.py 合约：约定未来每次交付自动付款，签订时托管买方货款与供货方押金
   core/       世界模型与共用机制，只依赖 core/ 内的模块
     world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、生效的合约、矿池、收购点、游戏时间）与坐标校验
     inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
@@ -90,11 +90,11 @@ Python 服务端（aiverse-server）
 2. 收件人从 `pending_for` 看到发给自己的事件，用原语 `RespondToEvent` 同意或拒绝；发件人可以用 `WithdrawEvent` 撤回尚未答复的事件。只有收件人能答复、只有发件人能撤回，对别人的事件一律报告 `unknown_event`。
 3. 同意时事件离开队列并执行 `on_accept`；拒绝或撤回时执行 `on_decline`，释放预留。钩子失败时世界与队列整体不变，事件仍待处理。
 
-每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。待答复的报价与合约提议以只读视图进入协议 12，只发给当事人（见变更 0026）；答复原语尚未进入协议。
+每种事件是 `EventPayload` 的一个子类（冻结的 dataclass），只覆盖需要的钩子，新增种类不改动框架。队列和物品栏一样属于不可变世界，提交与广播沿用现有路径。待答复的报价与合约提议以只读视图进入协议（变更 0026 起，现为协议 13），只发给当事人；答复原语尚未进入协议。
 
 第一批具体种类是交易，见服务端 `trade.py` 与 [变更 0010](../changes/0010-trade-offers.md)：买方用原语 `OfferToBuy` 向卖方发出 `PurchaseOffer`，或卖方用 `OfferToSell` 向买方发出 `SaleOffer`。发件人承诺的那一份（买方的金币或卖方的物品）在发送时预留，收件人同意时交出自己的一份并完成互换；拒绝或撤回时预留退回。金币是居民的独立余额，价格是整批的总价。
 
-第二种是合约提议 `ContractProposal`，见服务端 `contracts.py` 与 [合约设计](design/contracts.md)：同意后生成 `World.contracts` 中的一份合约，买方的全部货款托管在合约里，供货方每次 `Deliver` 从中得到一批的价款；到期由 `settle_due` 处理，出局和结束时终止，余款退回买方。
+第二种是合约提议 `ContractProposal`，见服务端 `contracts.py` 与 [合约设计](design/contracts.md)：同意后生成 `World.contracts` 中的一份合约，买方的全部货款和供货方的押金托管在合约里，供货方每次 `Deliver` 从中得到一批的价款并拿回这一批的押金；到期由 `settle_due` 处理，出局和结束时终止，余款退回买方，没交付的押金按责任赔给买方或退回供货方，结束记录留在 `ContractBook.ended`。
 
 ## 一局的生命周期
 

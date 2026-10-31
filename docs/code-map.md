@@ -38,7 +38,7 @@
 | `src/aiverse_server/economy/mining.py` | 矿池采矿：需要芯片、产量按最好的一块，开始、按游戏时间发放、取消、忙碌检查（含行走）、下一次完成时刻 |
 | `src/aiverse_server/economy/market.py` | 收购点：定价常量、随时间回落的卖出压力 `pressure_at`、边际单价 `unit_price`、卖出收入 `quote`、卖出 `sell_tokens` |
 | `src/aiverse_server/economy/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
-| `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`，托管金币统计 `contract_coins` |
+| `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`（押金按责任赔付或退回，并记入 `ContractBook.ended`），托管的货款与押金统计 `contract_coins` |
 | `src/aiverse_server/residents/walking.py` | 行走：速度 `WALK_SPEED`、所需时间、途中位置 `position_at`、出发、到达、中途停下、下一次到达时刻 |
 | `src/aiverse_server/residents/perception.py` | 感知与发现：感知半径、每轮开始时的 `begin_turn`（范围内的矿池、居民、新活动、收购点与现价、当前笔记、自上次以来说过和听到的话，更新记住的矿池）、`record_activity` 记录活动 |
 | `src/aiverse_server/residents/memory.py` | 居民自选的记忆：`remember` 写入长期或短期笔记、`forget` 忘掉一条、`forget_expired` 清除过期的短期笔记，短期时长 `SHORT_TERM_SECONDS` |

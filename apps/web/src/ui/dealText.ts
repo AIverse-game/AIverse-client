@@ -25,8 +25,14 @@ export function describeTerms(terms: Terms, nameOf: NameOf): string {
   return `${nameOf(terms.supplierId)} 每交付 ${items}，${nameOf(terms.buyerId)} 付 ${terms.price} 金币`;
 }
 
-/** A contract proposal: its terms, how many deliveries and for how long once signed. */
+/** What the supplier stakes on each delivery, such as “乙 每次押 20 金币”. */
+export function describeDeposit(terms: Pick<ContractProposalView, 'supplierId' | 'deposit'>, nameOf: NameOf): string {
+  return terms.deposit > 0 ? `${nameOf(terms.supplierId)} 每次押 ${terms.deposit} 金币` : '无押金';
+}
+
+/** A contract proposal: its terms, how many deliveries are owed by when once signed, and the deposit. */
 export function describeProposal(proposal: ContractProposalView, nameOf: NameOf): string {
-  const once = proposal.deliveries === 1 ? '一次性' : `最多 ${proposal.deliveries} 次`;
-  return `${describeTerms(proposal, nameOf)}，${once}，签订后 ${formatDuration(proposal.durationSeconds)} 内有效`;
+  const times = proposal.deliveries === 1 ? '一次性' : `共 ${proposal.deliveries} 次`;
+  const within = `签订后 ${formatDuration(proposal.durationSeconds)} 内交完`;
+  return `${describeTerms(proposal, nameOf)}，${times}，${within}，${describeDeposit(proposal, nameOf)}`;
 }
