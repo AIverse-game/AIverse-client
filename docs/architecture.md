@@ -168,3 +168,7 @@ AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界�
 ## 协议改动
 
 协议在两种语言中各有一份。改动时同时修改 `packages/protocol` 与服务端的 `protocol.py`，两边的测试一起更新；不兼容的改动要同时提升两边的 `PROTOCOL_VERSION`。
+
+## AI 行动时间线
+
+协议 14 的 `state.world.agentTimeline` 包含所选居民 id 和最近 30 个完成的 AI 轮次。`Game` 保存有界页面投影，`world_view` 按 `view_as` 选取；完整观察与异常不进协议。客户端 `ui/AgentTimelinePanel.tsx` 在地图下展示，并核对居民 id 避免切换期间显示旧记录。经营方针通过 `start_agent.strategy` 传入模型，最多 1000 个 Unicode 字符，修改后需重新交给 AI。

@@ -92,14 +92,14 @@ export class GameStore {
    * Hands the resident to a language model with these settings, replacing any agent driving
    * them. Blank settings are left out, for the server's config to fill in.
    */
-  startAgent(residentId: ResidentId, settings: LLMSettings): void {
+  startAgent(residentId: ResidentId, settings: LLMSettings, strategy = ''): void {
     if (this.state.connection !== 'ready') return;
     const llm: LLMSettings = {};
     for (const name of ['baseUrl', 'apiKey', 'model'] as const) {
       const value = settings[name]?.trim();
       if (value) llm[name] = value;
     }
-    this.connection.send({ type: 'start_agent', residentId, llm });
+    this.connection.send({ type: 'start_agent', residentId, llm, ...(strategy.trim() ? { strategy: strategy.trim() } : {}) });
     this.setAgentRequest(residentId, { status: 'pending' });
   }
 

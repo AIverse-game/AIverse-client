@@ -302,3 +302,13 @@ describe('GameStore', () => {
     expect(store.getState().agentRequests.b).toEqual({ status: 'accepted' });
   });
 });
+
+it('sends the trimmed strategy alongside model settings', () => {
+  const { connection, sent, deliver } = fakeConnection();
+  const store = new GameStore(connection);
+  deliver(WELCOME);
+
+  store.startAgent('a', { model: 'm' }, '  稳健经营  ');
+
+  expect(sent.at(-1)).toEqual({ type: 'start_agent', residentId: 'a', llm: { model: 'm' }, strategy: '稳健经营' });
+});

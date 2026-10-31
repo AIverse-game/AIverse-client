@@ -7,9 +7,13 @@ import type { LLMSettings, ResidentId } from '@aiverse/protocol';
  */
 const STORAGE_KEY = 'aiverse.llmSettings';
 
+export interface SavedAgentSettings extends LLMSettings {
+  strategy?: string;
+}
+
 interface Saved {
-  latest: LLMSettings;
-  byResident: Record<ResidentId, LLMSettings>;
+  latest: SavedAgentSettings;
+  byResident: Record<ResidentId, SavedAgentSettings>;
 }
 
 /** The browser's localStorage, or null where there is none or access is refused. */
@@ -22,10 +26,10 @@ function browserStorage(): Storage | null {
 }
 
 /** Only the string settings, so a hand-edited or older entry cannot break the page. */
-function settingsFrom(value: unknown): LLMSettings {
-  const settings: LLMSettings = {};
+function settingsFrom(value: unknown): SavedAgentSettings {
+  const settings: SavedAgentSettings = {};
   if (typeof value !== 'object' || value === null) return settings;
-  for (const name of ['baseUrl', 'apiKey', 'model'] as const) {
+  for (const name of ['baseUrl', 'apiKey', 'model', 'strategy'] as const) {
     const setting = (value as Record<string, unknown>)[name];
     if (typeof setting === 'string') settings[name] = setting;
   }
@@ -36,7 +40,7 @@ function read(storage: Storage): Saved {
   try {
     const data: unknown = JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}');
     const record = typeof data === 'object' && data !== null ? (data as Record<string, unknown>) : {};
-    const byResident: Record<ResidentId, LLMSettings> = {};
+    const byResident: Record<ResidentId, SavedAgentSettings> = {};
     const stored = record.byResident;
     if (typeof stored === 'object' && stored !== null) {
       for (const [id, settings] of Object.entries(stored)) byResident[id] = settingsFrom(settings);
@@ -48,13 +52,13 @@ function read(storage: Storage): Saved {
 }
 
 /** What was last used for this resident, else the latest used for anyone; empty if none. */
-export function loadLLMSettings(residentId: ResidentId, storage = browserStorage()): LLMSettings {
+export function loadLLMSettings(residentId: ResidentId, storage = browserStorage()): SavedAgentSettings {
   if (!storage) return {};
   const saved = read(storage);
   return saved.byResident[residentId] ?? saved.latest;
 }
 
-export function saveLLMSettings(residentId: ResidentId, settings: LLMSettings, storage = browserStorage()): void {
+export function saveLLMSettings(residentId: ResidentId, settings: SavedAgentSettings, storage = browserStorage()): void {
   if (!storage) return;
   const saved = read(storage);
   const kept = settingsFrom(settings);

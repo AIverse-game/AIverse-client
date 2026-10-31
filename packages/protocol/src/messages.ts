@@ -3,7 +3,7 @@ import type { Action } from './actions';
 import { worldViewSchema, type ResidentId } from './view';
 
 /** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
-export const PROTOCOL_VERSION = 13;
+export const PROTOCOL_VERSION = 14;
 
 /**
  * Where and what a language model is asked: an OpenAI-compatible chat completions API at
@@ -33,7 +33,7 @@ export type ClientMessage =
    * driving them; the server answers with `agent_result`. The key goes to the server, which
    * uses it only to ask the model.
    */
-  | { type: 'start_agent'; residentId: ResidentId; llm: LLMSettings }
+  | { type: 'start_agent'; residentId: ResidentId; llm: LLMSettings; strategy?: string }
   /** Allowed only after `welcome`. Stop the agent driving the resident, if any. */
   | { type: 'stop_agent'; residentId: ResidentId };
 

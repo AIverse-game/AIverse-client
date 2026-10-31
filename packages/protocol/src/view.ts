@@ -190,6 +190,32 @@ export const gameSchema = z.object({
 
 // The server guarantees these invariants; checking them here catches protocol drift
 // between the two codebases before it turns into a broken picture.
+const resourceBalanceSchema = z.object({
+  coins: z.number().int().nonnegative(),
+  tokens: z.number().int().nonnegative(),
+});
+
+export const agentTurnSchema = z.object({
+  seq: z.number().int().positive(),
+  time: z.number().nonnegative(),
+  endedAt: z.number().nonnegative(),
+  summary: z.string().refine((text) => [...text].length <= 500, 'text too long').optional(),
+  error: z.string().optional(),
+  before: resourceBalanceSchema,
+  after: resourceBalanceSchema,
+  calls: z.array(z.object({
+    name: z.string().refine((text) => [...text].length <= 80, 'text too long'),
+    arguments: z.string().refine((text) => [...text].length <= 300, 'text too long'),
+    time: z.number().nonnegative(),
+    ok: z.boolean(),
+    code: z.string().optional(),
+    coinsChange: z.number().int(),
+    tokensChange: z.number().int(),
+  })).max(128),
+});
+
+export type AgentTurnView = z.infer<typeof agentTurnSchema>;
+
 export const worldViewSchema = z
   .object({
     map: mapSchema,
@@ -207,6 +233,10 @@ export const worldViewSchema = z
     offers: z.array(offerSchema),
     contractProposals: z.array(contractProposalSchema),
     contracts: z.array(contractSchema),
+    agentTimeline: z.object({
+      residentId: z.string(),
+      turns: z.array(agentTurnSchema).max(30),
+    }).optional(),
   })
   .superRefine((world, context) => {
     const inside = ({ x, y }: Position) => x >= 0 && y >= 0 && x <= world.map.size && y <= world.map.size;
@@ -239,6 +269,9 @@ export const worldViewSchema = z
         context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
       }
     });
+    if (world.agentTimeline && !seen.has(world.agentTimeline.residentId)) {
+      context.addIssue({ code: 'custom', path: ['agentTimeline', 'residentId'], message: 'unknown resident' });
+    }
     world.speech.forEach((line, index) => {
       const people = [line.speakerId, ...line.listeners, ...(line.to === undefined ? [] : [line.to])];
       if (people.some((id) => !seen.has(id))) {

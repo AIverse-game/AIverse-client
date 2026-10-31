@@ -2,7 +2,7 @@ import type { LLMSettingName, LLMSettings, ResidentId } from '@aiverse/protocol'
 import { useState, type FormEvent } from 'react';
 import { useGameState, useStore } from '../state/storeContext';
 import type { ActionStatus } from '../state/store';
-import { loadLLMSettings, saveLLMSettings } from './savedLLMSettings';
+import { loadLLMSettings, saveLLMSettings, type SavedAgentSettings } from './savedLLMSettings';
 
 const FIELDS: { name: LLMSettingName; label: string; placeholder: string; type: 'url' | 'password' | 'text' }[] = [
   { name: 'baseUrl', label: 'API 地址', placeholder: 'https://…/v1', type: 'url' },
@@ -19,7 +19,7 @@ export function AgentPanel() {
   const store = useStore();
   const { world, selected, llmOverrides, agentRequests } = useGameState();
   // Edits per resident, until sent; before any, what this browser remembered for them.
-  const [drafts, setDrafts] = useState<Record<ResidentId, LLMSettings>>({});
+  const [drafts, setDrafts] = useState<Record<ResidentId, SavedAgentSettings>>({});
   if (!world) return null;
   const resident = world.residents.find((candidate) => candidate.id === selected) ?? null;
   if (!resident) {
@@ -33,16 +33,18 @@ export function AgentPanel() {
   const draft = drafts[resident.id] ?? loadLLMSettings(resident.id);
   const overridden = (name: LLMSettingName) => llmOverrides.includes(name);
   const canAct = store.canAct(resident.id);
+  const strategyLength = [...(draft.strategy ?? '').trim()].length;
+  const strategyValid = strategyLength <= 1000;
   const filled = FIELDS.every(({ name }) => overridden(name) || Boolean(draft[name]?.trim()));
   const request = agentRequests[resident.id];
   const pending = request?.status === 'pending';
 
-  const edit = (name: LLMSettingName, value: string) =>
+  const edit = (name: keyof SavedAgentSettings, value: string) =>
     setDrafts((current) => ({ ...current, [resident.id]: { ...draft, [name]: value } }));
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!canAct || !filled) return;
+    if (!canAct || !filled || !strategyValid || pending) return;
     saveLLMSettings(resident.id, draft);
     // Settings the server overrides are not sent at all; it would not use them.
     const settings: LLMSettings = {};
@@ -50,7 +52,7 @@ export function AgentPanel() {
       const value = draft[name];
       if (!overridden(name) && value !== undefined) settings[name] = value;
     }
-    store.startAgent(resident.id, settings);
+    store.startAgent(resident.id, settings, draft.strategy);
   };
 
   return (
@@ -80,8 +82,23 @@ export function AgentPanel() {
             />
           </label>
         ))}
+        <label>
+          经营方针（可选）
+          <textarea
+            rows={3}
+            disabled={!canAct}
+            placeholder="例如：稳健经营，优先低成本芯片，保留返程 token。"
+            value={draft.strategy ?? ''}
+            onChange={(event) => edit('strategy', event.target.value)}
+            aria-describedby="strategy-help"
+            aria-invalid={!strategyValid}
+          />
+        </label>
+        <p id="strategy-help" className={strategyValid ? 'muted small' : 'error small'}>
+          {strategyLength}/1000 字。留空由 AI 自行决策；修改后需重新交给 AI 才生效。
+        </p>
         <div className="agent-buttons">
-          <button type="submit" disabled={!canAct || !filled || pending}>
+          <button type="submit" disabled={!canAct || !filled || !strategyValid || pending}>
             {resident.agent ? '按此配置重新交给 AI' : '交给 AI'}
           </button>
           {resident.agent && (

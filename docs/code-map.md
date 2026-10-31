@@ -82,3 +82,5 @@
 | `.gitignore` | 本地环境、私密配置和生成产物的忽略规则 |
 
 只记录真实存在的文件和命令。
+
+AI 行动时间线入口：`apps/web/src/ui/AgentTimelinePanel.tsx`；经营方针输入在 `ui/AgentPanel.tsx`，保存由 `ui/savedLLMSettings.ts` 负责。

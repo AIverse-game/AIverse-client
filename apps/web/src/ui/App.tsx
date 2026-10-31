@@ -1,5 +1,6 @@
 import { ActionPanel } from './ActionPanel';
 import { AgentPanel } from './AgentPanel';
+import { AgentTimelinePanel } from './AgentTimelinePanel';
 import { DealsPanel } from './DealsPanel';
 import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
@@ -12,9 +13,12 @@ export function App() {
     <div className="app">
       <TopBar />
       <main className="layout">
-        <section className="stage" aria-label="小镇地图">
-          <MapView />
-        </section>
+        <div className="stage-column">
+          <section className="stage" aria-label="小镇地图">
+            <MapView />
+          </section>
+          <AgentTimelinePanel />
+        </div>
         <aside className="sidebar">
           <RankingPanel />
           <MapPanel />

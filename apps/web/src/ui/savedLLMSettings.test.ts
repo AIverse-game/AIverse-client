@@ -49,3 +49,13 @@ describe('saved model settings', () => {
     expect(() => saveLLMSettings('a', { model: 'm' }, storage)).not.toThrow();
   });
 });
+
+it('restores a different strategy for each resident after saving', () => {
+  const storage = memoryStorage();
+
+  saveLLMSettings('a', { model: 'm', strategy: '稳健经营' }, storage);
+  saveLLMSettings('b', { model: 'm', strategy: '抢矿优先' }, storage);
+
+  expect(loadLLMSettings('a', storage).strategy).toBe('稳健经营');
+  expect(loadLLMSettings('b', storage).strategy).toBe('抢矿优先');
+});

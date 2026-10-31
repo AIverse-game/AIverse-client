@@ -236,3 +236,38 @@ describe('parseServerMessage', () => {
     }
   });
 });
+
+const turn = {
+  seq: 1, time: 0, endedAt: 2, summary: '稳健经营',
+  before: { coins: 10000, tokens: 200 }, after: { coins: 9700, tokens: 200 },
+  calls: [{ name: 'buy_chip', arguments: "{'model': 'MK1'}", time: 1, ok: true, coinsChange: -300, tokensChange: 0 }],
+};
+
+it('accepts a selected resident timeline with measured resource changes', () => {
+  const message = state(100, [resident('a', 1, 1)]);
+
+  const parsed = parseServerMessage({ ...message, world: { ...message.world, agentTimeline: { residentId: 'a', turns: [turn] } } });
+
+  expect(parsed.ok).toBe(true);
+  if (parsed.ok && parsed.value.type === 'state') expect(parsed.value.world.agentTimeline?.turns[0]).toEqual(turn);
+});
+
+it.each([
+  { ...turn, after: { coins: -1, tokens: 200 } },
+  { ...turn, calls: [{ ...turn.calls[0], coinsChange: 0.5 }] },
+  { ...turn, summary: 'a'.repeat(501) },
+])('rejects an invalid timeline entry', (invalid) => {
+  const message = state(100, [resident('a', 1, 1)]);
+
+  const parsed = parseServerMessage({ ...message, world: { ...message.world, agentTimeline: { residentId: 'a', turns: [invalid] } } });
+
+  expect(parsed.ok).toBe(false);
+});
+
+it('counts bounded timeline text in Unicode code points like the server', () => {
+  const message = state(100, [resident('a', 1, 1)]);
+
+  const parsed = parseServerMessage({ ...message, world: { ...message.world, agentTimeline: { residentId: 'a', turns: [{ ...turn, summary: '🌱'.repeat(500) }] } } });
+
+  expect(parsed.ok).toBe(true);
+});
