@@ -1,6 +1,7 @@
 import type { MarketView, PoolView, Position, ResidentId, ResidentView, RigView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import marketSprite from '../assets/market/market-sprite.png';
+import miningRigSprite from '../assets/rigs/mining-rig.png';
 import type { GameStore } from '../state/store';
 import {
   axisTicks,
@@ -54,6 +55,14 @@ const MARKET_HEIGHT = 72;
 /** Across the picture, where the front corner of its base touches the ground. */
 const MARKET_FOOT_X = 0.65;
 const MARKET_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#f7dc8a', stroke: '#1d1a16', strokeThickness: 3 };
+
+const RIG_TEXTURE = 'mining-rig';
+const RIG_FRAME = 'machine';
+/** Visible area (alpha > 8) within the user's unchanged 1254 × 1254 transparent PNG. */
+const RIG_BOUNDS = { x: 87, y: 311, width: 1083, height: 840 };
+const RIG_HEIGHT = 66;
+/** Ground contact near the front foot, measured within the visible frame. */
+const RIG_FOOT_X = 0.7;
 
 /** Height of a resident's figure, in the units `drawFigure` uses. */
 const FIGURE_HEIGHT = 46;
@@ -115,7 +124,7 @@ export class MapScene extends Phaser.Scene {
   /** What the pools were last drawn from, so they are redrawn only when that changes. */
   private drawnPools = '';
   private drawnRigs = '';
-  private rigMarkers: { root: Phaser.GameObjects.Container; position: Position }[] = [];
+  private rigMarkers: { root: Phaser.GameObjects.Container; machine: Phaser.GameObjects.Image; position: Position }[] = [];
   private axisLabels: Phaser.GameObjects.Text[] = [];
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
@@ -127,9 +136,15 @@ export class MapScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image(MARKET_TEXTURE, marketSprite);
+    this.load.image(RIG_TEXTURE, miningRigSprite);
   }
 
   create(): void {
+    const texture = this.textures.get(RIG_TEXTURE);
+    if (!texture.has(RIG_FRAME)) {
+      texture.add(RIG_FRAME, 0, RIG_BOUNDS.x, RIG_BOUNDS.y, RIG_BOUNDS.width, RIG_BOUNDS.height);
+    }
+    texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     // Created first so the ground stays underneath everything else.
     this.ground = this.add.graphics();
     this.pools = this.add.graphics().setDepth(POOL_DEPTH);
@@ -184,7 +199,7 @@ export class MapScene extends Phaser.Scene {
       }
     }
     const { selected, world } = this.store.getState();
-    const rig = this.rigMarkers.find((marker) => over.includes(marker.root));
+    const rig = this.rigMarkers.find((marker) => over.includes(marker.machine));
     if (rig && selected && this.store.isFree(selected)) {
       this.store.act({ type: 'move_to', residentId: selected, target: rig.position });
       return;
@@ -378,19 +393,24 @@ export class MapScene extends Phaser.Scene {
       const index = counts.get(pool.id) ?? 0;
       counts.set(pool.id, index + 1);
       const point = this.projection!.toScreen(pool.position);
-      const figure = this.add.graphics();
-      figure.fillStyle(0x29323a).fillRoundedRect(-15, -36, 30, 36, 4);
-      figure.lineStyle(2, 0xf7dc8a).strokeRoundedRect(-15, -36, 30, 36, 4);
+      const scale = this.projection!.scaleAt(pool.position);
+      const shadow = this.add.graphics().fillStyle(INK, 0.3).fillEllipse(-12, -2, 72, 16);
+      const machine = this.add.image(0, 0, RIG_TEXTURE, RIG_FRAME)
+        .setOrigin(RIG_FOOT_X, 1)
+        .setScale(RIG_HEIGHT / RIG_BOUNDS.height)
+        .setInteractive({ pixelPerfect: true, alphaTolerance: 8, useHandCursor: true });
+      const lights = this.add.graphics();
       for (let slot = 0; slot < 4; slot++) {
         const occupied = rig.slots[slot];
         const color = !occupied ? 0x56616b : occupied.status === 'running' ? 0x9cdbb2 : 0xe0a93b;
-        figure.fillStyle(color).fillRect(-9, -29 + slot * 7, 18, 4);
+        lights.fillStyle(INK, 0.9).fillCircle(-23 + slot * 13, 9, 4);
+        lights.fillStyle(color).fillCircle(-23 + slot * 13, 9, 2.5);
       }
-      const label = this.add.text(0, 4, `矿机 #${rig.id}`, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
-      const root = this.add.container(point.x + 30 + index * 45, point.y - 4, [figure, label])
+      const label = this.add.text(-4, 17, `矿机 #${rig.id}`, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
+      const root = this.add.container(point.x + (70 + index * 94) * scale, point.y, [shadow, machine, lights, label])
         .setDepth(RESIDENT_DEPTH + point.y / CANVAS_HEIGHT)
-        .setSize(36, 80).setInteractive({ useHandCursor: true });
-      this.rigMarkers.push({ root, position: pool.position });
+        .setScale(scale);
+      this.rigMarkers.push({ root, machine, position: pool.position });
     }
   }
 

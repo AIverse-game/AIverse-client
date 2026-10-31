@@ -40,3 +40,4 @@
 | [0032-agent-timeline-and-strategy](0032-agent-timeline-and-strategy.md) | 已完成 | AI 行动时间线、真实资源变化与可选经营方针；协议 14 |
 | [0033-per-resident-logs](0033-per-resident-logs.md) | 已完成 | 默认按角色记录当前对局的操作、时间、记忆与模型输出，每局覆盖 |
 | [0034-mining-rigs](0034-mining-rigs.md) | 已完成 | 有限插槽矿机、芯片租用、预存租金与电费、出局停产，协议 15 |
+| [0035-mining-rig-sprite](0035-mining-rig-sprite.md) | 已完成 | 用户提供的矿机贴图、透明机身点击与独立插槽状态灯 |
