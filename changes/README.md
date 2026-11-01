@@ -46,4 +46,5 @@
 | [0038-larger-map](0038-larger-map.md) | 已完成 | 地图扩大到 150 × 150，矿池间距加倍、离收购点更远；确认矿机只能建在矿池上 |
 | [0039-price-history-chart](0039-price-history-chart.md) | 已完成 | 记录收购价历史（卖出时与无人卖出时每 5 秒），页面画折线图；协议 17 |
 | [0040-information-selling](0040-information-selling.md) | 已完成 | 居民可把自己知道的信息报价出售，买方成交前只看摘要，卖方保留原信息；协议未改 |
+| [0041-rig-price-9000](0041-rig-price-9000.md) | 已完成 | 矿机建造价从 8000 提到 9000 |
 | [0042-pool-token-coin-sprites](0042-pool-token-coin-sprites.md) | 已完成 | 矿池地面贴图与旋转浮动的悬浮标记；页面的 token、金币图标 |

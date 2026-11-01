@@ -27,7 +27,7 @@ const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, ra
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], rigs: [], rigRules: { price: 8000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 } },
+  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], rigs: [], rigRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 } },
 });
 
 const withRig = (equipment: unknown, clock: unknown = game) => {
