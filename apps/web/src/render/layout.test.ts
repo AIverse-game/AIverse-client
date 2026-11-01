@@ -7,6 +7,7 @@ import {
   HEADROOM,
   MARGIN,
   projectMap,
+  rigPositionOnPool,
   SLAB_DEPTH,
 } from './layout';
 
@@ -47,6 +48,10 @@ describe('projectMap', () => {
     }
   });
 
+  it('gives the ground a wider footprint while leaving sprite dimensions independent', () => {
+    expect(east.x - south.x).toBeGreaterThan(1080);
+  });
+
   it('draws any map size as the same picture', () => {
     const small = projectMap(40).toScreen({ x: 40, y: 20 });
     const large = toScreen({ x: 100, y: 50 });
@@ -77,6 +82,17 @@ describe('projectMap', () => {
     // The top-left canvas corner is off the map; far above it is past the horizon.
     expect(toMap(0, 0)).toBeNull();
     expect(toMap(origin.x, -1e6)).toBeNull();
+  });
+});
+
+describe('rigPositionOnPool', () => {
+  it.each([
+    { position: { x: 75, y: 75 }, radius: 4 },
+    { position: { x: 20, y: 110 }, radius: 2 },
+  ])('keeps the marker base within the pool at $position and radius $radius', (pool) => {
+    const position = rigPositionOnPool(pool);
+
+    expect(Math.hypot(position.x - pool.position.x, position.y - pool.position.y)).toBeLessThan(pool.radius);
   });
 });
 

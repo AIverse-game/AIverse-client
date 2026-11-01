@@ -6,9 +6,9 @@ import type { Position } from '@aiverse/protocol';
 // the origin sits at the far (top) corner, tilted so the far side is smaller.
 
 export const CANVAS_WIDTH = 1200;
-export const CANVAS_HEIGHT = 800;
+export const CANVAS_HEIGHT = 1000;
 /** Space around the map for axis labels and residents standing on the edge. */
-export const MARGIN = 56;
+export const MARGIN = 48;
 /** Extra space above the map so a resident at the far corner keeps its head and name. */
 export const HEADROOM = 48;
 
@@ -33,6 +33,15 @@ export interface MapProjection {
   scaleAt(position: Position): number;
   /** Ground position under a canvas point, or null outside the map. */
   toMap(x: number, y: number): Position | null;
+}
+
+/** Put a machine beside the pool marker while keeping its base within mining reach. */
+export function rigPositionOnPool(pool: { position: Position; radius: number }): Position {
+  const distance = pool.radius * 0.55;
+  return {
+    x: pool.position.x + distance,
+    y: pool.position.y,
+  };
 }
 
 const cosYaw = Math.cos(YAW);

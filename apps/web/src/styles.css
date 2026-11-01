@@ -70,10 +70,10 @@ h2 {
 }
 
 .map {
-  /* 3:2 canvas that fits the viewport height on wide screens. */
+  /* Taller canvas lets the ground grow while sprite pixel sizes stay fixed. */
   width: min(100%, calc((100vh - 140px) * 1.5));
   min-width: 280px;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 6 / 5;
   margin: 0 auto;
   /* Without this the canvas can stretch the box past its aspect ratio. */
   overflow: hidden;

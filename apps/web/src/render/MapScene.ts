@@ -17,6 +17,7 @@ import {
   CANVAS_WIDTH,
   formatCoordinate,
   projectMap,
+  rigPositionOnPool,
   SLAB_DEPTH,
   type MapProjection,
 } from './layout';
@@ -230,7 +231,12 @@ export class MapScene extends Phaser.Scene {
       this.drawnMarket = market;
     }
     this.syncResidents(world.residents, resized);
-    const rigs = JSON.stringify([world.map.size, world.rigs, world.game.ended]);
+    const rigs = JSON.stringify([
+      world.map.size,
+      world.rigs,
+      world.game.ended,
+      world.pools.map(({ id, position, radius }) => [id, position, radius]),
+    ]);
     if (rigs !== this.drawnRigs) {
       this.drawRigs(world.rigs, world.pools);
       this.drawnRigs = rigs;
@@ -437,26 +443,30 @@ export class MapScene extends Phaser.Scene {
   private drawRigs(rigs: RigView[], pools: PoolView[]): void {
     for (const marker of this.rigMarkers) marker.root.destroy();
     this.rigMarkers = [];
-    const counts = new Map<string, number>();
-    for (const rig of rigs) {
-      const pool = pools.find((candidate) => candidate.id === rig.poolId)!;
-      const index = counts.get(pool.id) ?? 0;
-      counts.set(pool.id, index + 1);
-      const point = this.projection!.toScreen(pool.position);
-      const scale = this.projection!.scaleAt(pool.position);
+    for (const pool of pools) {
+      const atPool = rigs.filter((rig) => rig.poolId === pool.id);
+      if (atPool.length === 0) continue;
+      // A pool pad is smaller than two machine sprites, so one marker represents the group.
+      const rig = atPool[0]!;
+      const position = rigPositionOnPool(pool);
+      const point = this.projection!.toScreen(position);
+      const scale = this.projection!.scaleAt(position);
       const machine = this.add.image(0, 0, RIG_TEXTURE, RIG_FRAME)
         .setOrigin(RIG_FOOT_X, 1)
         .setScale(RIG_HEIGHT / RIG_BOUNDS.height)
         .setInteractive({ pixelPerfect: true, alphaTolerance: 8, useHandCursor: true });
       const lights = this.add.graphics();
-      for (let slot = 0; slot < 4; slot++) {
-        const occupied = rig.slots[slot];
-        const color = !occupied ? 0x56616b : occupied.status === 'running' ? 0x9cdbb2 : 0xe0a93b;
-        lights.fillStyle(INK, 0.9).fillCircle(-23 + slot * 13, 9, 4);
-        lights.fillStyle(color).fillCircle(-23 + slot * 13, 9, 2.5);
+      if (atPool.length === 1) {
+        for (let slot = 0; slot < 4; slot++) {
+          const occupied = rig.slots[slot];
+          const color = !occupied ? 0x56616b : occupied.status === 'running' ? 0x9cdbb2 : 0xe0a93b;
+          lights.fillStyle(INK, 0.9).fillCircle(-23 + slot * 13, 9, 4);
+          lights.fillStyle(color).fillCircle(-23 + slot * 13, 9, 2.5);
+        }
       }
-      const label = this.add.text(-4, 17, `矿机 #${rig.id}`, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
-      const root = this.add.container(point.x + (70 + index * 94) * scale, point.y, [machine, lights, label])
+      const labelText = atPool.length === 1 ? `矿机 #${rig.id}` : `矿机 ×${atPool.length}`;
+      const label = this.add.text(-4, 17, labelText, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
+      const root = this.add.container(point.x, point.y, [machine, lights, label])
         .setDepth(RESIDENT_DEPTH + point.y / CANVAS_HEIGHT)
         .setScale(scale);
       this.rigMarkers.push({ root, machine, position: pool.position });
