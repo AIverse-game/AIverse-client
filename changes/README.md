@@ -51,3 +51,4 @@
 | [0043-resident-sprite](0043-resident-sprite.md) | 已完成 | 居民改用贴图，静止与移动时都上下浮动，颜色改为脚下圆盘 |
 | [0044-cheaper-walking-and-ending-notice](0044-cheaper-walking-and-ending-notice.md) | 已完成 | 走路每单位耗 token 由 1 减半；结束前 60 秒服务端向居民公告；`remember` 的 `term` 可省略；提示词补充思考耗时与笔记长度；协议未改 |
 | [0045-map-scale-and-rig-placement](0045-map-scale-and-rig-placement.md) | 已完成 | 地图显示相对角色放大约 18%；矿机底脚落在矿池内，同池多台合并显示数量 |
+| [0046-threefold-scrollable-map](0046-threefold-scrollable-map.md) | 已完成 | 在 0045 的基础上把地图相对角色再放大 3 倍，固定视窗内滚动浏览 |

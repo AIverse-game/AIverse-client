@@ -19,6 +19,7 @@ export function MapPanel() {
       <p className="small">
         {size} × {size}，原点 (0, 0) 是西北角，画在地图最上方的顶角；x 向右下、y 向左下增大。
       </p>
+      <p className="muted small">地图已放大 3 倍，可在地图区域内滚动查看。</p>
       <h2 className="subheading">居民</h2>
       {world.residents.length === 0 ? (
         <p className="muted small">地图上暂无居民。</p>

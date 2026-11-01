@@ -62,20 +62,19 @@ h2 {
 }
 
 .stage {
-  overflow: hidden;
+  height: min(840px, calc(100vh - 140px));
+  min-height: 320px;
+  overflow: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  /* Matches the canvas background so the letterboxing blends in. */
   background: #1b1712;
 }
 
 .map {
-  /* Taller canvas lets the ground grow while sprite pixel sizes stay fixed. */
-  width: min(100%, calc((100vh - 140px) * 1.5));
-  min-width: 280px;
+  /* Match the full-size canvas to three viewport widths without stretching its sprites. */
+  width: min(300%, calc((100vh - 140px) * 4.5));
+  min-width: 840px;
   aspect-ratio: 6 / 5;
-  margin: 0 auto;
-  /* Without this the canvas can stretch the box past its aspect ratio. */
   overflow: hidden;
 }
 

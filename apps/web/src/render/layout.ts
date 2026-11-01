@@ -5,12 +5,14 @@ import type { Position } from '@aiverse/protocol';
 // ground plane seen from a fixed camera above it, Don't Starve style: turned 45° so
 // the origin sits at the far (top) corner, tilted so the far side is smaller.
 
-export const CANVAS_WIDTH = 1200;
-export const CANVAS_HEIGHT = 1000;
+/** The full map is three viewport widths high-resolution pixels, so sprites keep their size. */
+export const MAP_DISPLAY_SCALE = 3;
+export const CANVAS_WIDTH = 1200 * MAP_DISPLAY_SCALE;
+export const CANVAS_HEIGHT = 1000 * MAP_DISPLAY_SCALE;
 /** Space around the map for axis labels and residents standing on the edge. */
-export const MARGIN = 48;
+export const MARGIN = 48 * MAP_DISPLAY_SCALE;
 /** Extra space above the map so a resident at the far corner keeps its head and name. */
-export const HEADROOM = 48;
+export const HEADROOM = 48 * MAP_DISPLAY_SCALE;
 
 /** Camera heading: 45° puts the origin at the top corner, x down-right, y down-left. */
 const YAW = Math.PI / 4;

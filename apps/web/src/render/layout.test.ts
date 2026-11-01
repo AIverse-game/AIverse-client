@@ -5,6 +5,7 @@ import {
   CANVAS_WIDTH,
   formatCoordinate,
   HEADROOM,
+  MAP_DISPLAY_SCALE,
   MARGIN,
   projectMap,
   rigPositionOnPool,
@@ -49,7 +50,7 @@ describe('projectMap', () => {
   });
 
   it('gives the ground a wider footprint while leaving sprite dimensions independent', () => {
-    expect(east.x - south.x).toBeGreaterThan(1080);
+    expect(east.x - south.x).toBeGreaterThan(1080 * MAP_DISPLAY_SCALE);
   });
 
   it('draws any map size as the same picture', () => {
