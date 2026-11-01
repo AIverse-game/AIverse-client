@@ -70,7 +70,7 @@ Game.start_agent / start_llm_agent / stop_agent（启动参数，或页面的 st
   - 系统提示给出规则（`system_prompt.py`，数值全部取自代码常量）；
   - 用户消息给出上一轮的行动摘要和本轮观察；
   - 模型可以连续调用工具，直到不再调用；
-  - 限制：每轮最多 8 次请求，每局每名居民最多 400 次（停止或更换 Agent 不会重置），每次最多输出 2048 token，超时 60 秒；
+  - 限制：每轮最多 8 次请求，每局每名居民最多 400 次（停止或更换 Agent 不会重置），每次默认最多输出 8192 token（服务端 YAML 可调整），每次请求等待上限配置为 180 秒；
   - 跨轮记忆靠居民自己写的笔记。
 
 ### 配置与密钥
@@ -78,7 +78,7 @@ Game.start_agent / start_llm_agent / stop_agent（启动参数，或页面的 st
 大模型需要三项设置：API 地址、API key、模型。来源有三处，合并规则是“配置文件覆盖，其余用玩家给的”：
 
 1. **页面**：“AI 驱动”面板。选中居民，填写三项，点“交给 AI”（协议 `start_agent`），就由模型驱动；再点一次会按新配置替换。“停止 AI，改为手动”（`stop_agent`）把居民交回页面。所有页面的居民列表都标出“AI”，面板显示所用模型。页面按居民把填过的设置记在本机 localStorage，没配置过的居民默认填上最近一次用过的。
-2. **服务端配置文件**（`server/config.py` 读取）：YAML，`--config` 指定，默认读服务端的 `src/aiverse_server/agents/config/llm.yml`。`override` 下的 `base_url`、`api_key`、`model` 填了哪项，哪项就对所有由模型驱动的居民生效，代替页面和命令行给的值。`welcome` 只告诉页面哪些项被覆盖（不含具体值），页面把这些输入框置灰，显示“由服务端配置指定”。示例见同目录的 `llm.example.yml`。
+2. **服务端配置文件**（`server/config.py` 读取）：YAML，`--config` 指定，默认读服务端的 `src/aiverse_server/agents/config/llm.yml`。`override` 下的 `base_url`、`api_key`、`model` 填了哪项，哪项就对所有由模型驱动的居民生效，代替页面和命令行给的值；`max_tokens` 是共用的每次回复上限，省略时为 8192，必须是正整数。`welcome` 只告诉页面哪些连接项被覆盖（不含具体值），页面把这些输入框置灰，显示“由服务端配置指定”。示例见同目录的 `llm.example.yml`。
 3. **启动参数**：可以重复。
 
    ```sh
@@ -91,6 +91,10 @@ Game.start_agent / start_llm_agent / stop_agent（启动参数，或页面的 st
 合并后缺项（`missing_llm_setting`）、地址不是 http(s) URL 或 key 不是不含空格的可打印 ASCII（`invalid_llm_setting`，否则 HTTP 客户端会在报错中原样带出 key）、居民不存在、已出局或游戏已结束时，请求被拒绝，用 `agent_result` 说明原因。
 
 key 只放在服务端内存里，用来调用接口：不进状态、控制台、`--agent-log` 或错误信息，设置对象和页面请求的 repr 也隐藏它；HTTP 客户端的异常不串进日志，服务商在错误信息里回显的 key 替换为 `***`。httpx 的请求日志调到 WARNING，因为玩家可能把凭据写进 API 地址。页面上的 key 存在本机浏览器的 localStorage 中。
+
+### 对局结束提醒
+
+对局时长分别大于 180 秒和 60 秒时，服务端在结束前 3 分钟和 60 秒向所有居民各发一次公告。公告进入 Agent 下一轮观察的 `notices`，唤醒等待中的 Agent；正在进行的模型请求不会被打断。公告不进入网页协议，页面暂不显示。
 
 ## 争议讨论与决定
 
