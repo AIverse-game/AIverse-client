@@ -39,12 +39,15 @@ const LABEL_OFFSET = 0.04;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
 /**
- * Token pools: a portal lying on the ground over their reach, with a marker floating above its
- * middle. Both pictures are the user's pool.png and pool-marker.png beside them, trimmed to the
- * visible pixels (alpha above 8) and scaled down to 256 px wide and 128 px high.
+ * Token pools: a square pad lying on the ground around their centre, its edges touching the reach
+ * circle (so the circle is inscribed in it and the corners stick out), with a marker floating above its middle. Both pictures are the user's pool.png and
+ * pool-marker.png beside them, trimmed to the visible pixels (alpha above 8) and scaled down to
+ * 256 px wide and 128 px high.
  */
 const POOL_TEXTURE = 'pool';
 const POOL_MARKER_TEXTURE = 'pool-marker';
+/** Side of the pad before it is turned and squashed onto the ground; only its ratio to the result matters. */
+const POOL_PAD_SIZE = 100;
 /** Height of the floating marker in canvas pixels at the map centre. */
 const POOL_MARKER_HEIGHT = 44;
 /** How far the marker's bottom hovers above the pool's centre, in canvas pixels at the map centre. */
@@ -137,7 +140,7 @@ export class MapScene extends Phaser.Scene {
   private floorEdge: Phaser.GameObjects.Graphics | null = null;
   private floorTexture: Phaser.Textures.CanvasTexture | null = null;
   private floorSources: ImageData[] = [];
-  private poolGrounds: Phaser.GameObjects.Image[] = [];
+  private poolGrounds: Phaser.GameObjects.Container[] = [];
   private poolMarkers: PoolMarker[] = [];
   private poolLabels: Phaser.GameObjects.Text[] = [];
   private market: Phaser.GameObjects.Graphics | null = null;
@@ -316,7 +319,7 @@ export class MapScene extends Phaser.Scene {
 
   private drawPools(pools: PoolView[]): void {
     const projection = this.projection!;
-    for (const image of this.poolGrounds) image.destroy();
+    for (const pad of this.poolGrounds) pad.destroy();
     this.poolGrounds = [];
     for (const { image } of this.poolMarkers) image.destroy();
     this.poolMarkers = [];
@@ -324,21 +327,24 @@ export class MapScene extends Phaser.Scene {
     this.poolLabels = [];
     pools.forEach((pool, index) => {
       const alpha = pool.reserve > 0 ? 1 : EMPTY_POOL_ALPHA;
-      // The reach is a circle on the ground, so its picture is fitted to the circle's image.
-      const rim = Array.from({ length: 48 }, (_, i) => {
-        const angle = (i / 48) * 2 * Math.PI;
-        return projection.toScreen({
-          x: pool.position.x + pool.radius * Math.cos(angle),
-          y: pool.position.y + pool.radius * Math.sin(angle),
-        });
-      });
-      const xs = rim.map((point) => point.x);
-      const ys = rim.map((point) => point.y);
+      // The pad is square on the ground, so its corners are projected and the picture turned a
+      // quarter of the way round, as the map is, then squashed to fit the diamond they make.
       const { x, y } = projection.toScreen(pool.position);
+      const [near, far] = [-pool.radius, pool.radius];
+      const corners = [
+        { x: pool.position.x + near, y: pool.position.y + near },
+        { x: pool.position.x + far, y: pool.position.y + near },
+        { x: pool.position.x + far, y: pool.position.y + far },
+        { x: pool.position.x + near, y: pool.position.y + far },
+      ].map((corner) => projection.toScreen(corner));
+      const xs = corners.map((point) => point.x);
+      const ys = corners.map((point) => point.y);
+      const turned = this.add.image(0, 0, POOL_TEXTURE).setDisplaySize(POOL_PAD_SIZE, POOL_PAD_SIZE).setRotation(Math.PI / 4);
+      const diagonal = POOL_PAD_SIZE * Math.SQRT2;
       this.poolGrounds.push(
         this.add
-          .image((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, POOL_TEXTURE)
-          .setDisplaySize(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))
+          .container((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, [turned])
+          .setScale((Math.max(...xs) - Math.min(...xs)) / diagonal, (Math.max(...ys) - Math.min(...ys)) / diagonal)
           .setDepth(POOL_DEPTH)
           .setAlpha(alpha),
       );
