@@ -175,4 +175,4 @@ AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界�
 
 ## 矿机与预存结算
 
-见 [矿机设计](design/mining-rigs.md)。协议 15 增加 `build_rig`、`install_chip`、`fund_rig`、`remove_chip`，网页及 Agent 同用服务端原语。矿机、槽位与预存属于不可变世界，安装从背包取出芯片；按实际产量从槽位余额同时支付租金、电费并从有限矿池给 token，预存计入排名。居民携带芯片和可用金币由独立视图字段提供。`clock.settle_due` 按实际到点时刻依次处理，出局与结束先清理槽位和退款；角色出局后的未来周期不产生 token 或租金。矿机公开列表进入 AI 观察，便于发现租用机会。
+见 [矿机设计](design/mining-rigs.md)。协议 15 增加 `build_rig`、`install_chip`、`fund_rig`、`remove_chip`，网页及 Agent 同用服务端原语。矿机、槽位与预存属于不可变世界，安装从背包取出芯片；按实际产量从槽位余额同时支付租金、电费并从有限矿池给 token，预存计入排名。居民携带芯片和可用金币由独立视图字段提供。`clock.settle_due` 按实际到点时刻依次处理，出局与结束先清理槽位和退款；角色出局后的未来周期不产生 token 或租金。矿机公开列表进入 AI 观察，便于发现租用机会。协议 16（[变更 0036](../changes/0036-market-and-rig-tuning.md)）：`rigRules` 增加 `yieldMultiplier`，收购点增加 `restingPressure` 且 `pressure` 可以为负，页面据此推算现价与矿机产量。

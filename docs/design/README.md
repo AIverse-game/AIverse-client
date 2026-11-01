@@ -41,4 +41,5 @@
 | [ai-residents](ai-residents.md) | 首版已实现 | AI 居民：事件驱动循环、工具、脚本机器人与 OpenAI 兼容接口的模型大脑，页面配置与服务端覆盖 |
 | [trade-offers](trade-offers.md) | 已调整 | 交易报价：买卖任一方发起、预留、只给当事人看的页面显示 |
 | [contracts](contracts.md) | 已调整 | 合约：约定未来每次交付自动付款，单次或多次，买方货款托管，供货方可押押金 |
-| [mining-rigs](mining-rigs.md) | 首版已实现 | 建造矿机、安装芯片、自动生产、按产量金币租金与出局结算 |
+| [mining-rigs](mining-rigs.md) | 已调整 | 建造矿机、安装芯片、自动生产、按产量金币租金与出局结算 |
+| [token-market](token-market.md) | 已调整 | token 收购点：随卖出下跌、久无人卖则涨价的市场价，AI 一轮内锁价 |

@@ -41,7 +41,7 @@ const world: WorldView = {
   contractProposals: [],
   contracts: [],
   rigs: [],
-  rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, rentPer100: 300, energyPer100: 20 },
+  rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 },
 };
 
 describe('GameStore', () => {
@@ -49,7 +49,7 @@ describe('GameStore', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
     const message = { ...world, market: {
-      position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0,
+      position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0,
       chips: [{ model: 'MK1', price: 300, tokensPerJob: 30 }],
     }, residents: [{ ...world.residents[0]!, chips: {}, carriedChips: {}, rigBalance: 500, spendableCoins: 9500 }] };
 
@@ -154,18 +154,20 @@ describe('GameStore', () => {
     let now = 5000;
     const store = new GameStore(connection, () => now);
     expect(store.marketPrice()).toBeNull();
-    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 100, chips: [] };
+    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, chips: [] };
     deliver({ type: 'state', world: { ...world, market } });
-    expect(store.marketPrice()).toBeCloseTo(10);
+    // 20 * 400 / (400 + 100).
+    expect(store.marketPrice()).toBeCloseTo(16);
     expect(store.atMarket('a')).toBe(true);
     expect(store.atMarket('nobody')).toBe(false);
     now += 60_000;
-    expect(store.marketPrice()).toBeCloseTo(20 / 1.5);
+    // Halfway from 100 to the resting -200: 20 * 400 / 350.
+    expect(store.marketPrice()).toBeCloseTo(160 / 7);
     expect(store.marketQuote(30)).toBeGreaterThan(0);
     // Once the game is over the price stops moving.
     deliver({ type: 'state', world: { ...world, market, game: { ended: true, remainingSeconds: 0 } } });
     now += 600_000;
-    expect(store.marketPrice()).toBeCloseTo(10);
+    expect(store.marketPrice()).toBeCloseTo(16);
     deliver({ type: 'state', world: { ...world, market: { ...market, position: { x: 12, y: 25 } } } });
     expect(store.atMarket('a')).toBe(false);
   });
@@ -230,7 +232,7 @@ describe('GameStore', () => {
       { model: 'MK2', price: 1200, tokensPerJob: 60 },
       { model: 'MK3', price: 3000, tokensPerJob: 100 },
     ];
-    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0, chips };
+    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips };
     const [resident] = world.residents;
     const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, chips: owned, carriedChips: owned }] });
     deliver({ type: 'state', world: owning({}) });

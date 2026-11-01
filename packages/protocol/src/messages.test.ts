@@ -27,7 +27,7 @@ const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, ra
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], rigs: [], rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, rentPer100: 300, energyPer100: 20 } },
+  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], rigs: [], rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 } },
 });
 
 const withRig = (equipment: unknown, clock: unknown = game) => {
@@ -104,7 +104,7 @@ const chips = [
   { model: 'MK2', price: 1200, tokensPerJob: 60 },
 ];
 
-const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 100, halfLifeSeconds: 60, pressure: 0, chips };
+const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips };
 
 const withMarket = (value: unknown) => {
   const message = state(100, []);
@@ -137,6 +137,11 @@ describe('parseServerMessage', () => {
     const message = withMarket({ ...market, position: { x: 100, y: 0 }, pressure: 12.5 });
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
     expect(parseServerMessage(state(100, [])).ok).toBe(true);
+  });
+
+  it('accepts a market below zero pressure after nobody sold for a while', () => {
+    const message = withMarket({ ...market, pressure: -84 });
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
   it('accepts speech aloud and to one resident', () => {
@@ -230,7 +235,8 @@ describe('parseServerMessage', () => {
       state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 5, y: 5 }, remainingSeconds: -1 } }]),
     ],
     ['market outside the map', withMarket({ ...market, position: { x: 50, y: 100.1 } })],
-    ['negative market pressure', withMarket({ ...market, pressure: -1 })],
+    ['market pressure not a number', withMarket({ ...market, pressure: Number.NaN })],
+    ['market without a resting pressure', withMarket({ ...market, restingPressure: undefined })],
     ['market without a price', withMarket({ ...market, basePrice: undefined })],
     ['market with no reach', withMarket({ ...market, radius: 0 })],
     ['missing speech', { type: 'state', world: { map: { size: 100 }, pools: [], residents: [], game } }],

@@ -41,3 +41,4 @@
 | [0033-per-resident-logs](0033-per-resident-logs.md) | 已完成 | 默认按角色记录当前对局的操作、时间、记忆与模型输出，每局覆盖 |
 | [0034-mining-rigs](0034-mining-rigs.md) | 已完成 | 有限插槽矿机、芯片租用、预存租金与电费、出局停产，协议 15 |
 | [0035-mining-rig-sprite](0035-mining-rig-sprite.md) | 已完成 | 用户提供的矿机贴图、透明机身点击与独立插槽状态灯 |
+| [0036-market-and-rig-tuning](0036-market-and-rig-tuning.md) | 已完成 | 收购价跌得慢、久无人卖则涨价；矿机产量翻倍、租金降到 50；Agent 建机后得知编号；协议 16 |

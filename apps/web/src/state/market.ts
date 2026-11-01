@@ -3,9 +3,15 @@ import type { MarketView } from '@aiverse/protocol';
 // The market price as the server defines it (see `marketSchema`), followed locally between
 // snapshots like the countdown and the walks. Only for display: the server prices each sale.
 
-/** Recent sales in tokens `elapsedSeconds` after the snapshot, faded since then. */
+/** Recent sales in tokens `elapsedSeconds` after the snapshot, drifted towards rest since then. */
 export function marketPressure(market: MarketView, elapsedSeconds: number): number {
-  return market.pressure * 2 ** (-Math.max(elapsedSeconds, 0) / market.halfLifeSeconds);
+  const drift = 2 ** (-Math.max(elapsedSeconds, 0) / market.halfLifeSeconds);
+  return market.restingPressure + (market.pressure - market.restingPressure) * drift;
+}
+
+/** Coins a token fetches once nobody has sold for a very long while. */
+export function marketTopPrice(market: MarketView): number {
+  return (market.basePrice * market.depth) / (market.depth + market.restingPressure);
 }
 
 /** Coins one more token fetches `elapsedSeconds` after the snapshot, before rounding. */

@@ -18,9 +18,9 @@ export function RigPanel() {
   return (
     <section className="panel rig-panel">
       <h2>矿机经营</h2>
-      <p className="small">建造 {rules.price.toLocaleString('zh-CN')} 金币 · 每台 {rules.capacity} 槽 · 每 {rules.cycleSeconds} 秒生产一次</p>
+      <p className="small">建造 {rules.price.toLocaleString('zh-CN')} 金币 · 每台 {rules.capacity} 槽 · 每 {rules.cycleSeconds} 秒生产一次，产量为芯片单次的 {rules.yieldMultiplier} 倍</p>
       <p className="muted small">每 100 token 向矿主付 {rules.rentPer100} 金币租金，另付 {rules.energyPer100} 金币电费；自己使用免租。按实际产量扣预存，不足时暂停。</p>
-      <p className="muted small">安装后可自由行动，手动采矿效率更高。角色出局后停止生产，矿主出局则整机关闭并退还租客芯片和余额。</p>
+      <p className="muted small">安装后可自由行动，每块芯片的产能与手动采矿相同，多个插槽同时生产。角色出局后停止生产，矿主出局则整机关闭并退还租客芯片和余额。</p>
       {resident ? (
         <>
           <p className="small">{resident.name}：可用 {resident.spendableCoins.toLocaleString('zh-CN')} 金币，矿机预存 {resident.rigBalance.toLocaleString('zh-CN')}（计入排名）</p>
@@ -52,7 +52,7 @@ function RigCard({ rig, resident, free }: { rig: RigView; resident: ResidentView
   const validDeposit = Number.isSafeInteger(amount) && amount > 0 && amount <= (resident?.spendableCoins ?? 0);
   const models = world.market?.chips ?? [];
   const model = models.find((candidate) => candidate.model === chip);
-  const output = Math.min(model?.tokensPerJob ?? 0, pool.reserve);
+  const output = Math.min((model?.tokensPerJob ?? 0) * rules.yieldMultiplier, pool.reserve);
   const rent = resident?.id === rig.ownerId ? 0 : Math.ceil(output * rules.rentPer100 / 100);
   const energy = Math.ceil(output * rules.energyPer100 / 100);
   const canInstall = free && atPool && rig.slots.length < rules.capacity && pool.reserve > 0

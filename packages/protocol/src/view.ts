@@ -90,9 +90,11 @@ export const chipModelSchema = z.object({
 
 /**
  * Where residents sell tokens for coins and buy chips, and what sets the token price. One more
- * token fetches `basePrice * depth / (depth + p)` coins, where the pressure p of recent sales
- * halves every `halfLifeSeconds` after the server sent this; selling q tokens pays
- * `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The server decides each sale.
+ * token fetches `basePrice * depth / (depth + p)` coins, where the distance of the pressure p of
+ * recent sales from `restingPressure` halves every `halfLifeSeconds` after the server sent this;
+ * selling q tokens pays `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The
+ * resting pressure is below zero, so a market nobody sells to pays more than `basePrice`. The
+ * server decides each sale.
  */
 export const marketSchema = z.object({
   position: positionSchema,
@@ -101,8 +103,10 @@ export const marketSchema = z.object({
   basePrice: z.number().positive(),
   depth: z.number().positive(),
   halfLifeSeconds: z.number().positive(),
-  /** Recent sales in tokens when the server sent this. */
-  pressure: z.number().nonnegative(),
+  /** Pressure the market drifts to with no sales, above `-depth`. */
+  restingPressure: z.number(),
+  /** Recent sales in tokens when the server sent this; below zero after a quiet while. */
+  pressure: z.number(),
   /** Chips on sale at fixed prices, worst first. */
   chips: z.array(chipModelSchema),
 });
@@ -244,6 +248,8 @@ export const rigRulesSchema = z.object({
   price: z.number().int().positive(),
   capacity: z.number().int().positive(),
   cycleSeconds: z.number().positive(),
+  /** A chip in a rig mines this many times its `tokensPerJob` each cycle. */
+  yieldMultiplier: z.number().int().positive(),
   rentPer100: z.number().int().nonnegative(),
   energyPer100: z.number().int().nonnegative(),
 });

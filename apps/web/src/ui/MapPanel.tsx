@@ -1,4 +1,5 @@
 import { formatCoordinate } from '../render/layout';
+import { marketTopPrice } from '../state/market';
 import { useGameState, useStore } from '../state/storeContext';
 import { ChipIcon } from './ChipIcon';
 import { formatPrice } from './format';
@@ -93,7 +94,7 @@ function MarketInfo() {
         <span className="price">{formatPrice(price)} 金币 / token</span>
       </p>
       <p className="muted small">
-        镇外的买家用金币收购 token：卖得越多价格越低，没人卖时逐渐回升到 {formatPrice(market.basePrice)}。所有人共用一个价格。
+        镇外的买家用金币收购 token：卖得越多价格越低，没人卖时逐渐上涨，最高到 {formatPrice(marketTopPrice(market))}。所有人共用一个价格。
       </p>
       {market.chips.length > 0 && (
         <>
