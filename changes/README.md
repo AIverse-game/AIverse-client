@@ -48,3 +48,4 @@
 | [0040-information-selling](0040-information-selling.md) | 已完成 | 居民可把自己知道的信息报价出售，买方成交前只看摘要，卖方保留原信息；协议未改 |
 | [0041-rig-price-9000](0041-rig-price-9000.md) | 已完成 | 矿机建造价从 8000 提到 9000 |
 | [0042-pool-token-coin-sprites](0042-pool-token-coin-sprites.md) | 已完成 | 矿池地面贴图与旋转浮动的悬浮标记；页面的 token、金币图标 |
+| [0043-resident-sprite](0043-resident-sprite.md) | 已完成 | 居民改用贴图，静止与移动时都上下浮动，颜色改为脚下圆盘 |

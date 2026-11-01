@@ -7,6 +7,7 @@ import floorStrips from '../assets/floor/metal-floor-strips.png';
 import marketSprite from '../assets/market/market-sprite.png';
 import poolMarkerSprite from '../assets/pools/pool-marker-sprite.png';
 import poolSprite from '../assets/pools/pool-sprite.png';
+import residentSprite from '../assets/residents/resident-sprite.png';
 import miningRigSprite from '../assets/rigs/mining-rig.png';
 import type { GameStore } from '../state/store';
 import { paintFloorSurface, readFloorSources } from './floorSurface';
@@ -20,6 +21,7 @@ import {
   type MapProjection,
 } from './layout';
 import { markerPose } from './poolMarkerMotion';
+import { floatPose, stepFloat, type FloatState } from './residentFloat';
 
 const FONT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
 const MOVE_TWEEN_MS = 400;
@@ -30,7 +32,6 @@ const FLOOR_SURFACE = 'floor-surface';
 const EDGE_COLOR = 0x487d91;
 const SLAB_LIT = 0x243846;
 const SLAB_SHADED = 0x172633;
-const SKIN = 0xf4ead2;
 const SELECTION_COLOR = 0xfdf8ee;
 const LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#c9b99a' };
 const NAME_STYLE = { fontFamily: FONT, fontSize: '13px', color: '#fdf8ee', stroke: '#1d1a16', strokeThickness: 3 };
@@ -77,8 +78,16 @@ const RIG_HEIGHT = 66;
 /** Ground contact near the front foot, measured within the visible frame. */
 const RIG_FOOT_X = 0.7;
 
-/** Height of a resident's figure, in the units `drawFigure` uses. */
-const FIGURE_HEIGHT = 46;
+/**
+ * A resident is the user's resident.png, a spirit that floats, trimmed to the visible pixels
+ * (alpha above 8) and scaled to 128 px high. Its size and positions are in figure units, which
+ * `RESIDENT_SCALE` turns into canvas pixels; the resident's own colour is the disc on the ground
+ * under it, since the picture is the same for everyone.
+ */
+const RESIDENT_TEXTURE = 'resident';
+const FIGURE_HEIGHT = 48;
+/** How far above the ground the picture's lowest pixel floats when it is not bobbing. */
+const FIGURE_HOVER = 6;
 /** Canvas pixels per figure unit at the map centre. */
 const RESIDENT_SCALE = 1.25;
 
@@ -86,7 +95,10 @@ interface Resident {
   root: Phaser.GameObjects.Container;
   /** Ring on the ground marking the selected resident. */
   ring: Phaser.GameObjects.Graphics;
-  figure: Phaser.GameObjects.Graphics;
+  /** The resident's coloured disc and shadow on the ground, which shrinks as it rises. */
+  shadow: Phaser.GameObjects.Graphics;
+  figure: Phaser.GameObjects.Image;
+  float: FloatState;
   label: Phaser.GameObjects.Text;
   color: string;
   /** Latest position from the server. */
@@ -156,6 +168,7 @@ export class MapScene extends Phaser.Scene {
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
   private drawnSize: number | null = null;
+  private lastUpdate = performance.now();
 
   constructor(private readonly store: GameStore) {
     super('map');
@@ -166,6 +179,7 @@ export class MapScene extends Phaser.Scene {
     this.load.image(POOL_TEXTURE, poolSprite);
     this.load.image(POOL_MARKER_TEXTURE, poolMarkerSprite);
     this.load.image(RIG_TEXTURE, miningRigSprite);
+    this.load.image(RESIDENT_TEXTURE, residentSprite);
     [floorCorners, floorSparse, floorNodes, floorStrips].forEach((url, index) => {
       this.load.image(FLOOR_TEXTURES[index]!, url);
     });
@@ -464,7 +478,7 @@ export class MapScene extends Phaser.Scene {
       }
       if (resident.color !== view.color) {
         resident.color = view.color;
-        drawFigure(resident.figure, view.color);
+        drawShadow(resident.shadow, view.color);
       }
       resident.label.setText(residentLabel(view));
       resident.root.setAlpha(view.left ? LEFT_ALPHA : 1);
@@ -505,7 +519,16 @@ export class MapScene extends Phaser.Scene {
 
   override update(): void {
     const now = performance.now();
-    for (const resident of this.residents.values()) this.stepWalk(resident, now);
+    // A long pause, such as a hidden tab, must not make the bob jump.
+    const elapsed = Math.min(now - this.lastUpdate, 100);
+    this.lastUpdate = now;
+    for (const resident of this.residents.values()) {
+      this.stepWalk(resident, now);
+      resident.float = stepFloat(resident.float, elapsed, isMoving(resident, now));
+      const pose = floatPose(resident.float);
+      resident.figure.setY(-FIGURE_HOVER - pose.lift);
+      resident.shadow.setScale(pose.shadow);
+    }
     this.moveMarkers(now);
   }
 
@@ -531,18 +554,22 @@ export class MapScene extends Phaser.Scene {
     const ring = this.add.graphics().setVisible(false);
     ring.lineStyle(2, SELECTION_COLOR, 0.9);
     ring.strokeEllipse(0, 0, 38, 16);
-    const figure = this.add.graphics();
-    drawFigure(figure, view.color);
-    const label = this.add.text(0, -FIGURE_HEIGHT - 4, residentLabel(view), NAME_STYLE).setOrigin(0.5, 1);
-    const root = this.add.container(0, 0, [ring, figure, label]);
+    const shadow = this.add.graphics();
+    drawShadow(shadow, view.color);
+    const figure = this.add.image(0, -FIGURE_HOVER, RESIDENT_TEXTURE).setOrigin(0.5, 1);
+    figure.setScale(FIGURE_HEIGHT / figure.height);
+    const label = this.add.text(0, -FIGURE_HEIGHT - FIGURE_HOVER - 6, residentLabel(view), NAME_STYLE).setOrigin(0.5, 1);
+    const root = this.add.container(0, 0, [ring, shadow, figure, label]);
     // The container has no size, so this rectangle is in figure units around the feet.
     root.setInteractive({
-      hitArea: new Phaser.Geom.Rectangle(-14, -FIGURE_HEIGHT - 2, 28, FIGURE_HEIGHT + 8),
+      hitArea: new Phaser.Geom.Rectangle(-14, -FIGURE_HEIGHT - FIGURE_HOVER - 6, 28, FIGURE_HEIGHT + FIGURE_HOVER + 12),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
       useHandCursor: true,
     });
     const shown = { ...view.position };
-    return { root, ring, figure, label, color: view.color, position: view.position, shown, walk: null };
+    // Residents start at different points of the bob, so they do not rise and fall together.
+    const float = { angle: Math.random() * 2 * Math.PI, effort: 0 };
+    return { root, ring, shadow, figure, float, label, color: view.color, position: view.position, shown, walk: null };
   }
 
   /** Stands the resident's feet on its shown position, sized and layered by distance. */
@@ -567,25 +594,21 @@ function residentLabel(view: ResidentView): string {
   return view.name;
 }
 
-/** A standing figure with its feet, and the centre of its shadow, at (0, 0). */
-function drawFigure(figure: Phaser.GameObjects.Graphics, color: string): void {
-  const fill = Phaser.Display.Color.HexStringToColor(color).color;
-  figure.clear();
-  figure.fillStyle(0x000000, 0.3);
-  figure.fillEllipse(0, 0, 26, 11);
-  figure.lineStyle(3, INK, 1);
-  figure.lineBetween(-4, -1, -4, -14);
-  figure.lineBetween(4, -1, 4, -14);
-  figure.fillStyle(fill, 1);
-  figure.fillRoundedRect(-9, -30, 18, 18, 5);
-  figure.lineStyle(2, INK, 1);
-  figure.strokeRoundedRect(-9, -30, 18, 18, 5);
-  figure.fillStyle(SKIN, 1);
-  figure.fillCircle(0, -FIGURE_HEIGHT + 9, 9);
-  figure.strokeCircle(0, -FIGURE_HEIGHT + 9, 9);
-  figure.fillStyle(INK, 1);
-  figure.fillCircle(-3, -FIGURE_HEIGHT + 8, 1.6);
-  figure.fillCircle(3, -FIGURE_HEIGHT + 8, 1.6);
+/** Whether the resident is on the way somewhere: along a walk the server reported or in a move tween. */
+function isMoving(resident: Resident, now: number): boolean {
+  const { walk, shown, position } = resident;
+  // A finished walk leaves `shown` at the target while `position` waits for the next snapshot.
+  if (walk) return now < walk.start + walk.duration;
+  return shown.x !== position.x || shown.y !== position.y;
+}
+
+/** The resident's colour as a disc on the ground, and its shadow, centred on (0, 0). */
+function drawShadow(shadow: Phaser.GameObjects.Graphics, color: string): void {
+  shadow.clear();
+  shadow.fillStyle(0x000000, 0.3);
+  shadow.fillEllipse(0, 0, 26, 11);
+  shadow.fillStyle(Phaser.Display.Color.HexStringToColor(color).color, 0.9);
+  shadow.fillEllipse(0, 0, 16, 7);
 }
 
 function xy(point: Phaser.Math.Vector2): [number, number] {

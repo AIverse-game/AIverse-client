@@ -4,6 +4,7 @@
 
 ## 已具备
 
+- 居民贴图（[变更 0043](../changes/0043-resident-sprite.md)）：地图居民改用用户提供的漂浮小精灵贴图，静止时慢慢浮动、移动时更快更大；居民颜色改画成脚下的圆盘。
 - 矿池、token 与金币贴图（[变更 0042](../changes/0042-pool-token-coin-sprites.md)）：地图矿池改用用户提供的地面贴图，上方的悬浮标记绕竖轴旋转并上下浮动；居民、矿池与金币排名前显示 token、金币小图标。
 - 信息售卖（[变更 0040](../changes/0040-information-selling.md)，[设计](design/information-selling.md)）：AI 居民用 `offer_information` 把自己写的信息报价卖给另一名居民，对方成交前只看摘要，同意付款后内容成为其长期笔记，卖方保留原信息，服务端不核实真假。协议与页面未接入。
 - 收购价历史与折线图（[变更 0039](../changes/0039-price-history-chart.md)）：服务端在每次卖出和每 5 秒记录收购价（无人卖出时也记），随状态下发，页面用 SVG 画走势折线。协议 17。
@@ -17,7 +18,7 @@
 - [AIverse 总体设计 v0.1](design/game-overview.md)：以玩家自带模型 API 驱动居民，进行生产和交易，最终按金币排名。规则和数值尚待原型验证；地图部分已按决策 0002 调整。
 - Python 服务端（与本仓库同级的 `aiverse-server` 目录，[决策 0002](decisions/0002-python-server-and-coordinate-map.md)）：FastAPI WebSocket `/ws`，生成固定布局的 150 × 150 连续坐标地图（[变更 0038](../changes/0038-larger-map.md)，原为 100 × 100）和 4 名居民，校验坐标与客户端消息。
 - 网页客户端（[变更 0005](../changes/0005-coordinate-map.md)）：经 WebSocket 读取地图并校验，Phaser 绘制地图、刻度、居民及指针坐标，侧栏列出地图边长和居民坐标；服务端不可达时显示错误。见 [应用架构](architecture.md)。
-- 2.5D 地图（[变更 0006](../changes/0006-perspective-map.md)）：参考《饥荒》的固定透视视角，地块转 45° 并露出土层，居民是带影子的站立小人，按远近缩放和遮挡。
+- 2.5D 地图（[变更 0006](../changes/0006-perspective-map.md)）：参考《饥荒》的固定透视视角，地块转 45° 并露出土层，居民按远近缩放和遮挡（最初是带影子的站立小人，后改为贴图，见变更 0043）。
 - 操作原语（[变更 0007](../changes/0007-action-primitives.md)）：服务端 `actions.py` 是玩家与 AI 改变世界的唯一入口，首个原语是 `move_to`（即时到达，校验居民存在和目标在地图内）。页面可手动操作：点选居民后填写坐标或点击地面；所有页面共享同一个世界并同步看到变化。
 - 居民物品（[变更 0008](../changes/0008-resident-inventory.md)）：每名居民有一个物品栏（物品种类 → 数量），容量无限，只存在于内存中的世界，新开一局即为空。服务端 `inventory.py` 提供存入、移出（不足时整体拒绝）、计数、列出和清空（出局时用）的内部接口，尚未开放为原语，也不在协议中。
 - 事件系统框架（[变更 0009](../changes/0009-event-queue.md)）：居民之间的请求（如购买）作为事件进入世界中的队列，等待收件人同意或拒绝，或由发件人撤回。服务端 `events.py` 提供发送、答复、查询收件箱的接口；每种事件是 `EventPayload` 的一个子类，用发送、同意、拒绝三个钩子定义规则。答复原语 `RespondToEvent`、`WithdrawEvent` 已加入 `actions.py`，但尚无具体事件种类，也未进入协议。
