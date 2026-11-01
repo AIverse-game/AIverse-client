@@ -119,7 +119,7 @@ Python 服务端（aiverse-server）
 见服务端 `tokens.py`、`mining.py` 与 [变更 0012](../changes/0012-tokens-and-mining.md)：
 
 - token 是居民的体力，也是物品种类 `"token"`，因此用现有的买卖报价交易。视图中的 `tokens` 是拥有量：携带的加出售报价中预留的。
-- `MoveTo` 先按直线距离扣 token（每单位 1，向上取整），不够时以 `not_enough_tokens` 拒绝。
+- `MoveTo` 先按直线距离扣 token（每单位 0.5，向上取整），不够时以 `not_enough_tokens` 拒绝。
 - `perform` 执行原语后调用 `knock_out_exhausted`：这次原语让其拥有量由正变零的居民按 `leave_game` 出局；判断时进行中的采矿已挖出的 token 也算拥有。
 - 矿池在创建世界时由 `layout.scatter_pools(seed)` 放置，之后不移动、不增减，只有储量下降。`Mine` 要求居民站在矿池半径内，开始时从矿池扣出 token，`MINE_SECONDS` 后发放；期间居民忙碌，除 `LeaveGame` 外以 `busy` 拒绝。出局时 token 退回矿池，游戏结束时任务作废。
 - 游戏时间是 `World.time`。`Game.tick` 在每帧处理前和计时任务醒来时推进它，用 `clock.settle_due` 发放到期的采矿、接回到达的行走者并记录活动，到点时结束游戏，有变化就广播；计时任务等待对局结束和最早一个采矿或行走结束中较早的那个。
