@@ -5,6 +5,8 @@ import floorNodes from '../assets/floor/metal-floor-nodes.png';
 import floorSparse from '../assets/floor/metal-floor-sparse.png';
 import floorStrips from '../assets/floor/metal-floor-strips.png';
 import marketSprite from '../assets/market/market-sprite.png';
+import poolMarkerSprite from '../assets/pools/pool-marker-sprite.png';
+import poolSprite from '../assets/pools/pool-sprite.png';
 import miningRigSprite from '../assets/rigs/mining-rig.png';
 import type { GameStore } from '../state/store';
 import { paintFloorSurface, readFloorSources } from './floorSurface';
@@ -17,6 +19,7 @@ import {
   SLAB_DEPTH,
   type MapProjection,
 } from './layout';
+import { markerPose } from './poolMarkerMotion';
 
 const FONT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
 const MOVE_TWEEN_MS = 400;
@@ -35,10 +38,17 @@ const NAME_STYLE = { fontFamily: FONT, fontSize: '13px', color: '#fdf8ee', strok
 const LABEL_OFFSET = 0.04;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
-/** Token pools: a glowing patch of ground the size of their reach, with a crystal in the middle. */
-const POOL_FILL = 0x4fc3d9;
-const POOL_EDGE = 0xb8f0fa;
-const POOL_CRYSTAL = 0xdff8fc;
+/**
+ * Token pools: a portal lying on the ground over their reach, with a marker floating above its
+ * middle. Both pictures are the user's pool.png and pool-marker.png beside them, trimmed to the
+ * visible pixels (alpha above 8) and scaled down to 256 px wide and 128 px high.
+ */
+const POOL_TEXTURE = 'pool';
+const POOL_MARKER_TEXTURE = 'pool-marker';
+/** Height of the floating marker in canvas pixels at the map centre. */
+const POOL_MARKER_HEIGHT = 44;
+/** How far the marker's bottom hovers above the pool's centre, in canvas pixels at the map centre. */
+const POOL_MARKER_HOVER = 10;
 /** Pools with nothing left stay on the map, faded. */
 const EMPTY_POOL_ALPHA = 0.35;
 const POOL_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#dff8fc', stroke: '#1d1a16', strokeThickness: 3 };
@@ -95,6 +105,16 @@ interface Walk {
   duration: number;
 }
 
+interface PoolMarker {
+  image: Phaser.GameObjects.Image;
+  /** Canvas pixels the marker's bottom edge rests above its ground point, and its full size there. */
+  restingY: number;
+  width: number;
+  height: number;
+  /** Offsets this marker's spin and bob from the others'. */
+  phase: number;
+}
+
 /** Pools lie on the ground, above the turf and below every resident. */
 const POOL_DEPTH = 0.5;
 
@@ -117,7 +137,8 @@ export class MapScene extends Phaser.Scene {
   private floorEdge: Phaser.GameObjects.Graphics | null = null;
   private floorTexture: Phaser.Textures.CanvasTexture | null = null;
   private floorSources: ImageData[] = [];
-  private pools: Phaser.GameObjects.Graphics | null = null;
+  private poolGrounds: Phaser.GameObjects.Image[] = [];
+  private poolMarkers: PoolMarker[] = [];
   private poolLabels: Phaser.GameObjects.Text[] = [];
   private market: Phaser.GameObjects.Graphics | null = null;
   private marketMachine: Phaser.GameObjects.Image | null = null;
@@ -139,6 +160,8 @@ export class MapScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image(MARKET_TEXTURE, marketSprite);
+    this.load.image(POOL_TEXTURE, poolSprite);
+    this.load.image(POOL_MARKER_TEXTURE, poolMarkerSprite);
     this.load.image(RIG_TEXTURE, miningRigSprite);
     [floorCorners, floorSparse, floorNodes, floorStrips].forEach((url, index) => {
       this.load.image(FLOOR_TEXTURES[index]!, url);
@@ -158,7 +181,6 @@ export class MapScene extends Phaser.Scene {
     this.ground = this.add.graphics();
     this.add.image(0, 0, FLOOR_SURFACE).setOrigin(0, 0).setDepth(0.1);
     this.floorEdge = this.add.graphics().setDepth(0.2);
-    this.pools = this.add.graphics().setDepth(POOL_DEPTH);
     this.market = this.add.graphics().setDepth(POOL_DEPTH);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
@@ -294,39 +316,48 @@ export class MapScene extends Phaser.Scene {
 
   private drawPools(pools: PoolView[]): void {
     const projection = this.projection!;
-    const graphics = this.pools!;
-    graphics.clear();
+    for (const image of this.poolGrounds) image.destroy();
+    this.poolGrounds = [];
+    for (const { image } of this.poolMarkers) image.destroy();
+    this.poolMarkers = [];
     for (const label of this.poolLabels) label.destroy();
     this.poolLabels = [];
-    for (const pool of pools) {
+    pools.forEach((pool, index) => {
       const alpha = pool.reserve > 0 ? 1 : EMPTY_POOL_ALPHA;
-      // The reach is a circle on the ground, so it is drawn through the projection.
+      // The reach is a circle on the ground, so its picture is fitted to the circle's image.
       const rim = Array.from({ length: 48 }, (_, i) => {
         const angle = (i / 48) * 2 * Math.PI;
-        const at = {
+        return projection.toScreen({
           x: pool.position.x + pool.radius * Math.cos(angle),
           y: pool.position.y + pool.radius * Math.sin(angle),
-        };
-        const { x, y } = projection.toScreen(at);
-        return new Phaser.Math.Vector2(x, y);
+        });
       });
-      graphics.fillStyle(POOL_FILL, 0.35 * alpha);
-      graphics.fillPoints(rim, true);
-      graphics.lineStyle(2, POOL_EDGE, 0.8 * alpha);
-      graphics.strokePoints(rim, true);
-
+      const xs = rim.map((point) => point.x);
+      const ys = rim.map((point) => point.y);
       const { x, y } = projection.toScreen(pool.position);
-      const size = 7 * projection.scaleAt(pool.position);
-      const crystal = [
-        new Phaser.Math.Vector2(x, y - 2.4 * size),
-        new Phaser.Math.Vector2(x + size, y - size),
-        new Phaser.Math.Vector2(x, y),
-        new Phaser.Math.Vector2(x - size, y - size),
-      ];
-      graphics.fillStyle(POOL_CRYSTAL, alpha);
-      graphics.fillPoints(crystal, true);
-      graphics.lineStyle(1.5, INK, 0.8 * alpha);
-      graphics.strokePoints(crystal, true);
+      this.poolGrounds.push(
+        this.add
+          .image((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, POOL_TEXTURE)
+          .setDisplaySize(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))
+          .setDepth(POOL_DEPTH)
+          .setAlpha(alpha),
+      );
+
+      // The marker floats over the middle and is sorted with the residents, like the machines.
+      const scale = projection.scaleAt(pool.position);
+      const image = this.add
+        .image(x, y, POOL_MARKER_TEXTURE)
+        .setOrigin(0.5, 1)
+        .setDepth(RESIDENT_DEPTH + y / CANVAS_HEIGHT)
+        .setAlpha(alpha);
+      const height = POOL_MARKER_HEIGHT * scale;
+      this.poolMarkers.push({
+        image,
+        restingY: y - POOL_MARKER_HOVER * scale,
+        width: (height * image.width) / image.height,
+        height,
+        phase: index / pools.length,
+      });
 
       const label = this.add
         .text(x, y + 4, `${pool.id} · ${pool.reserve}`, POOL_LABEL_STYLE)
@@ -334,6 +365,15 @@ export class MapScene extends Phaser.Scene {
         .setDepth(POOL_DEPTH)
         .setAlpha(alpha);
       this.poolLabels.push(label);
+    });
+    this.moveMarkers(performance.now());
+  }
+
+  /** Turns each marker around its vertical axis and bobs it up and down. */
+  private moveMarkers(now: number): void {
+    for (const marker of this.poolMarkers) {
+      const pose = markerPose(now, marker.phase);
+      marker.image.setDisplaySize(marker.width * pose.width, marker.height).setY(marker.restingY - pose.lift * marker.height);
     }
   }
 
@@ -460,6 +500,7 @@ export class MapScene extends Phaser.Scene {
   override update(): void {
     const now = performance.now();
     for (const resident of this.residents.values()) this.stepWalk(resident, now);
+    this.moveMarkers(now);
   }
 
   private startWalk(resident: Resident, view: ResidentView): void {

@@ -3,6 +3,7 @@ import { marketTopPrice } from '../state/market';
 import { useGameState, useStore } from '../state/storeContext';
 import { ChipIcon } from './ChipIcon';
 import { formatPrice } from './format';
+import { TokenIcon } from './TokenIcon';
 import { useSecondTick } from './useSecondTick';
 
 /** Map facts, pools and residents as text, to cross-check the drawing; picks who to operate. */
@@ -44,7 +45,10 @@ export function MapPanel() {
                     </span>
                   ))}
                 </span>
-                <span className="tokens">{resident.tokens} token</span>
+                <span className="tokens">
+                  <TokenIcon />
+                  {resident.tokens} token
+                </span>
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
                 </span>
@@ -64,7 +68,10 @@ export function MapPanel() {
               <span className="coords">
                 ({formatCoordinate(pool.position.x)}, {formatCoordinate(pool.position.y)})，半径 {formatCoordinate(pool.radius)}
               </span>
-              <span className="tokens">剩余 {pool.reserve}</span>
+              <span className="tokens">
+                <TokenIcon />
+                剩余 {pool.reserve}
+              </span>
             </li>
           ))}
         </ul>

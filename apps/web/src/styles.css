@@ -426,6 +426,14 @@ h2 {
   }
 }
 
+.resource-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 3px;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
 .chip-icon {
   width: 20px;
   height: 20px;

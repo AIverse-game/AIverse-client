@@ -4,6 +4,7 @@
 
 ## 已具备
 
+- 矿池、token 与金币贴图（[变更 0042](../changes/0042-pool-token-coin-sprites.md)）：地图矿池改用用户提供的地面贴图，上方的悬浮标记绕竖轴旋转并上下浮动；居民、矿池与金币排名前显示 token、金币小图标。
 - 信息售卖（[变更 0040](../changes/0040-information-selling.md)，[设计](design/information-selling.md)）：AI 居民用 `offer_information` 把自己写的信息报价卖给另一名居民，对方成交前只看摘要，同意付款后内容成为其长期笔记，卖方保留原信息，服务端不核实真假。协议与页面未接入。
 - 收购价历史与折线图（[变更 0039](../changes/0039-price-history-chart.md)）：服务端在每次卖出和每 5 秒记录收购价（无人卖出时也记），随状态下发，页面用 SVG 画走势折线。协议 17。
 
