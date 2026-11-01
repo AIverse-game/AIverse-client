@@ -42,3 +42,4 @@
 | [0034-mining-rigs](0034-mining-rigs.md) | 已完成 | 有限插槽矿机、芯片租用、预存租金与电费、出局停产，协议 15 |
 | [0035-mining-rig-sprite](0035-mining-rig-sprite.md) | 已完成 | 用户提供的矿机贴图、透明机身点击与独立插槽状态灯 |
 | [0036-market-and-rig-tuning](0036-market-and-rig-tuning.md) | 已完成 | 收购价跌得慢、久无人卖则涨价；矿机产量翻倍、租金降到 50；Agent 建机后得知编号；协议 16 |
+| [0037-lock-hold-and-rig-price](0037-lock-hold-and-rig-price.md) | 已完成 | AI 卖出锁价只管 30 秒；矿机建造价 8000 |

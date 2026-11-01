@@ -41,7 +41,7 @@ const world: WorldView = {
   contractProposals: [],
   contracts: [],
   rigs: [],
-  rigRules: { price: 4000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 },
+  rigRules: { price: 8000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 },
 };
 
 describe('GameStore', () => {
