@@ -1,8 +1,13 @@
 import type { MarketView, PoolView, Position, ResidentId, ResidentView, RigView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
+import floorCorners from '../assets/floor/metal-floor-corners.png';
+import floorNodes from '../assets/floor/metal-floor-nodes.png';
+import floorSparse from '../assets/floor/metal-floor-sparse.png';
+import floorStrips from '../assets/floor/metal-floor-strips.png';
 import marketSprite from '../assets/market/market-sprite.png';
 import miningRigSprite from '../assets/rigs/mining-rig.png';
 import type { GameStore } from '../state/store';
+import { paintFloorSurface, readFloorSources } from './floorSurface';
 import {
   axisTicks,
   CANVAS_HEIGHT,
@@ -15,24 +20,19 @@ import {
 
 const FONT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
 const MOVE_TWEEN_MS = 400;
-const BACKGROUND = '#1b1712';
+const BACKGROUND = '#0d141e';
 const INK = 0x1d1a16;
-/** Alternating turf colours of the cells between ticks. */
-const TURF_LIGHT = 0x687b3d;
-const TURF_DARK = 0x5b6d36;
-const TUFT_COLOR = 0x8b9c50;
-const EDGE_COLOR = 0xe2d3a8;
-const EARTH_LIT = 0x5c4331;
-const EARTH_SHADED = 0x433022;
+const FLOOR_TEXTURES = ['floor-corners', 'floor-sparse', 'floor-nodes', 'floor-strips'] as const;
+const FLOOR_SURFACE = 'floor-surface';
+const EDGE_COLOR = 0x487d91;
+const SLAB_LIT = 0x243846;
+const SLAB_SHADED = 0x172633;
 const SKIN = 0xf4ead2;
 const SELECTION_COLOR = 0xfdf8ee;
 const LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#c9b99a' };
 const NAME_STYLE = { fontFamily: FONT, fontSize: '13px', color: '#fdf8ee', stroke: '#1d1a16', strokeThickness: 3 };
 /** How far outside the map edge the tick labels sit, as a fraction of the map side. */
 const LABEL_OFFSET = 0.04;
-/** Grass tufts scattered over the ground for texture; they are not game objects. */
-const TUFT_COUNT = 240;
-const TUFT_SEED = 7;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
 /** Token pools: a glowing patch of ground the size of their reach, with a crystal in the middle. */
@@ -114,6 +114,9 @@ const CURSOR_DEPTH = 10;
 export class MapScene extends Phaser.Scene {
   private readonly residents = new Map<ResidentId, Resident>();
   private ground: Phaser.GameObjects.Graphics | null = null;
+  private floorEdge: Phaser.GameObjects.Graphics | null = null;
+  private floorTexture: Phaser.Textures.CanvasTexture | null = null;
+  private floorSources: ImageData[] = [];
   private pools: Phaser.GameObjects.Graphics | null = null;
   private poolLabels: Phaser.GameObjects.Text[] = [];
   private market: Phaser.GameObjects.Graphics | null = null;
@@ -137,6 +140,9 @@ export class MapScene extends Phaser.Scene {
   preload(): void {
     this.load.image(MARKET_TEXTURE, marketSprite);
     this.load.image(RIG_TEXTURE, miningRigSprite);
+    [floorCorners, floorSparse, floorNodes, floorStrips].forEach((url, index) => {
+      this.load.image(FLOOR_TEXTURES[index]!, url);
+    });
   }
 
   create(): void {
@@ -145,8 +151,13 @@ export class MapScene extends Phaser.Scene {
       texture.add(RIG_FRAME, 0, RIG_BOUNDS.x, RIG_BOUNDS.y, RIG_BOUNDS.width, RIG_BOUNDS.height);
     }
     texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    this.floorSources = readFloorSources(FLOOR_TEXTURES.map((key) => this.textures.get(key).getSourceImage() as HTMLImageElement));
+    this.floorTexture = this.textures.createCanvas(FLOOR_SURFACE, CANVAS_WIDTH, CANVAS_HEIGHT);
+    if (!this.floorTexture) throw new Error('Cannot create floor surface texture');
     // Created first so the ground stays underneath everything else.
     this.ground = this.add.graphics();
+    this.add.image(0, 0, FLOOR_SURFACE).setOrigin(0, 0).setDepth(0.1);
+    this.floorEdge = this.add.graphics().setDepth(0.2);
     this.pools = this.add.graphics().setDepth(POOL_DEPTH);
     this.market = this.add.graphics().setDepth(POOL_DEPTH);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
@@ -228,12 +239,12 @@ export class MapScene extends Phaser.Scene {
     ];
     ground.clear();
 
-    // Earth under the turf. The camera is fixed, so only the two near sides, the
+    // Metal platform under the floor. Only the two near sides, the
     // east and south edges, are ever visible; the south one faces the light.
     const bottom = -SLAB_DEPTH * size;
     const nearSides: [number, number, number, number, number][] = [
-      [size, 0, size, size, EARTH_SHADED],
-      [size, size, 0, size, EARTH_LIT],
+      [size, 0, size, size, SLAB_SHADED],
+      [size, size, 0, size, SLAB_LIT],
     ];
     for (const [x0, y0, x1, y1, color] of nearSides) {
       const side = [point(x0, y0), point(x1, y1), point(x1, y1, bottom), point(x0, y0, bottom)];
@@ -241,38 +252,17 @@ export class MapScene extends Phaser.Scene {
       ground.fillPoints(side, true);
       ground.lineStyle(2, INK, 0.9);
       ground.strokePoints(side, true);
+      ground.lineStyle(1, EDGE_COLOR, 0.5);
+      ground.lineBetween(...xy(point(x0, y0, bottom * 0.7)), ...xy(point(x1, y1, bottom * 0.7)));
     }
 
-    // Turf: a checkerboard of the cells between ticks, which also marks the scale.
+    paintFloorSurface(this.floorTexture!.getContext(), this.floorSources, projection, size);
+    this.floorTexture!.refresh();
+    const edge = this.floorEdge!;
+    edge.clear();
     const ticks = axisTicks(size);
-    const bounds = ticks.at(-1)! < size ? [...ticks, size] : ticks;
-    const spans = bounds.slice(1).map((end, i): [number, number] => [bounds[i]!, end]);
-    for (const [i, [x0, x1]] of spans.entries()) {
-      for (const [j, [y0, y1]] of spans.entries()) {
-        ground.fillStyle((i + j) % 2 ? TURF_DARK : TURF_LIGHT, 1);
-        ground.fillPoints([point(x0, y0), point(x1, y0), point(x1, y1), point(x0, y1)], true);
-      }
-    }
-
-    const random = seededRandom(TUFT_SEED);
-    for (let n = 0; n < TUFT_COUNT; n++) {
-      const at = { x: (0.02 + 0.96 * random()) * size, y: (0.02 + 0.96 * random()) * size };
-      const { x, y } = projection.toScreen(at);
-      const blade = 5 * projection.scaleAt(at);
-      ground.lineStyle(1.5, TUFT_COLOR, 0.7);
-      ground.lineBetween(x, y, x - blade * 0.6, y - blade);
-      ground.lineBetween(x, y, x, y - blade * 1.3);
-      ground.lineBetween(x, y, x + blade * 0.6, y - blade);
-    }
-
-    ground.lineStyle(1, INK, 0.2);
-    for (const tick of ticks) {
-      if (tick === 0 || tick === size) continue;
-      ground.lineBetween(...xy(point(tick, 0)), ...xy(point(tick, size)));
-      ground.lineBetween(...xy(point(0, tick)), ...xy(point(size, tick)));
-    }
-    ground.lineStyle(2, EDGE_COLOR, 0.8);
-    ground.strokePoints(
+    edge.lineStyle(2, EDGE_COLOR, 0.8);
+    edge.strokePoints(
       corners.map(([x, y]) => point(x, y)),
       true,
     );
@@ -394,7 +384,6 @@ export class MapScene extends Phaser.Scene {
       counts.set(pool.id, index + 1);
       const point = this.projection!.toScreen(pool.position);
       const scale = this.projection!.scaleAt(pool.position);
-      const shadow = this.add.graphics().fillStyle(INK, 0.3).fillEllipse(-12, -2, 72, 16);
       const machine = this.add.image(0, 0, RIG_TEXTURE, RIG_FRAME)
         .setOrigin(RIG_FOOT_X, 1)
         .setScale(RIG_HEIGHT / RIG_BOUNDS.height)
@@ -407,7 +396,7 @@ export class MapScene extends Phaser.Scene {
         lights.fillStyle(color).fillCircle(-23 + slot * 13, 9, 2.5);
       }
       const label = this.add.text(-4, 17, `矿机 #${rig.id}`, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
-      const root = this.add.container(point.x + (70 + index * 94) * scale, point.y, [shadow, machine, lights, label])
+      const root = this.add.container(point.x + (70 + index * 94) * scale, point.y, [machine, lights, label])
         .setDepth(RESIDENT_DEPTH + point.y / CANVAS_HEIGHT)
         .setScale(scale);
       this.rigMarkers.push({ root, machine, position: pool.position });
@@ -554,17 +543,6 @@ function drawFigure(figure: Phaser.GameObjects.Graphics, color: string): void {
 
 function xy(point: Phaser.Math.Vector2): [number, number] {
   return [point.x, point.y];
-}
-
-/** Small deterministic generator (mulberry32) so the ground looks the same on every load. */
-function seededRandom(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 2 ** 32;
-  };
 }
 
 export function createMapGame(parent: HTMLElement, store: GameStore): Phaser.Game {
