@@ -88,6 +88,13 @@ export const chipModelSchema = z.object({
   tokensPerJob: z.number().int().positive(),
 });
 
+/** What one more token fetched at the market at a game time, before rounding. */
+export const pricePointSchema = z.object({
+  /** Game seconds since the start. */
+  time: z.number().nonnegative(),
+  price: z.number().positive(),
+});
+
 /**
  * Where residents sell tokens for coins and buy chips, and what sets the token price. One more
  * token fetches `basePrice * depth / (depth + p)` coins, where the distance of the pressure p of
@@ -109,6 +116,12 @@ export const marketSchema = z.object({
   pressure: z.number(),
   /** Chips on sale at fixed prices, worst first. */
   chips: z.array(chipModelSchema),
+  /**
+   * The token price over the game so far, oldest first: noted at every sale (a step, the price
+   * just before and just after) and every few seconds in between, so a market nobody sells to
+   * still shows its price climbing.
+   */
+  priceHistory: z.array(pricePointSchema),
 });
 
 /**
@@ -254,6 +267,7 @@ export const rigRulesSchema = z.object({
   energyPer100: z.number().int().nonnegative(),
 });
 
+export type PricePointView = z.infer<typeof pricePointSchema>;
 export type RigView = z.infer<typeof rigSchema>;
 export type RigSlotView = z.infer<typeof rigSlotSchema>;
 

@@ -50,7 +50,7 @@ describe('GameStore', () => {
     const store = new GameStore(connection);
     const message = { ...world, market: {
       position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0,
-      chips: [{ model: 'MK1', price: 300, tokensPerJob: 30 }],
+      chips: [{ model: 'MK1', price: 300, tokensPerJob: 30 }], priceHistory: [],
     }, residents: [{ ...world.residents[0]!, chips: {}, carriedChips: {}, rigBalance: 500, spendableCoins: 9500 }] };
 
     deliver(WELCOME);
@@ -154,7 +154,7 @@ describe('GameStore', () => {
     let now = 5000;
     const store = new GameStore(connection, () => now);
     expect(store.marketPrice()).toBeNull();
-    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, chips: [] };
+    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, chips: [], priceHistory: [] };
     deliver({ type: 'state', world: { ...world, market } });
     // 20 * 400 / (400 + 100).
     expect(store.marketPrice()).toBeCloseTo(16);
@@ -232,7 +232,7 @@ describe('GameStore', () => {
       { model: 'MK2', price: 1200, tokensPerJob: 60 },
       { model: 'MK3', price: 3000, tokensPerJob: 100 },
     ];
-    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips };
+    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips, priceHistory: [] };
     const [resident] = world.residents;
     const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, chips: owned, carriedChips: owned }] });
     deliver({ type: 'state', world: owning({}) });

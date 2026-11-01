@@ -104,7 +104,7 @@ const chips = [
   { model: 'MK2', price: 1200, tokensPerJob: 60 },
 ];
 
-const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips };
+const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips, priceHistory: [] };
 
 const withMarket = (value: unknown) => {
   const message = state(100, []);
@@ -137,6 +137,17 @@ describe('parseServerMessage', () => {
     const message = withMarket({ ...market, position: { x: 100, y: 0 }, pressure: 12.5 });
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
     expect(parseServerMessage(state(100, [])).ok).toBe(true);
+  });
+
+  it('accepts a price history with a step at one instant', () => {
+    const priceHistory = [
+      { time: 0, price: 20 },
+      { time: 5, price: 21.2 },
+      { time: 8, price: 22 },
+      { time: 8, price: 18.4 },
+    ];
+    const message = withMarket({ ...market, priceHistory });
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
   it('accepts a market below zero pressure after nobody sold for a while', () => {
@@ -238,6 +249,10 @@ describe('parseServerMessage', () => {
     ['market pressure not a number', withMarket({ ...market, pressure: Number.NaN })],
     ['market without a resting pressure', withMarket({ ...market, restingPressure: undefined })],
     ['market without a price', withMarket({ ...market, basePrice: undefined })],
+    ['market without a price history', withMarket({ ...market, priceHistory: undefined })],
+    ['a price point without a price', withMarket({ ...market, priceHistory: [{ time: 1 }] })],
+    ['a price point before the start', withMarket({ ...market, priceHistory: [{ time: -1, price: 20 }] })],
+    ['a free price point', withMarket({ ...market, priceHistory: [{ time: 1, price: 0 }] })],
     ['market with no reach', withMarket({ ...market, radius: 0 })],
     ['missing speech', { type: 'state', world: { map: { size: 100 }, pools: [], residents: [], game } }],
     ['speech by an unknown resident', withSpeech([{ ...line, speakerId: 'z' }])],

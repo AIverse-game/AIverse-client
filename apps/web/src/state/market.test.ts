@@ -11,6 +11,7 @@ const calm: MarketView = {
   restingPressure: -200,
   pressure: 0,
   chips: [],
+  priceHistory: [],
 };
 
 describe('market price', () => {

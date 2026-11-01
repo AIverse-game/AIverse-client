@@ -44,3 +44,4 @@
 | [0036-market-and-rig-tuning](0036-market-and-rig-tuning.md) | 已完成 | 收购价跌得慢、久无人卖则涨价；矿机产量翻倍、租金降到 50；Agent 建机后得知编号；协议 16 |
 | [0037-lock-hold-and-rig-price](0037-lock-hold-and-rig-price.md) | 已完成 | AI 卖出锁价只管 30 秒；矿机建造价 8000 |
 | [0038-larger-map](0038-larger-map.md) | 已完成 | 地图扩大到 150 × 150，矿池间距加倍、离收购点更远；确认矿机只能建在矿池上 |
+| [0039-price-history-chart](0039-price-history-chart.md) | 已完成 | 记录收购价历史（卖出时与无人卖出时每 5 秒），页面画折线图；协议 17 |

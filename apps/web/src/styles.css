@@ -697,3 +697,12 @@ h2 {
 .rig-panel button { padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-strong); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
 .rig-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
 .rig-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.price-chart-summary { margin: 0 0 6px; font-size: 13px; }
+.price-chart-summary strong { font-size: 18px; color: var(--accent); }
+.price-chart-plot { display: block; width: 100%; height: auto; }
+.price-chart-plot .grid { stroke: var(--border); stroke-width: 1; }
+.price-chart-plot .reference { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
+.price-chart-plot .tick { fill: var(--muted); font-size: 10px; }
+.price-chart-plot .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.price-chart-plot .latest { fill: var(--accent); }
