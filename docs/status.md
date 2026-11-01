@@ -11,7 +11,7 @@
 - 矿机与芯片租用（[设计](design/mining-rigs.md)，[变更 0034](../changes/0034-mining-rigs.md)）：8000 金币建 4 槽矿机（[变更 0037](../changes/0037-lock-hold-and-rig-price.md)，原为 4000），每 20 秒自动采矿；租客预存租金、电费，按实际产量同步支付，余额不足暂停，支持远程充值和拆回退款。角色出局立即清除其槽位，矿主出局关闭整机并退款；对局结束停产退款，预存计入排名。页面及 Agent 均可操作；协议 15。矿池储量扩至 1500～4000，价格与回本周期待试玩验证。
 
 - [AIverse 总体设计 v0.1](design/game-overview.md)：以玩家自带模型 API 驱动居民，进行生产和交易，最终按金币排名。规则和数值尚待原型验证；地图部分已按决策 0002 调整。
-- Python 服务端（与本仓库同级的 `aiverse-server` 目录，[决策 0002](decisions/0002-python-server-and-coordinate-map.md)）：FastAPI WebSocket `/ws`，生成固定布局的 100 × 100 连续坐标地图和 4 名居民，校验坐标与客户端消息。
+- Python 服务端（与本仓库同级的 `aiverse-server` 目录，[决策 0002](decisions/0002-python-server-and-coordinate-map.md)）：FastAPI WebSocket `/ws`，生成固定布局的 150 × 150 连续坐标地图（[变更 0038](../changes/0038-larger-map.md)，原为 100 × 100）和 4 名居民，校验坐标与客户端消息。
 - 网页客户端（[变更 0005](../changes/0005-coordinate-map.md)）：经 WebSocket 读取地图并校验，Phaser 绘制地图、刻度、居民及指针坐标，侧栏列出地图边长和居民坐标；服务端不可达时显示错误。见 [应用架构](architecture.md)。
 - 2.5D 地图（[变更 0006](../changes/0006-perspective-map.md)）：参考《饥荒》的固定透视视角，地块转 45° 并露出土层，居民是带影子的站立小人，按远近缩放和遮挡。
 - 操作原语（[变更 0007](../changes/0007-action-primitives.md)）：服务端 `actions.py` 是玩家与 AI 改变世界的唯一入口，首个原语是 `move_to`（即时到达，校验居民存在和目标在地图内）。页面可手动操作：点选居民后填写坐标或点击地面；所有页面共享同一个世界并同步看到变化。
