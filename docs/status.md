@@ -4,7 +4,8 @@
 
 ## 已具备
 
-- 模型回复 token 上限与结束提醒（[变更 0047](../changes/0047-model-output-limit-and-early-notice.md)）：服务端 YAML 的 `override.max_tokens` 可设所有模型每次回复的上限，默认 8192；结束前 3 分钟和 60 秒各向全体居民发一次公告，唤醒等待中的 Agent。公告仍只进 AI 观察，页面协议未改。
+- 游戏时间独立配置（[变更 0048](../changes/0048-configurable-game-timing.md)）：服务端 `game/config/game.yml` 可设置对局时长、两次结束公告的提前量；`--duration` 可单独覆盖时长。本机下一局对照值为 40 分钟、提前 5 分钟和 2 分钟公告，配置文件不入库。
+- 模型回复 token 上限与结束提醒（[变更 0047](../changes/0047-model-output-limit-and-early-notice.md)）：服务端 YAML 的 `override.max_tokens` 可设所有模型每次回复的上限，默认 8192；默认结束前 3 分钟和 60 秒各向全体居民发一次公告，唤醒等待中的 Agent，提前量现可按变更 0048 配置。公告仍只进 AI 观察，页面协议未改。
 - 地图显示比例与矿机落点（[变更 0045](../changes/0045-map-scale-and-rig-placement.md)、[变更 0046](../changes/0046-threefold-scrollable-map.md)）：地图相对角色再放大 3 倍，在固定视窗中滚动查看，居民贴图保持原来的屏幕尺寸；矿机底座按矿池坐标摆放在可采矿范围内，同池多台矿机合并为一个带数量的地图标记。
 - 居民贴图（[变更 0043](../changes/0043-resident-sprite.md)）：地图居民改用用户提供的漂浮小精灵贴图，静止时慢慢浮动、移动时更快更大；居民颜色改画成脚下的圆盘。
 - 矿池、token 与金币贴图（[变更 0042](../changes/0042-pool-token-coin-sprites.md)）：地图矿池改用用户提供的地面贴图，上方的悬浮标记绕竖轴旋转并上下浮动；居民、矿池与金币排名前显示 token、金币小图标。
