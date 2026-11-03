@@ -54,3 +54,4 @@
 | [0046-threefold-scrollable-map](0046-threefold-scrollable-map.md) | 已完成 | 在 0045 的基础上把地图相对角色再放大 3 倍，固定视窗内滚动浏览 |
 | [0047-model-output-limit-and-early-notice](0047-model-output-limit-and-early-notice.md) | 已完成 | 配置模型回复 token 上限，结束前 3 分钟增加公告 |
 | [0048-configurable-game-timing](0048-configurable-game-timing.md) | 已完成 | 游戏时长和两次结束公告提前量在 `game/config/` 独立配置 |
+| [0049-coin-ledger-and-economy-report](0049-coin-ledger-and-economy-report.md) | 已完成 | 金币流水账按渠道记下每次真实转手；对局结束写 `summary.json` 经济报告，含居民间流量占比 |
