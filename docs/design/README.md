@@ -44,3 +44,6 @@
 | [contracts](contracts.md) | 已调整 | 合约：约定未来每次交付自动付款，单次或多次，买方货款托管，供货方可押押金 |
 | [mining-rigs](mining-rigs.md) | 已调整 | 建造矿机、安装芯片、自动生产、按产量金币租金与出局结算 |
 | [token-market](token-market.md) | 已调整 | token 收购点：随卖出下跌、久无人卖则涨价的市场价，AI 卖出锁价 30 秒 |
+| [chips](chips.md) | 设计中（购买已实现） | 芯片：购买与采矿；计划中的硅矿、芯片厂、配方升级链、熟练度与进口价 |
+| [order-book](order-book.md) | 设计中 | 挂单交易所：收购点处的匿名限价挂单簿，连续撮合 token、硅与芯片 |
+| [economy-metrics](economy-metrics.md) | 设计中 | 经济指标：按渠道记账的金币流水，对局结束输出居民间流量占比等指标 |
