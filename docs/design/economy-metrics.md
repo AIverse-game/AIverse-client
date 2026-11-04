@@ -15,7 +15,7 @@
 ### 记账
 
 - 世界中有一本流水账 `World.ledger`：每次金币真实转手记一条（游戏时间、付款方、收款方、金额、渠道；买物品时还有物品和数量）。付款方或收款方可以是 `system`。
-- 渠道：`market`（收购点收能量）、`crystal_import`（系统卖晶核）、`tower_build`、`upkeep`、`rent`（汲能塔租金）、`offer`（报价成交）、`contract_payment`（合约交付付款）、`contract_forfeit`（押金赔给买方）、`information`。实现交易所时再加 `exchange`。预留和退回不记，只记真实转手。
+- 渠道：`market`（收购点收能量）、`crystal_import`（系统卖晶核）、`tower_build`、`upkeep`、`rent`（汲能塔租金）、`offer`（报价成交）、`contract_payment`（合约交付付款）、`contract_forfeit`（押金赔给买方）、`information`、`exchange`（交易所成交，变更 0052）。预留和退回不记，只记真实转手。
 - 在各结算点调用 `record_transfer` 记账，金币仍由结算点自己移动。流水账只追加，上限 20000 条，满了丢掉最早的，并计数丢掉的条数，报告据此标明不完整。
 
 ### 指标

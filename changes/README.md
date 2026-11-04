@@ -57,3 +57,4 @@
 | [0049-coin-ledger-and-economy-report](0049-coin-ledger-and-economy-report.md) | 已完成 | 金币流水账按渠道记下每次真实转手；对局结束写 `summary.json` 经济报告，含居民间流量占比 |
 | [0050-energy-and-crystal-terms](0050-energy-and-crystal-terms.md) | 已完成 | token、矿池、挖矿、芯片、矿机、电费改称能量、能量泉、汲取、晶核、汲能塔、维护费，代码、协议与文档一起改，规则不变 |
 | [0051-quarries-and-workshop](0051-quarries-and-workshop.md) | 已完成 | 晶矿挖晶砂、工坊按配方炼晶核（升级链、熟练度），进口价翻倍；服务端与 Agent 工具，页面未接入 |
+| [0052-order-book-exchange](0052-order-book-exchange.md) | 已完成 | 收购点处的匿名挂单交易所：能量、晶砂、C1～C3 连续撮合；服务端与 Agent 工具，页面未接入 |
