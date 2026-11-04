@@ -2,6 +2,7 @@ import { ActionPanel } from './ActionPanel';
 import { AgentPanel } from './AgentPanel';
 import { AgentTimelinePanel } from './AgentTimelinePanel';
 import { DealsPanel } from './DealsPanel';
+import { ExchangePanel } from './ExchangePanel';
 import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
 import { PriceChartPanel } from './PriceChartPanel';
@@ -26,6 +27,7 @@ export function App() {
           <MapPanel />
           <ActionPanel />
           <PriceChartPanel />
+          <ExchangePanel />
           <TowerPanel />
           <DealsPanel />
           <AgentPanel />

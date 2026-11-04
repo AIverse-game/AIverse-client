@@ -1,4 +1,4 @@
-import type { SpringId, Position, ResidentId } from './view';
+import type { SpringId, Position, QuarryId, ResidentId } from './view';
 
 // Operation primitives: the only ways to change the world, mirroring aiverse_server/game/actions.py.
 // Players send them by hand today; AI-driven residents will use the same set later. The
@@ -30,6 +30,19 @@ export type SellEnergyAction = { type: 'sell_energy'; residentId: ResidentId; qu
 export type BuyCrystalAction = { type: 'buy_crystal'; residentId: ResidentId; tier: string };
 
 /**
+ * Spend time digging shards at a quarry the resident stands within reach of; no crystal needed.
+ * The shards arrive when the job ends; until then the resident can only talk or leave.
+ */
+export type DigShardsAction = { type: 'dig_shards'; residentId: ResidentId; quarryId: QuarryId };
+
+/**
+ * Refine one crystal of `tier` at the workshop the resident stands at, spending the recipe's
+ * carried shards, energy and lower crystal at once. The crystal arrives when the job ends; until
+ * then the resident can only talk or leave.
+ */
+export type RefineCrystalAction = { type: 'refine_crystal'; residentId: ResidentId; tier: string };
+
+/**
  * Say `text`, at most 100 characters after trimming, aloud to every resident within earshot, or,
  * given `to`, to that one resident wherever they are. Costs carried energy, 2 aloud and 1 to one
  * resident; spending the last takes the speaker out of the game. Works while walking or harvesting.
@@ -42,4 +55,5 @@ export type FundTowerAction = { type: 'fund_tower'; residentId: ResidentId; towe
 export type RemoveCrystalAction = { type: 'remove_crystal'; residentId: ResidentId; towerId: number; slotId: number };
 
 export type Action = MoveToAction | LeaveGameAction | HarvestAction | SellEnergyAction | BuyCrystalAction | SayAction
+  | DigShardsAction | RefineCrystalAction
   | BuildTowerAction | InstallCrystalAction | FundTowerAction | RemoveCrystalAction;

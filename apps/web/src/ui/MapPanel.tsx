@@ -37,6 +37,8 @@ export function MapPanel() {
                 {resident.left && <span className="tag">已出局</span>}
                 {resident.agent && <span className="tag tag-agent">AI</span>}
                 {resident.harvesting && <span className="tag tag-harvesting">汲取中</span>}
+                {resident.digging && <span className="tag tag-crafting">挖砂中</span>}
+                {resident.refining && <span className="tag tag-crafting">炼制中</span>}
                 {resident.walking && <span className="tag tag-walking">行走中</span>}
                 <span className="crystals">
                   {Object.entries(resident.crystals).map(([tier, count]) => (
@@ -50,6 +52,11 @@ export function MapPanel() {
                   <EnergyIcon />
                   {resident.energy} 能量
                 </span>
+                {(resident.shards > 0 || resident.crystalsRefined > 0) && (
+                  <span className="coords">
+                    {resident.shards} 晶砂{resident.crystalsRefined > 0 && `，已炼 ${resident.crystalsRefined} 块`}
+                  </span>
+                )}
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
                 </span>
@@ -78,8 +85,62 @@ export function MapPanel() {
         </ul>
       )}
       <p className="muted small">能量泉开局时随机放置，整局固定不动。</p>
+      <QuarryInfo />
       <MarketInfo />
     </section>
+  );
+}
+
+/** The quarries and the workshop with its recipes: where shards come from and where crystals are made. */
+function QuarryInfo() {
+  const { world } = useGameState();
+  if (!world || (world.quarries.length === 0 && !world.workshop)) return null;
+  const { workshop } = world;
+
+  return (
+    <>
+      <h2 className="subheading">晶矿与工坊</h2>
+      <ul className="springs">
+        {world.quarries.map((quarry) => (
+          <li key={quarry.id} className={quarry.reserve === 0 ? 'empty' : undefined}>
+            <span className="name">{quarry.id}</span>
+            <span className="coords">
+              ({formatCoordinate(quarry.position.x)}, {formatCoordinate(quarry.position.y)})，半径 {formatCoordinate(quarry.radius)}
+            </span>
+            <span className="energy">剩余 {quarry.reserve} 晶砂</span>
+          </li>
+        ))}
+        {workshop && (
+          <li>
+            <span className="name">工坊</span>
+            <span className="coords">
+              ({formatCoordinate(workshop.position.x)}, {formatCoordinate(workshop.position.y)})，半径 {formatCoordinate(workshop.radius)}
+            </span>
+          </li>
+        )}
+      </ul>
+      {workshop && (
+        <ul className="springs">
+          {workshop.recipes.map((recipe) => (
+            <li key={recipe.tier}>
+              <span className="name">
+                <CrystalIcon tier={recipe.tier} />
+                {recipe.tier}
+              </span>
+              <span className="coords">
+                {recipe.shards} 晶砂 + {recipe.energy} 能量{recipe.consumes && ` + 1 块 ${recipe.consumes}`}
+              </span>
+              <span className="energy">{recipe.seconds} 秒</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="muted small">
+        在晶矿里不用晶核就能挖晶砂；在工坊按配方炼晶核，每炼成一块，以后炼制少用
+        {workshop ? ` ${Math.round(workshop.speedupPerCrystal * 100)}%` : ''} 的时间
+        {workshop ? `，最少只要 ${Math.round(workshop.fastestShare * 100)}%` : ''}。
+      </p>
+    </>
   );
 }
 

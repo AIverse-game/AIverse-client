@@ -21,9 +21,10 @@ export function ActionPanel() {
   const size = world.map.size;
   const ended = world.game.ended;
   const canAct = resident !== null && store.canAct(resident.id);
-  // Harvesting and walking keep the resident busy: everything but leaving waits until they end.
+  // Jobs and walks keep the resident busy: everything but talking and leaving waits until they end.
   const free = resident !== null && store.isFree(resident.id);
   const spring = resident ? store.springInReach(resident.id) : null;
+  const quarry = resident ? store.quarryInReach(resident.id) : null;
   const crystal = resident ? store.bestCrystal(resident.id) : null;
 
   const submit = (event: FormEvent) => {
@@ -35,6 +36,11 @@ export function ActionPanel() {
   const harvest = () => {
     if (!resident || !spring) return;
     store.act({ type: 'harvest', residentId: resident.id, springId: spring.id });
+  };
+
+  const dig = () => {
+    if (!resident || !quarry) return;
+    store.act({ type: 'dig_shards', residentId: resident.id, quarryId: quarry.id });
   };
 
   const leave = () => {
@@ -69,6 +75,17 @@ export function ActionPanel() {
           正在用 <CrystalIcon tier={resident.harvesting.crystal} />
           {resident.harvesting.crystal} 在能量泉 {resident.harvesting.springId} 汲取，完成后获得 {resident.harvesting.amount}{' '}
           能量；汲取期间守着晶核，只能说话或退出游戏。
+        </p>
+      )}
+      {resident?.digging && (
+        <p className="small" role="status">
+          正在晶矿 {resident.digging.quarryId} 挖晶砂，完成后获得 {resident.digging.amount} 个晶砂；期间只能说话或退出游戏。
+        </p>
+      )}
+      {resident?.refining && (
+        <p className="small" role="status">
+          正在工坊炼制 <CrystalIcon tier={resident.refining.tier} />
+          {resident.refining.tier}，原料已经扣除；期间只能说话或退出游戏。
         </p>
       )}
       {resident?.walking && (
@@ -126,6 +143,15 @@ export function ActionPanel() {
           {!spring && '走到能量泉的圆圈范围内才能汲取。'}
         </p>
       )}
+      {world.quarries.length > 0 && (
+        <button type="button" className="harvest" disabled={!free || !quarry || quarry.reserve === 0} onClick={dig}>
+          {quarry ? `在晶矿 ${quarry.id} 挖晶砂（剩余 ${quarry.reserve}）` : '挖晶砂'}
+        </button>
+      )}
+      {resident && canAct && !quarry && world.quarries.length > 0 && (
+        <p className="muted small">走到晶矿的圆圈范围内才能挖晶砂，不需要晶核。晶砂只用来炼晶核，收购点自己不收也不卖，可以在交易所和其他居民买卖。</p>
+      )}
+      {resident && world.workshop && <RefineForm resident={resident} free={free} />}
       {resident && world.market && <SellForm resident={resident} free={free} />}
       {resident && world.market && <BuyCrystalForm resident={resident} free={free} />}
       <button type="button" className="leave" disabled={!canAct} onClick={leave}>
@@ -193,6 +219,49 @@ function SellForm({ resident, free }: { resident: ResidentView; free: boolean })
       ) : (
         <p className="muted small">走到地图中央收购点的圆圈范围内才能卖能量、买晶核。</p>
       )}
+    </>
+  );
+}
+
+/** Refining at the workshop, one button per recipe with what it uses up and how long it takes. */
+function RefineForm({ resident, free }: { resident: ResidentView; free: boolean }) {
+  const store = useStore();
+  const { world } = useGameState();
+  const recipes = world?.workshop?.recipes ?? [];
+  const atWorkshop = store.atWorkshop(resident.id);
+  const canAct = store.canAct(resident.id);
+
+  const refine = (tier: string, energy: number) => {
+    // Owned energy counts what offers and sell orders set aside, so this may ask needlessly.
+    if (
+      energy === resident.energy &&
+      !window.confirm(`炼制会用掉 ${resident.name} 全部的能量，之后会出局。继续？`)
+    )
+      return;
+    store.act({ type: 'refine_crystal', residentId: resident.id, tier });
+  };
+
+  return (
+    <>
+      <div className="buy-crystals">
+        {recipes.map((recipe) => {
+          const seconds = store.refineSeconds(resident.id, recipe);
+          return (
+            <button
+              key={recipe.tier}
+              type="button"
+              disabled={!free || !atWorkshop || store.lacksMaterials(resident.id, recipe)}
+              onClick={() => refine(recipe.tier, recipe.energy)}
+            >
+              炼 <CrystalIcon tier={recipe.tier} />
+              {recipe.tier}：{recipe.shards} 晶砂 + {recipe.energy} 能量
+              {recipe.consumes && ` + 1 块 ${recipe.consumes}`}
+              {seconds !== null && `，约 ${Math.round(seconds)} 秒`}
+            </button>
+          );
+        })}
+      </div>
+      {canAct && !atWorkshop && <p className="muted small">走到工坊的圆圈范围内才能炼晶核，原料要带在身上。</p>}
     </>
   );
 }

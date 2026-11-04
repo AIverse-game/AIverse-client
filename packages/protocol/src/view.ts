@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 export type ResidentId = string;
 export type SpringId = string;
+export type QuarryId = string;
 
 export const positionSchema = z.object({ x: z.number(), y: z.number() });
 
@@ -37,6 +38,10 @@ export const residentSchema = z.object({
    */
   crystals: z.record(z.string(), z.number().int().positive()),
   carriedCrystals: z.record(z.string(), z.number().int().positive()),
+  /** Shards owned, including those set aside by pending offers and sell orders. */
+  shards: z.number().int().nonnegative(),
+  /** Crystals the resident has refined so far; each makes the next refining job quicker. */
+  crystalsRefined: z.number().int().nonnegative(),
   /** Present while the resident is busy harvesting; they stay with the crystal until it ends. */
   harvesting: z
     .object({
@@ -46,6 +51,23 @@ export const residentSchema = z.object({
       /** Tier of the crystal doing the work. */
       crystal: z.string(),
       /** Time left in the job when the server sent this. */
+      remainingSeconds: z.number().nonnegative(),
+    })
+    .optional(),
+  /** Present while the resident is busy digging shards at a quarry. */
+  digging: z
+    .object({
+      quarryId: z.string(),
+      /** Shards paid out when the job ends. */
+      amount: z.number().int().positive(),
+      remainingSeconds: z.number().nonnegative(),
+    })
+    .optional(),
+  /** Present while the resident is busy refining a crystal at the workshop. */
+  refining: z
+    .object({
+      /** Tier of the crystal the job makes. */
+      tier: z.string(),
       remainingSeconds: z.number().nonnegative(),
     })
     .optional(),
@@ -77,6 +99,101 @@ export const springSchema = z.object({
   radius: z.number().positive(),
   /** Energy left in the ground. */
   reserve: z.number().int().nonnegative(),
+});
+
+/** A shard quarry. Placed when the game starts and never moves; only `reserve` drops. */
+export const quarrySchema = z.object({
+  id: z.string(),
+  position: positionSchema,
+  /** Residents within this distance of `position` can dig here. */
+  radius: z.number().positive(),
+  /** Shards left in the ground. */
+  reserve: z.number().int().nonnegative(),
+});
+
+/** What refining one crystal of `tier` uses up, and how long it takes a beginner. */
+export const recipeSchema = z.object({
+  tier: z.string(),
+  shards: z.number().int().nonnegative(),
+  energy: z.number().int().nonnegative(),
+  /** Tier of the crystal it uses up; absent for the first tier. */
+  consumes: z.string().optional(),
+  /** Game seconds the job takes for a resident who has refined nothing yet. */
+  seconds: z.number().positive(),
+});
+
+/**
+ * Where crystals are refined. A job takes a recipe's `seconds`, less `speedupPerCrystal` of them
+ * for every crystal the resident refined before, but never less than `fastestShare` of them.
+ */
+export const workshopSchema = z.object({
+  position: positionSchema,
+  /** Residents within this distance of `position` can refine here. */
+  radius: z.number().positive(),
+  /** One per tier, worst first. */
+  recipes: z.array(recipeSchema),
+  speedupPerCrystal: z.number().nonnegative(),
+  fastestShare: z.number().positive(),
+});
+
+const levelSchema = z.object({
+  /** Coins per unit. */
+  price: z.number().int().positive(),
+  /** Units resting at that price, of every order together. */
+  quantity: z.number().int().positive(),
+});
+
+/** One item's book, without who placed the orders. */
+export const bookSchema = z.object({
+  item: z.string().min(1),
+  /** The best buy prices, highest first. */
+  bids: z.array(levelSchema),
+  /** The best sell prices, lowest first. */
+  asks: z.array(levelSchema),
+});
+
+/** Units that changed hands on the exchange, at the resting order's price, without who traded. */
+export const fillSchema = z.object({
+  seq: z.number().int().positive(),
+  /** Game seconds since the start, to a tenth of a second. */
+  time: z.number().nonnegative(),
+  item: z.string().min(1),
+  quantity: z.number().int().positive(),
+  /** Coins per unit. */
+  price: z.number().int().positive(),
+  /** Present when the resident the connection views as took part. */
+  own: z.enum(['bought', 'sold']).optional(),
+});
+
+/** A resting order of the resident the connection views as. */
+export const orderSchema = z.object({
+  id: z.number().int().positive(),
+  side: z.enum(['buy', 'sell']),
+  item: z.string().min(1),
+  /** Units still wanted or offered. */
+  quantity: z.number().int().positive(),
+  /** Coins per unit. */
+  price: z.number().int().positive(),
+  /** Time until it expires when the server sent this. */
+  remainingSeconds: z.number().nonnegative(),
+});
+
+/** The anonymous exchange at the market. */
+export const exchangeSchema = z.object({
+  /** One per item traded, in a fixed order. */
+  books: z.array(bookSchema),
+  /** The latest fills of every item, oldest first. */
+  fills: z.array(fillSchema),
+  /**
+   * The resident the connection viewed as when the server sent this, whose orders `orders` lists
+   * and whose fills `own` marks; absent for nobody. Right after choosing someone else, a state
+   * about the previous choice can still arrive.
+   */
+  viewerId: z.string().optional(),
+  /** Resting orders of the resident the connection views as (`view_as`); empty for nobody. */
+  orders: z.array(orderSchema),
+  /** Resting orders a resident may have at once. */
+  maxOrders: z.number().int().positive(),
 });
 
 /** A tier of crystal on sale at the market. Higher tiers draw more energy per job. */
@@ -281,6 +398,10 @@ export const worldViewSchema = z
     towerRules: towerRulesSchema,
     /** Absent on a map without a market. */
     market: marketSchema.optional(),
+    quarries: z.array(quarrySchema),
+    /** Absent on a map without a workshop. */
+    workshop: workshopSchema.optional(),
+    exchange: exchangeSchema,
     /** The latest lines this connection may see, oldest first: everything aloud, its viewer's whispers. */
     speech: z.array(speechSchema),
     /**
@@ -310,6 +431,19 @@ export const worldViewSchema = z
       }
       springs.add(spring.id);
     });
+    if (world.workshop && !inside(world.workshop.position)) {
+      context.addIssue({ code: 'custom', path: ['workshop', 'position'], message: 'outside the map' });
+    }
+    const quarries = new Set<QuarryId>();
+    world.quarries.forEach((quarry, index) => {
+      if (!inside(quarry.position)) {
+        context.addIssue({ code: 'custom', path: ['quarries', index, 'position'], message: 'outside the map' });
+      }
+      if (quarries.has(quarry.id)) {
+        context.addIssue({ code: 'custom', path: ['quarries', index, 'id'], message: 'duplicate id' });
+      }
+      quarries.add(quarry.id);
+    });
     const seen = new Set<ResidentId>();
     world.residents.forEach((resident, index) => {
       if (!inside(resident.position)) {
@@ -321,6 +455,9 @@ export const worldViewSchema = z
       seen.add(resident.id);
       if (resident.harvesting && !springs.has(resident.harvesting.springId)) {
         context.addIssue({ code: 'custom', path: ['residents', index, 'harvesting'], message: 'unknown spring' });
+      }
+      if (resident.digging && !quarries.has(resident.digging.quarryId)) {
+        context.addIssue({ code: 'custom', path: ['residents', index, 'digging'], message: 'unknown quarry' });
       }
       if (resident.walking && !inside(resident.walking.target)) {
         context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
@@ -383,6 +520,13 @@ export type Position = z.infer<typeof positionSchema>;
 export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
 export type SpringView = z.infer<typeof springSchema>;
+export type QuarryView = z.infer<typeof quarrySchema>;
+export type RecipeView = z.infer<typeof recipeSchema>;
+export type WorkshopView = z.infer<typeof workshopSchema>;
+export type BookView = z.infer<typeof bookSchema>;
+export type FillView = z.infer<typeof fillSchema>;
+export type OrderView = z.infer<typeof orderSchema>;
+export type ExchangeView = z.infer<typeof exchangeSchema>;
 export type MarketView = z.infer<typeof marketSchema>;
 export type CrystalTierView = z.infer<typeof crystalTierSchema>;
 export type GameView = z.infer<typeof gameSchema>;

@@ -14,6 +14,8 @@ const resident = (id: string, x: number, y: number) => ({
   rank: 1,
   energy: 200,
   crystals: {},
+  shards: 0,
+  crystalsRefined: 0,
 });
 
 const game = { ended: false, remainingSeconds: 1200 };
@@ -27,7 +29,7 @@ const spring = (id: string, x: number, y: number) => ({ id, position: { x, y }, 
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, springs: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, springs, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], towers: [], towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 } },
+  world: { map: { size }, springs, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], towers: [], towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 }, quarries: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
 const withTower = (equipment: unknown, clock: unknown = game) => {
@@ -55,6 +57,55 @@ it.each([
 
 it('refuses occupied slots after the game ends', () => {
   expect(parseServerMessage(withTower(tower, { ended: true, remainingSeconds: 0 })).ok).toBe(false);
+});
+
+const quarry = { id: 'q1', position: { x: 20, y: 20 }, radius: 4, reserve: 300 };
+const workshop = {
+  position: { x: 50, y: 50 },
+  radius: 5,
+  recipes: [
+    { tier: 'C1', shards: 5, energy: 15, seconds: 15 },
+    { tier: 'C2', shards: 15, energy: 40, consumes: 'C1', seconds: 30 },
+  ],
+  speedupPerCrystal: 0.1,
+  fastestShare: 0.5,
+};
+const exchange = {
+  books: [{ item: 'shard', bids: [{ price: 25, quantity: 2 }], asks: [{ price: 30, quantity: 5 }] }],
+  fills: [{ seq: 1, time: 12, item: 'shard', quantity: 3, price: 30, own: 'sold' }],
+  viewerId: 'a',
+  orders: [{ id: 1, side: 'sell', item: 'shard', quantity: 5, price: 30, remainingSeconds: 288 }],
+  maxOrders: 8,
+};
+
+const withCrafts = (patch: Record<string, unknown>, worker: Record<string, unknown> = {}) => {
+  const message = state(100, [{ ...resident('a', 20, 20), ...worker }]);
+  return { ...message, world: { ...message.world, quarries: [quarry], workshop, exchange, ...patch } };
+};
+
+it('accepts quarries, a workshop, the exchange and a resident digging', () => {
+  const parsed = parseServerMessage(
+    withCrafts({}, { shards: 12, crystalsRefined: 2, digging: { quarryId: 'q1', amount: 6, remainingSeconds: 4 } }),
+  );
+
+  expect(parsed.ok).toBe(true);
+});
+
+it('accepts a resident refining a crystal', () => {
+  const parsed = parseServerMessage(withCrafts({}, { refining: { tier: 'C2', remainingSeconds: 20 } }));
+
+  expect(parsed.ok).toBe(true);
+});
+
+it.each([
+  ['a quarry outside the map', { quarries: [{ ...quarry, position: { x: 101, y: 20 } }] }, {}],
+  ['a duplicate quarry', { quarries: [quarry, quarry] }, {}],
+  ['a workshop outside the map', { workshop: { ...workshop, position: { x: -1, y: 0 } } }, {}],
+  ['a dig at an unknown quarry', {}, { digging: { quarryId: 'q9', amount: 6, remainingSeconds: 4 } }],
+  ['an order with an unknown side', { exchange: { ...exchange, orders: [{ ...exchange.orders[0], side: 'hold' }] } }, {}],
+  ['a fill at no price', { exchange: { ...exchange, fills: [{ ...exchange.fills[0], price: 0 }] } }, {}],
+])('refuses %s', (_, patch, worker) => {
+  expect(parseServerMessage(withCrafts(patch, worker)).ok).toBe(false);
 });
 
 const withSpeech = (speech: unknown[]) => {

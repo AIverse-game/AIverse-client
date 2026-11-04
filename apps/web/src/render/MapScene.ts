@@ -1,4 +1,4 @@
-import type { MarketView, SpringView, Position, ResidentId, ResidentView, TowerView } from '@aiverse/protocol';
+import type { MarketView, Position, QuarryView, ResidentId, ResidentView, SpringView, TowerView, WorkshopView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import floorCorners from '../assets/floor/metal-floor-corners.png';
 import floorNodes from '../assets/floor/metal-floor-nodes.png';
@@ -135,6 +135,21 @@ interface SpringMarker {
 const SPRING_DEPTH = 0.5;
 
 /**
+ * Shard quarries and the workshop: a patch of ground the size of their reach with a small drawn
+ * figure in the middle, sorted with the residents. Drawn here until there are pictures for them.
+ */
+const QUARRY_FILL = 0x8f6fd6;
+const QUARRY_EDGE = 0xc9b3f5;
+const QUARRY_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#e4d8fb', stroke: '#1d1a16', strokeThickness: 3 };
+const WORKSHOP_FILL = 0x4fa58a;
+const WORKSHOP_EDGE = 0x9cdbb2;
+const WORKSHOP_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#c8f0d7', stroke: '#1d1a16', strokeThickness: 3 };
+/** Quarries with nothing left stay on the map, faded. */
+const EMPTY_QUARRY_ALPHA = 0.35;
+/** Canvas pixels per figure unit of a quarry's or the workshop's figure at the map centre. */
+const SITE_FIGURE_SCALE = 2;
+
+/**
  * Residents get depths in [1, 2) by how far down the canvas they stand, so nearer
  * ones cover farther ones. All of them stay above the ground and axis labels and
  * below the pointer readout.
@@ -143,7 +158,7 @@ const RESIDENT_DEPTH = 1;
 const CURSOR_DEPTH = 10;
 
 /**
- * Draws the map as a tilted ground slab, its springs, market and residents from the latest
+ * Draws the map as a tilted ground slab, its springs, quarries, workshop, market and residents from the latest
  * snapshot in the store.
  * Clicking a resident selects it; clicking the ground then asks the server to move it there.
  */
@@ -163,6 +178,10 @@ export class MapScene extends Phaser.Scene {
   private drawnMarket = '';
   /** What the springs were last drawn from, so they are redrawn only when that changes. */
   private drawnSprings = '';
+  /** Patches of the quarries and the workshop, and their figures and labels. */
+  private sites: Phaser.GameObjects.Graphics | null = null;
+  private siteObjects: Phaser.GameObjects.GameObject[] = [];
+  private drawnSites = '';
   private drawnTowers = '';
   private towerMarkers: { root: Phaser.GameObjects.Container; machine: Phaser.GameObjects.Image; position: Position }[] = [];
   private axisLabels: Phaser.GameObjects.Text[] = [];
@@ -200,6 +219,7 @@ export class MapScene extends Phaser.Scene {
     this.add.image(0, 0, FLOOR_SURFACE).setOrigin(0, 0).setDepth(0.1);
     this.floorEdge = this.add.graphics().setDepth(0.2);
     this.market = this.add.graphics().setDepth(SPRING_DEPTH);
+    this.sites = this.add.graphics().setDepth(SPRING_DEPTH);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
     this.input.on(Phaser.Input.Events.GAME_OUT, () => this.cursor?.setText(''));
@@ -229,6 +249,11 @@ export class MapScene extends Phaser.Scene {
     if (market !== this.drawnMarket) {
       this.drawMarket(world.market);
       this.drawnMarket = market;
+    }
+    const sites = JSON.stringify([world.map.size, world.quarries, world.workshop?.position, world.workshop?.radius]);
+    if (sites !== this.drawnSites) {
+      this.drawSites(world.quarries, world.workshop);
+      this.drawnSites = sites;
     }
     this.syncResidents(world.residents, resized);
     const towers = JSON.stringify([
@@ -440,6 +465,65 @@ export class MapScene extends Phaser.Scene {
       .setDepth(SPRING_DEPTH);
   }
 
+  private drawSites(quarries: QuarryView[], workshop: WorkshopView | undefined): void {
+    const projection = this.projection!;
+    const ground = this.sites!;
+    ground.clear();
+    for (const object of this.siteObjects) object.destroy();
+    this.siteObjects = [];
+    const patch = (position: Position, radius: number, fill: number, edge: number, alpha: number) => {
+      const rim = Array.from({ length: 48 }, (_, i) => {
+        const angle = (i / 48) * 2 * Math.PI;
+        const { x, y } = projection.toScreen({ x: position.x + radius * Math.cos(angle), y: position.y + radius * Math.sin(angle) });
+        return new Phaser.Math.Vector2(x, y);
+      });
+      ground.fillStyle(fill, 0.25 * alpha).fillPoints(rim, true);
+      ground.lineStyle(2, edge, 0.8 * alpha).strokePoints(rim, true);
+    };
+    // A figure stands on its centre, scaled by distance and sorted with the residents.
+    const figure = (position: Position, draw: (graphics: Phaser.GameObjects.Graphics) => void) => {
+      const { x, y } = projection.toScreen(position);
+      const graphics = this.add.graphics({ x, y });
+      draw(graphics);
+      this.siteObjects.push(graphics.setScale(SITE_FIGURE_SCALE * projection.scaleAt(position)).setDepth(RESIDENT_DEPTH + y / CANVAS_HEIGHT));
+      return { x, y };
+    };
+
+    for (const quarry of quarries) {
+      const alpha = quarry.reserve > 0 ? 1 : EMPTY_QUARRY_ALPHA;
+      patch(quarry.position, quarry.radius, QUARRY_FILL, QUARRY_EDGE, alpha);
+      const { x, y } = figure(quarry.position, (graphics) => {
+        // A cluster of three upright crystals, the middle one tallest.
+        for (const [dx, height, width] of [[-9, 18, 7], [9, 14, 6], [0, 28, 9]] as const) {
+          const points = [
+            new Phaser.Math.Vector2(dx, 0),
+            new Phaser.Math.Vector2(dx - width / 2, -height * 0.7),
+            new Phaser.Math.Vector2(dx, -height),
+            new Phaser.Math.Vector2(dx + width / 2, -height * 0.7),
+          ];
+          graphics.fillStyle(QUARRY_FILL, alpha).fillPoints(points, true);
+          graphics.lineStyle(1.5, INK, 0.9 * alpha).strokePoints(points, true);
+          graphics.fillStyle(QUARRY_EDGE, 0.8 * alpha).fillTriangle(dx, -height, dx + width / 2, -height * 0.7, dx, -height * 0.45);
+        }
+      });
+      this.siteObjects.push(
+        this.add.text(x, y + 4, `${quarry.id} · ${quarry.reserve}`, QUARRY_LABEL_STYLE).setOrigin(0.5, 0).setDepth(SPRING_DEPTH).setAlpha(alpha),
+      );
+    }
+
+    if (!workshop) return;
+    patch(workshop.position, workshop.radius, WORKSHOP_FILL, WORKSHOP_EDGE, 1);
+    const { x, y } = figure(workshop.position, (graphics) => {
+      // A small hut with a chimney and a glowing doorway.
+      graphics.fillStyle(0x2f5f50).fillRect(-16, -22, 32, 22);
+      graphics.fillStyle(0x3b7a66).fillTriangle(-20, -22, 20, -22, 0, -36);
+      graphics.fillStyle(0x56616b).fillRect(8, -38, 6, 12);
+      graphics.fillStyle(0xf7dc8a).fillRect(-5, -13, 10, 13);
+      graphics.lineStyle(1.5, INK, 0.9).strokeRect(-16, -22, 32, 22).strokeTriangle(-20, -22, 20, -22, 0, -36);
+    });
+    this.siteObjects.push(this.add.text(x, y + 4, '工坊', WORKSHOP_LABEL_STYLE).setOrigin(0.5, 0).setDepth(SPRING_DEPTH));
+  }
+
   private drawTowers(towers: TowerView[], springs: SpringView[]): void {
     for (const marker of this.towerMarkers) marker.root.destroy();
     this.towerMarkers = [];
@@ -600,6 +684,8 @@ export class MapScene extends Phaser.Scene {
 
 function residentLabel(view: ResidentView): string {
   if (view.harvesting) return `${view.name} · 汲取中`;
+  if (view.digging) return `${view.name} · 挖砂中`;
+  if (view.refining) return `${view.name} · 炼制中`;
   if (view.walking) return `${view.name} · 行走中`;
   return view.name;
 }

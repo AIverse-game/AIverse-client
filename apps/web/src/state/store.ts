@@ -3,6 +3,8 @@ import {
   type Action,
   type CrystalTierView,
   type LLMSettings,
+  type QuarryView,
+  type RecipeView,
   type SpringView,
   type ResidentId,
   type ServerMessage,
@@ -120,10 +122,17 @@ export class GameStore {
     return connection === 'ready' && !world?.game.ended && resident !== undefined && !resident.left;
   }
 
-  /** Like `canAct`, and the resident is not busy harvesting or walking: then only leaving goes through. */
+  /**
+   * Like `canAct`, and the resident is not busy harvesting, digging, refining or walking: then only
+   * talking and leaving go through.
+   */
   isFree(id: ResidentId): boolean {
     const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
-    return this.canAct(id) && resident?.harvesting === undefined && resident?.walking === undefined;
+    return (
+      this.canAct(id) &&
+      resident !== undefined &&
+      [resident.harvesting, resident.digging, resident.refining, resident.walking].every((job) => job === undefined)
+    );
   }
 
   /** The spring the resident stands within reach of, the nearest if several; null if none. */
@@ -135,6 +144,54 @@ export class GameStore {
       Math.hypot(spring.position.x - resident.position.x, spring.position.y - resident.position.y);
     const reachable = world.springs.filter((spring) => distance(spring) <= spring.radius);
     return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
+  }
+
+  /** The quarry the resident stands within reach of, the nearest if several; null if none. */
+  quarryInReach(id: ResidentId): QuarryView | null {
+    const { world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    if (!world || !resident) return null;
+    const distance = (quarry: QuarryView) =>
+      Math.hypot(quarry.position.x - resident.position.x, quarry.position.y - resident.position.y);
+    const reachable = world.quarries.filter((quarry) => distance(quarry) <= quarry.radius);
+    return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
+  }
+
+  /** Whether the resident stands within reach of the workshop. */
+  atWorkshop(id: ResidentId): boolean {
+    const { world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    const workshop = world?.workshop;
+    if (!resident || !workshop) return false;
+    return Math.hypot(workshop.position.x - resident.position.x, workshop.position.y - resident.position.y) <= workshop.radius;
+  }
+
+  /**
+   * Game seconds refining `recipe` would take the resident, quicker for every crystal they refined
+   * before; only for display, the server times the job.
+   */
+  refineSeconds(id: ResidentId, recipe: RecipeView): number | null {
+    const { world } = this.state;
+    const resident = world?.residents.find((candidate) => candidate.id === id);
+    const workshop = world?.workshop;
+    if (!resident || !workshop) return null;
+    const share = Math.max(1 - workshop.speedupPerCrystal * resident.crystalsRefined, workshop.fastestShare);
+    return recipe.seconds * share;
+  }
+
+  /**
+   * Whether the resident surely lacks what `recipe` uses up: owned shards and energy count those
+   * set aside too, so having them is no promise the server accepts, but lacking them is a sure
+   * refusal. The lower crystal must be carried.
+   */
+  lacksMaterials(id: ResidentId, recipe: RecipeView): boolean {
+    const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
+    if (!resident) return true;
+    return (
+      resident.shards < recipe.shards ||
+      resident.energy < recipe.energy ||
+      (recipe.consumes !== undefined && !resident.carriedCrystals[recipe.consumes])
+    );
   }
 
   /** Whether the resident stands within reach of the market. */

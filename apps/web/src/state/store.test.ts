@@ -1,4 +1,4 @@
-import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage, type WorldView } from '@aiverse/protocol';
+import { PROTOCOL_VERSION, type ClientMessage, type RecipeView, type ServerMessage, type WorldView } from '@aiverse/protocol';
 import { describe, expect, it } from 'vitest';
 import type { GameConnection } from '../net/connection';
 import { GameStore } from './store';
@@ -33,7 +33,7 @@ const world: WorldView = {
   map: { size: 100 },
   springs: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
   residents: [
-    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, towerBalance: 0, carriedCrystals: {}, left: false, rank: 1, energy: 200, crystals: {} },
+    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, towerBalance: 0, carriedCrystals: {}, left: false, rank: 1, energy: 200, crystals: {}, shards: 0, crystalsRefined: 0 },
   ],
   game: { ended: false, remainingSeconds: 90 },
   speech: [],
@@ -42,7 +42,20 @@ const world: WorldView = {
   contracts: [],
   towers: [],
   towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 },
+  quarries: [],
+  exchange: { books: [], fills: [], orders: [], maxOrders: 8 },
 };
+
+/** `world` with a quarry where resident a stands and a workshop elsewhere; a has refined `refined` crystals. */
+const craftWorld = (refined = 0): WorldView => ({
+  ...world,
+  residents: [{ ...world.residents[0]!, crystalsRefined: refined }],
+  quarries: [
+    { id: 'q1', position: { x: 13, y: 20 }, radius: 4, reserve: 300 },
+    { id: 'q2', position: { x: 11, y: 20 }, radius: 4, reserve: 300 },
+  ],
+  workshop: { position: { x: 60, y: 60 }, radius: 5, recipes: [{ tier: 'C1', shards: 5, energy: 15, seconds: 15 }], speedupPerCrystal: 0.1, fastestShare: 0.5 },
+});
 
 describe('GameStore', () => {
   it('sends tower actions and keeps installed crystals out of manual harvesting', () => {
@@ -209,6 +222,79 @@ describe('GameStore', () => {
     deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, walking }] } });
     expect(store.canAct('a')).toBe(true);
     expect(store.isFree('a')).toBe(false);
+  });
+
+  it.each([
+    ['digging', { digging: { quarryId: 'q1', amount: 6, remainingSeconds: 5 } }],
+    ['refining', { refining: { tier: 'C1', remainingSeconds: 5 } }],
+  ])('allows only talking and leaving while the resident is %s', (_, job) => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+    const busy = craftWorld();
+
+    deliver({ type: 'state', world: { ...busy, residents: [{ ...busy.residents[0]!, ...job }] } });
+
+    expect([store.canAct('a'), store.isFree('a')]).toEqual([true, false]);
+  });
+
+  it('finds the nearest quarry a resident stands within reach of', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+
+    deliver({ type: 'state', world: craftWorld() });
+
+    expect(store.quarryInReach('a')?.id).toBe('q2');
+  });
+
+  it('tells whether a resident stands at the workshop', () => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+    const crafted = craftWorld();
+
+    deliver({ type: 'state', world: { ...crafted, residents: [{ ...crafted.residents[0]!, position: { x: 63, y: 64 } }] } });
+
+    expect(store.atWorkshop('a')).toBe(true);
+  });
+
+  // The same numbers as the server's test_workshop.py, refine_seconds for the C1 recipe.
+  it.each([
+    [0, 15],
+    [1, 13.5],
+    [3, 10.5],
+    [5, 7.5],
+    [9, 7.5],
+  ])('estimates refining for a resident who refined %i crystals at %f seconds', (refined, seconds) => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+    const crafted = craftWorld(refined);
+
+    deliver({ type: 'state', world: crafted });
+
+    expect(store.refineSeconds('a', crafted.workshop!.recipes[0]!)).toBeCloseTo(seconds);
+  });
+
+  const C1: RecipeView = { tier: 'C1', shards: 5, energy: 15, seconds: 15 };
+  const C2: RecipeView = { tier: 'C2', shards: 5, energy: 15, consumes: 'C1', seconds: 30 };
+
+  it.each([
+    ['enough of everything', C1, {}, false],
+    ['too few shards', C1, { shards: 4 }, true],
+    ['too little energy', C1, { energy: 14 }, true],
+    ['no lower crystal carried', C2, {}, true],
+    ['the lower crystal carried', C2, { carriedCrystals: { C1: 1 } }, false],
+  ])('tells whether a resident lacks the materials with %s', (_, recipe, owned, lacks) => {
+    const { connection, deliver } = fakeConnection();
+    const store = new GameStore(connection);
+    deliver(WELCOME);
+    const crafted = craftWorld();
+
+    deliver({ type: 'state', world: { ...crafted, residents: [{ ...crafted.residents[0]!, shards: 5, energy: 15, ...owned }] } });
+
+    expect(store.lacksMaterials('a', recipe)).toBe(lacks);
   });
 
   it('finds the spring a resident stands within reach of', () => {
