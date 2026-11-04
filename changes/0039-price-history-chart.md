@@ -14,7 +14,7 @@
 
 客户端：协议 schema 与版本 17；`ui/priceChart.ts` 把价格点排成折线坐标（纯函数）；`ui/PriceChartPanel.tsx` 用 SVG 画图，放在操作面板之后，不引入图表库。
 
-设计文档：修改 [token 收购点](../docs/design/token-market.md)。
+设计文档：修改 [token 收购点](../docs/design/energy-market.md)。
 
 ## 关键选择
 

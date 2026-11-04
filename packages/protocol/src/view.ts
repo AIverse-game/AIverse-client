@@ -8,7 +8,7 @@ import { z } from 'zod';
 // are continuous map units, not grid cells.
 
 export type ResidentId = string;
-export type PoolId = string;
+export type SpringId = string;
 
 export const positionSchema = z.object({ x: z.number(), y: z.number() });
 
@@ -21,30 +21,30 @@ export const residentSchema = z.object({
   /** Total coins, including those set aside by pending offers and contracts. */
   coins: z.number().int().nonnegative(),
   spendableCoins: z.number().int().nonnegative(),
-  rigBalance: z.number().int().nonnegative(),
+  towerBalance: z.number().int().nonnegative(),
   /** Left the game: still shown and ranked, but can no longer act. */
   left: z.boolean(),
   /** Place by coins, 1 for the most; equal totals share a place. Final once the game ends. */
   rank: z.number().int().positive(),
   /**
-   * Tokens owned, including those set aside by pending offers: the resident's stamina. Walking
-   * spends them, mining earns them, and a resident who runs out is out of the game.
+   * Energy owned, including those set aside by pending offers: the resident's stamina. Walking
+   * spends them, harvesting earns them, and a resident who runs out is out of the game.
    */
-  tokens: z.number().int().nonnegative(),
+  energy: z.number().int().nonnegative(),
   /**
-   * Chips owned, model to count, including those set aside by pending offers; models
-   * with none are left out. Mining needs one, and the best one carried does the work.
+   * Crystals owned, tier to count, including those set aside by pending offers; tiers
+   * with none are left out. Harvesting needs one, and the best one carried does the work.
    */
-  chips: z.record(z.string(), z.number().int().positive()),
-  carriedChips: z.record(z.string(), z.number().int().positive()),
-  /** Present while the resident is busy mining; they stay with the chip until it ends. */
-  mining: z
+  crystals: z.record(z.string(), z.number().int().positive()),
+  carriedCrystals: z.record(z.string(), z.number().int().positive()),
+  /** Present while the resident is busy harvesting; they stay with the crystal until it ends. */
+  harvesting: z
     .object({
-      poolId: z.string(),
-      /** Tokens paid out when the job ends. */
+      springId: z.string(),
+      /** Energy paid out when the job ends. */
       amount: z.number().int().positive(),
-      /** Model of the chip doing the work. */
-      chip: z.string(),
+      /** Tier of the crystal doing the work. */
+      crystal: z.string(),
       /** Time left in the job when the server sent this. */
       remainingSeconds: z.number().nonnegative(),
     })
@@ -69,26 +69,26 @@ export const residentSchema = z.object({
     .optional(),
 });
 
-/** A token pool on the ground. Placed when the game starts and never moves; only `reserve` drops. */
-export const poolSchema = z.object({
+/** A spring on the ground. Placed when the game starts and never moves; only `reserve` drops. */
+export const springSchema = z.object({
   id: z.string(),
   position: positionSchema,
-  /** Residents within this distance of `position` can mine here. */
+  /** Residents within this distance of `position` can harvest here. */
   radius: z.number().positive(),
-  /** Tokens left in the ground. */
+  /** Energy left in the ground. */
   reserve: z.number().int().nonnegative(),
 });
 
-/** A model of chip on sale at the market. Better models dig more tokens per job. */
-export const chipModelSchema = z.object({
-  model: z.string(),
-  /** Coins one chip costs; fixed. */
+/** A tier of crystal on sale at the market. Higher tiers draw more energy per job. */
+export const crystalTierSchema = z.object({
+  tier: z.string(),
+  /** Coins one crystal costs; fixed. */
   price: z.number().int().positive(),
-  /** Tokens one mining job digs out while the pool has that many left. */
-  tokensPerJob: z.number().int().positive(),
+  /** Energy one harvesting job digs out while the spring has that many left. */
+  energyPerJob: z.number().int().positive(),
 });
 
-/** What one more token fetched at the market at a game time, before rounding. */
+/** What one more energy fetched at the market at a game time, before rounding. */
 export const pricePointSchema = z.object({
   /** Game seconds since the start. */
   time: z.number().nonnegative(),
@@ -96,10 +96,10 @@ export const pricePointSchema = z.object({
 });
 
 /**
- * Where residents sell tokens for coins and buy chips, and what sets the token price. One more
- * token fetches `basePrice * depth / (depth + p)` coins, where the distance of the pressure p of
+ * Where residents sell energy for coins and buy crystals, and what sets the energy price. One more
+ * energy fetches `basePrice * depth / (depth + p)` coins, where the distance of the pressure p of
  * recent sales from `restingPressure` halves every `halfLifeSeconds` after the server sent this;
- * selling q tokens pays `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The
+ * selling q energy pays `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The
  * resting pressure is below zero, so a market nobody sells to pays more than `basePrice`. The
  * server decides each sale.
  */
@@ -112,12 +112,12 @@ export const marketSchema = z.object({
   halfLifeSeconds: z.number().positive(),
   /** Pressure the market drifts to with no sales, above `-depth`. */
   restingPressure: z.number(),
-  /** Recent sales in tokens when the server sent this; below zero after a quiet while. */
+  /** Recent sales in energy when the server sent this; below zero after a quiet while. */
   pressure: z.number(),
-  /** Chips on sale at fixed prices, worst first. */
-  chips: z.array(chipModelSchema),
+  /** Crystals on sale at fixed prices, worst first. */
+  crystals: z.array(crystalTierSchema),
   /**
-   * The token price over the game so far, oldest first: noted at every sale (a step, the price
+   * The energy price over the game so far, oldest first: noted at every sale (a step, the price
    * just before and just after) and every few seconds in between, so a market nobody sells to
    * still shows its price climbing.
    */
@@ -150,7 +150,7 @@ export const offerSchema = z.object({
   side: z.enum(['buy', 'sell']),
   fromId: z.string(),
   toId: z.string(),
-  /** Item kind, such as `token` or a chip model. */
+  /** Item kind, such as `energy` or a crystal tier. */
   item: z.string().min(1),
   quantity: count,
   /** Coins for the whole lot. */
@@ -212,7 +212,7 @@ export const gameSchema = z.object({
 // between the two codebases before it turns into a broken picture.
 const resourceBalanceSchema = z.object({
   coins: z.number().int().nonnegative(),
-  tokens: z.number().int().nonnegative(),
+  energy: z.number().int().nonnegative(),
 });
 
 export const agentTurnSchema = z.object({
@@ -230,55 +230,55 @@ export const agentTurnSchema = z.object({
     ok: z.boolean(),
     code: z.string().optional(),
     coinsChange: z.number().int(),
-    tokensChange: z.number().int(),
+    energyChange: z.number().int(),
   })).max(128),
 });
 
 export type AgentTurnView = z.infer<typeof agentTurnSchema>;
 
-export const rigSlotSchema = z.object({
+export const towerSlotSchema = z.object({
   id: z.number().int().positive(),
   residentId: z.string(),
-  chip: z.enum(['MK1', 'MK2', 'MK3']),
+  crystal: z.enum(['C1', 'C2', 'C3']),
   balance: z.number().int().nonnegative(),
-  mined: z.number().int().nonnegative(),
+  harvested: z.number().int().nonnegative(),
   rentPaid: z.number().int().nonnegative(),
-  status: z.enum(['running', 'no_funds', 'pool_empty']),
+  status: z.enum(['running', 'no_funds', 'spring_empty']),
   remainingSeconds: z.number().nonnegative(),
-  tokensPerCycle: z.number().int().nonnegative(),
-  rentPerCycle: z.number().int().nonnegative(),
   energyPerCycle: z.number().int().nonnegative(),
+  rentPerCycle: z.number().int().nonnegative(),
+  upkeepPerCycle: z.number().int().nonnegative(),
 });
 
-export const rigSchema = z.object({
+export const towerSchema = z.object({
   id: z.number().int().positive(),
   ownerId: z.string(),
-  poolId: z.string(),
-  slots: z.array(rigSlotSchema),
+  springId: z.string(),
+  slots: z.array(towerSlotSchema),
 });
 
-export const rigRulesSchema = z.object({
+export const towerRulesSchema = z.object({
   price: z.number().int().positive(),
   capacity: z.number().int().positive(),
   cycleSeconds: z.number().positive(),
-  /** A chip in a rig mines this many times its `tokensPerJob` each cycle. */
+  /** A crystal in a tower harvests this many times its `energyPerJob` each cycle. */
   yieldMultiplier: z.number().int().positive(),
   rentPer100: z.number().int().nonnegative(),
-  energyPer100: z.number().int().nonnegative(),
+  upkeepPer100: z.number().int().nonnegative(),
 });
 
 export type PricePointView = z.infer<typeof pricePointSchema>;
-export type RigView = z.infer<typeof rigSchema>;
-export type RigSlotView = z.infer<typeof rigSlotSchema>;
+export type TowerView = z.infer<typeof towerSchema>;
+export type TowerSlotView = z.infer<typeof towerSlotSchema>;
 
 export const worldViewSchema = z
   .object({
     map: mapSchema,
-    pools: z.array(poolSchema),
+    springs: z.array(springSchema),
     residents: z.array(residentSchema),
     game: gameSchema,
-    rigs: z.array(rigSchema),
-    rigRules: rigRulesSchema,
+    towers: z.array(towerSchema),
+    towerRules: towerRulesSchema,
     /** Absent on a map without a market. */
     market: marketSchema.optional(),
     /** The latest lines this connection may see, oldest first: everything aloud, its viewer's whispers. */
@@ -300,15 +300,15 @@ export const worldViewSchema = z
     if (world.market && !inside(world.market.position)) {
       context.addIssue({ code: 'custom', path: ['market', 'position'], message: 'outside the map' });
     }
-    const pools = new Set<PoolId>();
-    world.pools.forEach((pool, index) => {
-      if (!inside(pool.position)) {
-        context.addIssue({ code: 'custom', path: ['pools', index, 'position'], message: 'outside the map' });
+    const springs = new Set<SpringId>();
+    world.springs.forEach((spring, index) => {
+      if (!inside(spring.position)) {
+        context.addIssue({ code: 'custom', path: ['springs', index, 'position'], message: 'outside the map' });
       }
-      if (pools.has(pool.id)) {
-        context.addIssue({ code: 'custom', path: ['pools', index, 'id'], message: 'duplicate id' });
+      if (springs.has(spring.id)) {
+        context.addIssue({ code: 'custom', path: ['springs', index, 'id'], message: 'duplicate id' });
       }
-      pools.add(pool.id);
+      springs.add(spring.id);
     });
     const seen = new Set<ResidentId>();
     world.residents.forEach((resident, index) => {
@@ -319,8 +319,8 @@ export const worldViewSchema = z
         context.addIssue({ code: 'custom', path: ['residents', index, 'id'], message: 'duplicate id' });
       }
       seen.add(resident.id);
-      if (resident.mining && !pools.has(resident.mining.poolId)) {
-        context.addIssue({ code: 'custom', path: ['residents', index, 'mining'], message: 'unknown pool' });
+      if (resident.harvesting && !springs.has(resident.harvesting.springId)) {
+        context.addIssue({ code: 'custom', path: ['residents', index, 'harvesting'], message: 'unknown spring' });
       }
       if (resident.walking && !inside(resident.walking.target)) {
         context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
@@ -329,18 +329,18 @@ export const worldViewSchema = z
     if (world.agentTimeline && !seen.has(world.agentTimeline.residentId)) {
       context.addIssue({ code: 'custom', path: ['agentTimeline', 'residentId'], message: 'unknown resident' });
     }
-    const rigs = new Set<number>();
-    world.rigs.forEach((rig, index) => {
-      const owner = world.residents.find((resident) => resident.id === rig.ownerId);
-      if (rigs.has(rig.id) || !pools.has(rig.poolId) || !owner || owner.left || rig.slots.length > world.rigRules.capacity) {
-        context.addIssue({ code: 'custom', path: ['rigs', index], message: 'invalid rig or owner' });
+    const towers = new Set<number>();
+    world.towers.forEach((tower, index) => {
+      const owner = world.residents.find((resident) => resident.id === tower.ownerId);
+      if (towers.has(tower.id) || !springs.has(tower.springId) || !owner || owner.left || tower.slots.length > world.towerRules.capacity) {
+        context.addIssue({ code: 'custom', path: ['towers', index], message: 'invalid tower or owner' });
       }
-      rigs.add(rig.id);
+      towers.add(tower.id);
       const slots = new Set<number>();
-      rig.slots.forEach((slot, slotIndex) => {
+      tower.slots.forEach((slot, slotIndex) => {
         const resident = world.residents.find((person) => person.id === slot.residentId);
         if (slots.has(slot.id) || !resident || resident.left || world.game.ended) {
-          context.addIssue({ code: 'custom', path: ['rigs', index, 'slots', slotIndex], message: 'invalid slot or resident' });
+          context.addIssue({ code: 'custom', path: ['towers', index, 'slots', slotIndex], message: 'invalid slot or resident' });
         }
         slots.add(slot.id);
       });
@@ -382,9 +382,9 @@ export const worldViewSchema = z
 export type Position = z.infer<typeof positionSchema>;
 export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
-export type PoolView = z.infer<typeof poolSchema>;
+export type SpringView = z.infer<typeof springSchema>;
 export type MarketView = z.infer<typeof marketSchema>;
-export type ChipModelView = z.infer<typeof chipModelSchema>;
+export type CrystalTierView = z.infer<typeof crystalTierSchema>;
 export type GameView = z.infer<typeof gameSchema>;
 export type SpeechView = z.infer<typeof speechSchema>;
 export type OfferView = z.infer<typeof offerSchema>;

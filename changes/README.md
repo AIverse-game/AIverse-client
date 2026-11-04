@@ -55,3 +55,4 @@
 | [0047-model-output-limit-and-early-notice](0047-model-output-limit-and-early-notice.md) | 已完成 | 配置模型回复 token 上限，结束前 3 分钟增加公告 |
 | [0048-configurable-game-timing](0048-configurable-game-timing.md) | 已完成 | 游戏时长和两次结束公告提前量在 `game/config/` 独立配置 |
 | [0049-coin-ledger-and-economy-report](0049-coin-ledger-and-economy-report.md) | 已完成 | 金币流水账按渠道记下每次真实转手；对局结束写 `summary.json` 经济报告，含居民间流量占比 |
+| [0050-energy-and-crystal-terms](0050-energy-and-crystal-terms.md) | 已完成 | token、矿池、挖矿、芯片、矿机、电费改称能量、能量泉、汲取、晶核、汲能塔、维护费，代码、协议与文档一起改，规则不变 |

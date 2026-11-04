@@ -87,7 +87,7 @@ export function AgentPanel() {
           <textarea
             rows={3}
             disabled={!canAct}
-            placeholder="例如：稳健经营，优先低成本芯片，保留返程 token。"
+            placeholder="例如：稳健经营，优先低成本晶核，保留返程能量。"
             value={draft.strategy ?? ''}
             onChange={(event) => edit('strategy', event.target.value)}
             aria-describedby="strategy-help"

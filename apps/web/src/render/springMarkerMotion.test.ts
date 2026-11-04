@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MARKER_BOB_AMPLITUDE, MARKER_BOB_MS, MARKER_TURN_MS, markerPose } from './poolMarkerMotion';
+import { MARKER_BOB_AMPLITUDE, MARKER_BOB_MS, MARKER_TURN_MS, markerPose } from './springMarkerMotion';
 
 describe('markerPose', () => {
   it('starts facing the viewer at its resting height', () => {

@@ -8,7 +8,7 @@ import {
   MAP_DISPLAY_SCALE,
   MARGIN,
   projectMap,
-  rigPositionOnPool,
+  towerPositionOnSpring,
   SLAB_DEPTH,
 } from './layout';
 
@@ -86,14 +86,14 @@ describe('projectMap', () => {
   });
 });
 
-describe('rigPositionOnPool', () => {
+describe('towerPositionOnSpring', () => {
   it.each([
     { position: { x: 75, y: 75 }, radius: 4 },
     { position: { x: 20, y: 110 }, radius: 2 },
-  ])('keeps the marker base within the pool at $position and radius $radius', (pool) => {
-    const position = rigPositionOnPool(pool);
+  ])('keeps the marker base within the spring at $position and radius $radius', (spring) => {
+    const position = towerPositionOnSpring(spring);
 
-    expect(Math.hypot(position.x - pool.position.x, position.y - pool.position.y)).toBeLessThan(pool.radius);
+    expect(Math.hypot(position.x - spring.position.x, position.y - spring.position.y)).toBeLessThan(spring.radius);
   });
 });
 

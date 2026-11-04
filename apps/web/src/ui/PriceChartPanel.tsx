@@ -7,7 +7,7 @@ const SIZE = { width: 320, height: 170 };
 const MARGINS = { top: 10, right: 12, bottom: 24, left: 38 };
 
 /**
- * The token price over the game as a line chart: it climbs while nobody sells and steps down at
+ * The energy price over the game as a line chart: it climbs while nobody sells and steps down at
  * every sale. Drawn from the points the server notes, so it moves with each state, not every
  * second.
  */
@@ -31,7 +31,7 @@ export function PriceChartPanel() {
       ) : (
         <>
           <p className="price-chart-summary">
-            <strong>{formatPrice(latest.price)}</strong> 金币 / token
+            <strong>{formatPrice(latest.price)}</strong> 金币 / 能量
             <span className="muted">
               {' '}
               · 最高 {formatPrice(Math.max(...prices))} · 最低 {formatPrice(Math.min(...prices))}
@@ -41,7 +41,7 @@ export function PriceChartPanel() {
             className="price-chart-plot"
             viewBox={`0 0 ${SIZE.width} ${SIZE.height}`}
             role="img"
-            aria-label={`收购价走势，共 ${history.length} 个记录点，最新 ${formatPrice(latest.price)} 金币每 token`}
+            aria-label={`收购价走势，共 ${history.length} 个记录点，最新 ${formatPrice(latest.price)} 金币每能量`}
           >
             {chart.priceTicks.map((tick) => (
               <g key={`price-${tick.value}`}>

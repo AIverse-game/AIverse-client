@@ -6,7 +6,7 @@ import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
 import { PriceChartPanel } from './PriceChartPanel';
 import { RankingPanel } from './RankingPanel';
-import { RigPanel } from './RigPanel';
+import { TowerPanel } from './TowerPanel';
 import { SpeechPanel } from './SpeechPanel';
 import { TopBar } from './TopBar';
 
@@ -26,7 +26,7 @@ export function App() {
           <MapPanel />
           <ActionPanel />
           <PriceChartPanel />
-          <RigPanel />
+          <TowerPanel />
           <DealsPanel />
           <AgentPanel />
           <SpeechPanel />

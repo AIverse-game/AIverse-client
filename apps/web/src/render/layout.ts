@@ -37,12 +37,12 @@ export interface MapProjection {
   toMap(x: number, y: number): Position | null;
 }
 
-/** Put a machine beside the pool marker while keeping its base within mining reach. */
-export function rigPositionOnPool(pool: { position: Position; radius: number }): Position {
-  const distance = pool.radius * 0.55;
+/** Put a machine beside the spring marker while keeping its base within harvesting reach. */
+export function towerPositionOnSpring(spring: { position: Position; radius: number }): Position {
+  const distance = spring.radius * 0.55;
   return {
-    x: pool.position.x + distance,
-    y: pool.position.y,
+    x: spring.position.x + distance,
+    y: spring.position.y,
   };
 }
 

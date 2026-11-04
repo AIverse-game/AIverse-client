@@ -1,12 +1,12 @@
 import { formatCoordinate } from '../render/layout';
 import { marketTopPrice } from '../state/market';
 import { useGameState, useStore } from '../state/storeContext';
-import { ChipIcon } from './ChipIcon';
+import { CrystalIcon } from './CrystalIcon';
 import { formatPrice } from './format';
-import { TokenIcon } from './TokenIcon';
+import { EnergyIcon } from './EnergyIcon';
 import { useSecondTick } from './useSecondTick';
 
-/** Map facts, pools and residents as text, to cross-check the drawing; picks who to operate. */
+/** Map facts, springs and residents as text, to cross-check the drawing; picks who to operate. */
 export function MapPanel() {
   const store = useStore();
   const { world, selected } = useGameState();
@@ -36,19 +36,19 @@ export function MapPanel() {
                 <span className="name">{resident.name}</span>
                 {resident.left && <span className="tag">已出局</span>}
                 {resident.agent && <span className="tag tag-agent">AI</span>}
-                {resident.mining && <span className="tag tag-mining">采矿中</span>}
+                {resident.harvesting && <span className="tag tag-harvesting">汲取中</span>}
                 {resident.walking && <span className="tag tag-walking">行走中</span>}
-                <span className="chips">
-                  {Object.entries(resident.chips).map(([model, count]) => (
-                    <span key={model} className="chip">
-                      <ChipIcon model={model} alone />
+                <span className="crystals">
+                  {Object.entries(resident.crystals).map(([tier, count]) => (
+                    <span key={tier} className="crystal">
+                      <CrystalIcon tier={tier} alone />
                       {count > 1 && `×${count}`}
                     </span>
                   ))}
                 </span>
-                <span className="tokens">
-                  <TokenIcon />
-                  {resident.tokens} token
+                <span className="energy">
+                  <EnergyIcon />
+                  {resident.energy} 能量
                 </span>
                 <span className="coords">
                   ({formatCoordinate(resident.position.x)}, {formatCoordinate(resident.position.y)})
@@ -58,26 +58,26 @@ export function MapPanel() {
           ))}
         </ul>
       )}
-      <h2 className="subheading">token 矿池</h2>
-      {world.pools.length === 0 ? (
-        <p className="muted small">地图上没有矿池。</p>
+      <h2 className="subheading">能量泉</h2>
+      {world.springs.length === 0 ? (
+        <p className="muted small">地图上没有能量泉。</p>
       ) : (
-        <ul className="pools">
-          {world.pools.map((pool) => (
-            <li key={pool.id} className={pool.reserve === 0 ? 'empty' : undefined}>
-              <span className="name">{pool.id}</span>
+        <ul className="springs">
+          {world.springs.map((spring) => (
+            <li key={spring.id} className={spring.reserve === 0 ? 'empty' : undefined}>
+              <span className="name">{spring.id}</span>
               <span className="coords">
-                ({formatCoordinate(pool.position.x)}, {formatCoordinate(pool.position.y)})，半径 {formatCoordinate(pool.radius)}
+                ({formatCoordinate(spring.position.x)}, {formatCoordinate(spring.position.y)})，半径 {formatCoordinate(spring.radius)}
               </span>
-              <span className="tokens">
-                <TokenIcon />
-                剩余 {pool.reserve}
+              <span className="energy">
+                <EnergyIcon />
+                剩余 {spring.reserve}
               </span>
             </li>
           ))}
         </ul>
       )}
-      <p className="muted small">矿池开局时随机放置，整局固定不动。</p>
+      <p className="muted small">能量泉开局时随机放置，整局固定不动。</p>
       <MarketInfo />
     </section>
   );
@@ -99,26 +99,26 @@ function MarketInfo() {
         <span className="coords">
           ({formatCoordinate(market.position.x)}, {formatCoordinate(market.position.y)})，半径 {formatCoordinate(market.radius)}
         </span>
-        <span className="price">{formatPrice(price)} 金币 / token</span>
+        <span className="price">{formatPrice(price)} 金币 / 能量</span>
       </p>
       <p className="muted small">
-        镇外的买家用金币收购 token：卖得越多价格越低，没人卖时逐渐上涨，最高到 {formatPrice(marketTopPrice(market))}。所有人共用一个价格。
+        镇外的买家用金币收购能量：卖得越多价格越低，没人卖时逐渐上涨，最高到 {formatPrice(marketTopPrice(market))}。所有人共用一个价格。
       </p>
-      {market.chips.length > 0 && (
+      {market.crystals.length > 0 && (
         <>
-          <ul className="pools">
-            {market.chips.map((model) => (
-              <li key={model.model}>
+          <ul className="springs">
+            {market.crystals.map((tier) => (
+              <li key={tier.tier}>
                 <span className="name">
-                  <ChipIcon model={model.model} />
-                  {model.model}
+                  <CrystalIcon tier={tier.tier} />
+                  {tier.tier}
                 </span>
-                <span className="coords">每次采 {model.tokensPerJob} token</span>
-                <span className="tokens">{model.price.toLocaleString('zh-CN')} 金币</span>
+                <span className="coords">每次汲取 {tier.energyPerJob} 能量</span>
+                <span className="energy">{tier.price.toLocaleString('zh-CN')} 金币</span>
               </li>
             ))}
           </ul>
-          <p className="muted small">收购点还按定价出售芯片。没有芯片不能采矿，有几块时用最好的一块。</p>
+          <p className="muted small">收购点还按定价出售晶核。没有晶核不能汲取，有几块时用最好的一块。</p>
         </>
       )}
     </>

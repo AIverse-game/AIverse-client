@@ -8,53 +8,53 @@ const resident = (id: string, x: number, y: number) => ({
   position: { x, y },
   coins: 10000,
   spendableCoins: 10000,
-  rigBalance: 0,
-  carriedChips: {},
+  towerBalance: 0,
+  carriedCrystals: {},
   left: false,
   rank: 1,
-  tokens: 200,
-  chips: {},
+  energy: 200,
+  crystals: {},
 });
 
 const game = { ended: false, remainingSeconds: 1200 };
 
-const rig = { id: 1, ownerId: 'a', poolId: 'p1', slots: [{
-  id: 1, residentId: 'b', chip: 'MK1', balance: 404, mined: 30, rentPaid: 90,
-  status: 'running', remainingSeconds: 20, tokensPerCycle: 30, rentPerCycle: 90, energyPerCycle: 6,
+const tower = { id: 1, ownerId: 'a', springId: 'p1', slots: [{
+  id: 1, residentId: 'b', crystal: 'C1', balance: 404, harvested: 30, rentPaid: 90,
+  status: 'running', remainingSeconds: 20, energyPerCycle: 30, rentPerCycle: 90, upkeepPerCycle: 6,
 }] };
 
-const pool = (id: string, x: number, y: number) => ({ id, position: { x, y }, radius: 4, reserve: 300 });
+const spring = (id: string, x: number, y: number) => ({ id, position: { x, y }, radius: 4, reserve: 300 });
 
-const state = (size: unknown, residents: unknown[], clock: unknown = game, pools: unknown[] = []) => ({
+const state = (size: unknown, residents: unknown[], clock: unknown = game, springs: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, pools, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], rigs: [], rigRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 } },
+  world: { map: { size }, springs, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], towers: [], towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 } },
 });
 
-const withRig = (equipment: unknown, clock: unknown = game) => {
-  const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)], clock, [pool('p1', 10, 10)]);
-  return { ...message, world: { ...message.world, rigs: [equipment] } };
+const withTower = (equipment: unknown, clock: unknown = game) => {
+  const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)], clock, [spring('p1', 10, 10)]);
+  return { ...message, world: { ...message.world, towers: [equipment] } };
 };
 
-it('accepts prepaid automatic mining slots', () => {
-  const parsed = parseServerMessage(withRig(rig));
+it('accepts prepaid automatic harvesting slots', () => {
+  const parsed = parseServerMessage(withTower(tower));
 
   expect(parsed.ok).toBe(true);
 });
 
 it.each([
-  ['unknown owner', { ...rig, ownerId: 'missing' }],
-  ['unknown pool', { ...rig, poolId: 'missing' }],
-  ['unknown renter', { ...rig, slots: [{ ...rig.slots[0], residentId: 'missing' }] }],
-  ['negative balance', { ...rig, slots: [{ ...rig.slots[0], balance: -1 }] }],
-  ['unknown chip', { ...rig, slots: [{ ...rig.slots[0], chip: 'MK4' }] }],
-  ['duplicate slot', { ...rig, slots: [...rig.slots, ...rig.slots] }],
-  ['over capacity', { ...rig, slots: Array.from({ length: 5 }, (_, id) => ({ ...rig.slots[0], id: id + 1 })) }],
-])('refuses a rig with %s', (_, equipment) => {
-  expect(parseServerMessage(withRig(equipment)).ok).toBe(false);
+  ['unknown owner', { ...tower, ownerId: 'missing' }],
+  ['unknown spring', { ...tower, springId: 'missing' }],
+  ['unknown renter', { ...tower, slots: [{ ...tower.slots[0], residentId: 'missing' }] }],
+  ['negative balance', { ...tower, slots: [{ ...tower.slots[0], balance: -1 }] }],
+  ['unknown crystal', { ...tower, slots: [{ ...tower.slots[0], crystal: 'C4' }] }],
+  ['duplicate slot', { ...tower, slots: [...tower.slots, ...tower.slots] }],
+  ['over capacity', { ...tower, slots: Array.from({ length: 5 }, (_, id) => ({ ...tower.slots[0], id: id + 1 })) }],
+])('refuses a tower with %s', (_, equipment) => {
+  expect(parseServerMessage(withTower(equipment)).ok).toBe(false);
 });
 
 it('refuses occupied slots after the game ends', () => {
-  expect(parseServerMessage(withRig(rig, { ended: true, remainingSeconds: 0 })).ok).toBe(false);
+  expect(parseServerMessage(withTower(tower, { ended: true, remainingSeconds: 0 })).ok).toBe(false);
 });
 
 const withSpeech = (speech: unknown[]) => {
@@ -67,7 +67,7 @@ const withDeals = (deals: Record<string, unknown[]>) => {
   return { ...message, world: { ...message.world, ...deals } };
 };
 
-const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'token', quantity: 5, price: 80 };
+const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'energy', quantity: 5, price: 80 };
 
 const proposal = {
   eventId: 2,
@@ -75,7 +75,7 @@ const proposal = {
   toId: 'b',
   supplierId: 'b',
   buyerId: 'a',
-  item: 'token',
+  item: 'energy',
   quantity: 10,
   price: 100,
   deliveries: 3,
@@ -87,7 +87,7 @@ const contract = {
   id: 1,
   supplierId: 'b',
   buyerId: 'a',
-  item: 'token',
+  item: 'energy',
   quantity: 10,
   price: 100,
   deliveriesLeft: 2,
@@ -99,12 +99,12 @@ const contract = {
 
 const line = { seq: 1, time: 3.5, speakerId: 'a', text: '有人吗？', listeners: ['b'] };
 
-const chips = [
-  { model: 'MK1', price: 300, tokensPerJob: 30 },
-  { model: 'MK2', price: 1200, tokensPerJob: 60 },
+const crystals = [
+  { tier: 'C1', price: 300, energyPerJob: 30 },
+  { tier: 'C2', price: 1200, energyPerJob: 60 },
 ];
 
-const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips, priceHistory: [] };
+const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, crystals, priceHistory: [] };
 
 const withMarket = (value: unknown) => {
   const message = state(100, []);
@@ -117,13 +117,13 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
-  it('accepts pools and a resident mining one of them with a chip', () => {
-    const miner = {
+  it('accepts springs and a resident harvesting one of them with a crystal', () => {
+    const harvester = {
       ...resident('a', 1, 1),
-      chips: { MK1: 2, MK2: 1 },
-      mining: { poolId: 'p1', amount: 60, chip: 'MK2', remainingSeconds: 9.5 },
+      crystals: { C1: 2, C2: 1 },
+      harvesting: { springId: 'p1', amount: 60, crystal: 'C2', remainingSeconds: 9.5 },
     };
-    const message = state(100, [miner], game, [pool('p1', 10, 10), pool('p2', 100, 0)]);
+    const message = state(100, [harvester], game, [spring('p1', 10, 10), spring('p2', 100, 0)]);
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
@@ -217,26 +217,26 @@ describe('parseServerMessage', () => {
     ['rank below 1', state(100, [{ ...resident('a', 1, 1), rank: 0 }])],
     ['missing game', { type: 'state', world: { map: { size: 100 }, residents: [] } }],
     ['negative remaining time', state(100, [], { ended: false, remainingSeconds: -1 })],
-    ['missing tokens', state(100, [{ ...resident('a', 1, 1), tokens: undefined }])],
-    ['fractional tokens', state(100, [{ ...resident('a', 1, 1), tokens: 0.5 }])],
-    ['missing pools', { type: 'state', world: { map: { size: 100 }, residents: [], game } }],
-    ['pool outside the map', state(100, [], game, [pool('p1', 101, 5)])],
-    ['duplicate pool ids', state(100, [], game, [pool('p1', 1, 1), pool('p1', 2, 2)])],
-    ['negative reserve', state(100, [], game, [{ ...pool('p1', 1, 1), reserve: -1 }])],
+    ['missing energy', state(100, [{ ...resident('a', 1, 1), energy: undefined }])],
+    ['fractional energy', state(100, [{ ...resident('a', 1, 1), energy: 0.5 }])],
+    ['missing springs', { type: 'state', world: { map: { size: 100 }, residents: [], game } }],
+    ['spring outside the map', state(100, [], game, [spring('p1', 101, 5)])],
+    ['duplicate spring ids', state(100, [], game, [spring('p1', 1, 1), spring('p1', 2, 2)])],
+    ['negative reserve', state(100, [], game, [{ ...spring('p1', 1, 1), reserve: -1 }])],
     [
-      'mining an unknown pool',
-      state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p9', amount: 1, chip: 'MK1', remainingSeconds: 1 } }]),
+      'harvesting an unknown spring',
+      state(100, [{ ...resident('a', 1, 1), harvesting: { springId: 'p9', amount: 1, crystal: 'C1', remainingSeconds: 1 } }]),
     ],
     [
-      'mining without saying which chip',
-      state(100, [{ ...resident('a', 1, 1), mining: { poolId: 'p1', amount: 1, remainingSeconds: 1 } }], game, [
-        pool('p1', 1, 1),
+      'harvesting without saying which crystal',
+      state(100, [{ ...resident('a', 1, 1), harvesting: { springId: 'p1', amount: 1, remainingSeconds: 1 } }], game, [
+        spring('p1', 1, 1),
       ]),
     ],
-    ['missing chips', state(100, [{ ...resident('a', 1, 1), chips: undefined }])],
-    ['a chip count of zero', state(100, [{ ...resident('a', 1, 1), chips: { MK1: 0 } }])],
-    ['market without chips on sale', withMarket({ ...market, chips: undefined })],
-    ['a chip without a price', withMarket({ ...market, chips: [{ model: 'MK1', tokensPerJob: 30 }] })],
+    ['missing crystals', state(100, [{ ...resident('a', 1, 1), crystals: undefined }])],
+    ['a crystal count of zero', state(100, [{ ...resident('a', 1, 1), crystals: { C1: 0 } }])],
+    ['market without crystals on sale', withMarket({ ...market, crystals: undefined })],
+    ['a crystal without a price', withMarket({ ...market, crystals: [{ tier: 'C1', energyPerJob: 30 }] })],
     [
       'walking off the map',
       state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 100.1, y: 0 }, remainingSeconds: 1 } }]),
@@ -254,13 +254,13 @@ describe('parseServerMessage', () => {
     ['a price point before the start', withMarket({ ...market, priceHistory: [{ time: -1, price: 20 }] })],
     ['a free price point', withMarket({ ...market, priceHistory: [{ time: 1, price: 0 }] })],
     ['market with no reach', withMarket({ ...market, radius: 0 })],
-    ['missing speech', { type: 'state', world: { map: { size: 100 }, pools: [], residents: [], game } }],
+    ['missing speech', { type: 'state', world: { map: { size: 100 }, springs: [], residents: [], game } }],
     ['speech by an unknown resident', withSpeech([{ ...line, speakerId: 'z' }])],
     ['speech heard by an unknown resident', withSpeech([{ ...line, listeners: ['z'] }])],
     ['speech to an unknown resident', withSpeech([{ ...line, to: 'z' }])],
     ['speech to the speaker', withSpeech([{ ...line, to: 'a', listeners: [] }])],
     ['empty speech', withSpeech([{ ...line, text: '' }])],
-    ['missing offers', { type: 'state', world: { map: { size: 100 }, pools: [], residents: [], game, speech: [] } }],
+    ['missing offers', { type: 'state', world: { map: { size: 100 }, springs: [], residents: [], game, speech: [] } }],
     ['an offer from an unknown resident', withDeals({ offers: [{ ...offer, fromId: 'z' }] })],
     ['an offer to oneself', withDeals({ offers: [{ ...offer, toId: 'b' }] })],
     ['an offer of no items', withDeals({ offers: [{ ...offer, quantity: 0 }] })],
@@ -295,8 +295,8 @@ describe('parseServerMessage', () => {
 
 const turn = {
   seq: 1, time: 0, endedAt: 2, summary: '稳健经营',
-  before: { coins: 10000, tokens: 200 }, after: { coins: 9700, tokens: 200 },
-  calls: [{ name: 'buy_chip', arguments: "{'model': 'MK1'}", time: 1, ok: true, coinsChange: -300, tokensChange: 0 }],
+  before: { coins: 10000, energy: 200 }, after: { coins: 9700, energy: 200 },
+  calls: [{ name: 'buy_crystal', arguments: "{'model': 'C1'}", time: 1, ok: true, coinsChange: -300, energyChange: 0 }],
 };
 
 it('accepts a selected resident timeline with measured resource changes', () => {
@@ -309,7 +309,7 @@ it('accepts a selected resident timeline with measured resource changes', () => 
 });
 
 it.each([
-  { ...turn, after: { coins: -1, tokens: 200 } },
+  { ...turn, after: { coins: -1, energy: 200 } },
   { ...turn, calls: [{ ...turn.calls[0], coinsChange: 0.5 }] },
   { ...turn, summary: 'a'.repeat(501) },
 ])('rejects an invalid timeline entry', (invalid) => {

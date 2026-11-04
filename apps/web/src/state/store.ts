@@ -1,9 +1,9 @@
 import {
   PROTOCOL_VERSION,
   type Action,
-  type ChipModelView,
+  type CrystalTierView,
   type LLMSettings,
-  type PoolView,
+  type SpringView,
   type ResidentId,
   type ServerMessage,
   type WorldView,
@@ -120,20 +120,20 @@ export class GameStore {
     return connection === 'ready' && !world?.game.ended && resident !== undefined && !resident.left;
   }
 
-  /** Like `canAct`, and the resident is not busy mining or walking: then only leaving goes through. */
+  /** Like `canAct`, and the resident is not busy harvesting or walking: then only leaving goes through. */
   isFree(id: ResidentId): boolean {
     const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
-    return this.canAct(id) && resident?.mining === undefined && resident?.walking === undefined;
+    return this.canAct(id) && resident?.harvesting === undefined && resident?.walking === undefined;
   }
 
-  /** The pool the resident stands within reach of, the nearest if several; null if none. */
-  poolInReach(id: ResidentId): PoolView | null {
+  /** The spring the resident stands within reach of, the nearest if several; null if none. */
+  springInReach(id: ResidentId): SpringView | null {
     const { world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
     if (!world || !resident) return null;
-    const distance = (pool: PoolView) =>
-      Math.hypot(pool.position.x - resident.position.x, pool.position.y - resident.position.y);
-    const reachable = world.pools.filter((pool) => distance(pool) <= pool.radius);
+    const distance = (spring: SpringView) =>
+      Math.hypot(spring.position.x - resident.position.x, spring.position.y - resident.position.y);
+    const reachable = world.springs.filter((spring) => distance(spring) <= spring.radius);
     return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
   }
 
@@ -146,24 +146,24 @@ export class GameStore {
     return Math.hypot(market.position.x - resident.position.x, market.position.y - resident.position.y) <= market.radius;
   }
 
-  /** The best chip currently carried; installed and offered chips cannot mine manually. */
-  bestChip(id: ResidentId): ChipModelView | null {
+  /** The best crystal currently carried; installed and offered crystals cannot harvest manually. */
+  bestCrystal(id: ResidentId): CrystalTierView | null {
     const { world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
-    const owned = (world?.market?.chips ?? []).filter((model) => (resident?.carriedChips[model.model] ?? 0) > 0);
-    return owned.reduce<ChipModelView | null>(
-      (best, model) => (best === null || model.tokensPerJob > best.tokensPerJob ? model : best),
+    const owned = (world?.market?.crystals ?? []).filter((tier) => (resident?.carriedCrystals[tier.tier] ?? 0) > 0);
+    return owned.reduce<CrystalTierView | null>(
+      (best, tier) => (best === null || tier.energyPerJob > best.energyPerJob ? tier : best),
       null,
     );
   }
 
-  /** Coins one more token fetches right now by the local clock, or null without a market. */
+  /** Coins one more energy fetches right now by the local clock, or null without a market. */
   marketPrice(): number | null {
     const market = this.state.world?.market;
     return market ? marketPrice(market, this.sinceSnapshot()) : null;
   }
 
-  /** Coins selling `quantity` tokens would fetch right now; an estimate, the server decides. */
+  /** Coins selling `quantity` energy would fetch right now; an estimate, the server decides. */
   marketQuote(quantity: number): number | null {
     const market = this.state.world?.market;
     return market ? marketQuote(market, this.sinceSnapshot(), quantity) : null;

@@ -1,14 +1,14 @@
-import type { MarketView, PoolView, Position, ResidentId, ResidentView, RigView } from '@aiverse/protocol';
+import type { MarketView, SpringView, Position, ResidentId, ResidentView, TowerView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import floorCorners from '../assets/floor/metal-floor-corners.png';
 import floorNodes from '../assets/floor/metal-floor-nodes.png';
 import floorSparse from '../assets/floor/metal-floor-sparse.png';
 import floorStrips from '../assets/floor/metal-floor-strips.png';
 import marketSprite from '../assets/market/market-sprite.png';
-import poolMarkerSprite from '../assets/pools/pool-marker-sprite.png';
-import poolSprite from '../assets/pools/pool-sprite.png';
+import springMarkerSprite from '../assets/pools/pool-marker-sprite.png';
+import springSprite from '../assets/pools/pool-sprite.png';
 import residentSprite from '../assets/residents/resident-sprite.png';
-import miningRigSprite from '../assets/rigs/mining-rig.png';
+import towerSprite from '../assets/rigs/mining-rig.png';
 import type { GameStore } from '../state/store';
 import { paintFloorSurface, readFloorSources } from './floorSurface';
 import {
@@ -17,11 +17,11 @@ import {
   CANVAS_WIDTH,
   formatCoordinate,
   projectMap,
-  rigPositionOnPool,
+  towerPositionOnSpring,
   SLAB_DEPTH,
   type MapProjection,
 } from './layout';
-import { markerPose } from './poolMarkerMotion';
+import { markerPose } from './springMarkerMotion';
 import { floatPose, stepFloat, type FloatState } from './residentFloat';
 
 const FONT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
@@ -41,22 +41,22 @@ const LABEL_OFFSET = 0.04;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
 /**
- * Token pools: a square pad lying on the ground around their centre, its edges touching the reach
+ * Energy springs: a square pad lying on the ground around their centre, its edges touching the reach
  * circle (so the circle is inscribed in it and the corners stick out), with a marker floating above its middle. Both pictures are the user's pool.png and
  * pool-marker.png beside them, trimmed to the visible pixels (alpha above 8) and scaled down to
  * 256 px wide and 128 px high.
  */
-const POOL_TEXTURE = 'pool';
-const POOL_MARKER_TEXTURE = 'pool-marker';
+const SPRING_TEXTURE = 'spring';
+const SPRING_MARKER_TEXTURE = 'spring-marker';
 /** Side of the pad before it is turned and squashed onto the ground; only its ratio to the result matters. */
-const POOL_PAD_SIZE = 100;
+const SPRING_PAD_SIZE = 100;
 /** Height of the floating marker in canvas pixels at the map centre. */
-const POOL_MARKER_HEIGHT = 44;
-/** How far the marker's bottom hovers above the pool's centre, in canvas pixels at the map centre. */
-const POOL_MARKER_HOVER = 10;
-/** Pools with nothing left stay on the map, faded. */
-const EMPTY_POOL_ALPHA = 0.35;
-const POOL_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#dff8fc', stroke: '#1d1a16', strokeThickness: 3 };
+const SPRING_MARKER_HEIGHT = 44;
+/** How far the marker's bottom hovers above the spring's centre, in canvas pixels at the map centre. */
+const SPRING_MARKER_HOVER = 10;
+/** Springs with nothing left stay on the map, faded. */
+const EMPTY_SPRING_ALPHA = 0.35;
+const SPRING_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#dff8fc', stroke: '#1d1a16', strokeThickness: 3 };
 /** The market: a patch of ground the size of its reach, with a machine standing in the middle. */
 const MARKET_FILL = 0xe0a93b;
 const MARKET_EDGE = 0xf7dc8a;
@@ -71,13 +71,13 @@ const MARKET_HEIGHT = 72;
 const MARKET_FOOT_X = 0.65;
 const MARKET_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#f7dc8a', stroke: '#1d1a16', strokeThickness: 3 };
 
-const RIG_TEXTURE = 'mining-rig';
-const RIG_FRAME = 'machine';
+const TOWER_TEXTURE = 'tower';
+const TOWER_FRAME = 'machine';
 /** Visible area (alpha > 8) within the user's unchanged 1254 × 1254 transparent PNG. */
-const RIG_BOUNDS = { x: 87, y: 311, width: 1083, height: 840 };
-const RIG_HEIGHT = 66;
+const TOWER_BOUNDS = { x: 87, y: 311, width: 1083, height: 840 };
+const TOWER_HEIGHT = 66;
 /** Ground contact near the front foot, measured within the visible frame. */
-const RIG_FOOT_X = 0.7;
+const TOWER_FOOT_X = 0.7;
 
 /**
  * A resident is the user's resident.png, a spirit that floats, trimmed to the visible pixels
@@ -121,7 +121,7 @@ interface Walk {
   duration: number;
 }
 
-interface PoolMarker {
+interface SpringMarker {
   image: Phaser.GameObjects.Image;
   /** Canvas pixels the marker's bottom edge rests above its ground point, and its full size there. */
   restingY: number;
@@ -131,8 +131,8 @@ interface PoolMarker {
   phase: number;
 }
 
-/** Pools lie on the ground, above the turf and below every resident. */
-const POOL_DEPTH = 0.5;
+/** Springs lie on the ground, above the turf and below every resident. */
+const SPRING_DEPTH = 0.5;
 
 /**
  * Residents get depths in [1, 2) by how far down the canvas they stand, so nearer
@@ -143,7 +143,7 @@ const RESIDENT_DEPTH = 1;
 const CURSOR_DEPTH = 10;
 
 /**
- * Draws the map as a tilted ground slab, its token pools, market and residents from the latest
+ * Draws the map as a tilted ground slab, its springs, market and residents from the latest
  * snapshot in the store.
  * Clicking a resident selects it; clicking the ground then asks the server to move it there.
  */
@@ -153,18 +153,18 @@ export class MapScene extends Phaser.Scene {
   private floorEdge: Phaser.GameObjects.Graphics | null = null;
   private floorTexture: Phaser.Textures.CanvasTexture | null = null;
   private floorSources: ImageData[] = [];
-  private poolGrounds: Phaser.GameObjects.Container[] = [];
-  private poolMarkers: PoolMarker[] = [];
-  private poolLabels: Phaser.GameObjects.Text[] = [];
+  private springGrounds: Phaser.GameObjects.Container[] = [];
+  private springMarkers: SpringMarker[] = [];
+  private springLabels: Phaser.GameObjects.Text[] = [];
   private market: Phaser.GameObjects.Graphics | null = null;
   private marketMachine: Phaser.GameObjects.Image | null = null;
   private marketLabel: Phaser.GameObjects.Text | null = null;
   /** Where the market was last drawn, so it is redrawn only when that changes. */
   private drawnMarket = '';
-  /** What the pools were last drawn from, so they are redrawn only when that changes. */
-  private drawnPools = '';
-  private drawnRigs = '';
-  private rigMarkers: { root: Phaser.GameObjects.Container; machine: Phaser.GameObjects.Image; position: Position }[] = [];
+  /** What the springs were last drawn from, so they are redrawn only when that changes. */
+  private drawnSprings = '';
+  private drawnTowers = '';
+  private towerMarkers: { root: Phaser.GameObjects.Container; machine: Phaser.GameObjects.Image; position: Position }[] = [];
   private axisLabels: Phaser.GameObjects.Text[] = [];
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
@@ -177,9 +177,9 @@ export class MapScene extends Phaser.Scene {
 
   preload(): void {
     this.load.image(MARKET_TEXTURE, marketSprite);
-    this.load.image(POOL_TEXTURE, poolSprite);
-    this.load.image(POOL_MARKER_TEXTURE, poolMarkerSprite);
-    this.load.image(RIG_TEXTURE, miningRigSprite);
+    this.load.image(SPRING_TEXTURE, springSprite);
+    this.load.image(SPRING_MARKER_TEXTURE, springMarkerSprite);
+    this.load.image(TOWER_TEXTURE, towerSprite);
     this.load.image(RESIDENT_TEXTURE, residentSprite);
     [floorCorners, floorSparse, floorNodes, floorStrips].forEach((url, index) => {
       this.load.image(FLOOR_TEXTURES[index]!, url);
@@ -187,9 +187,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   create(): void {
-    const texture = this.textures.get(RIG_TEXTURE);
-    if (!texture.has(RIG_FRAME)) {
-      texture.add(RIG_FRAME, 0, RIG_BOUNDS.x, RIG_BOUNDS.y, RIG_BOUNDS.width, RIG_BOUNDS.height);
+    const texture = this.textures.get(TOWER_TEXTURE);
+    if (!texture.has(TOWER_FRAME)) {
+      texture.add(TOWER_FRAME, 0, TOWER_BOUNDS.x, TOWER_BOUNDS.y, TOWER_BOUNDS.width, TOWER_BOUNDS.height);
     }
     texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.floorSources = readFloorSources(FLOOR_TEXTURES.map((key) => this.textures.get(key).getSourceImage() as HTMLImageElement));
@@ -199,7 +199,7 @@ export class MapScene extends Phaser.Scene {
     this.ground = this.add.graphics();
     this.add.image(0, 0, FLOOR_SURFACE).setOrigin(0, 0).setDepth(0.1);
     this.floorEdge = this.add.graphics().setDepth(0.2);
-    this.market = this.add.graphics().setDepth(POOL_DEPTH);
+    this.market = this.add.graphics().setDepth(SPRING_DEPTH);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
     this.input.on(Phaser.Input.Events.GAME_OUT, () => this.cursor?.setText(''));
@@ -219,10 +219,10 @@ export class MapScene extends Phaser.Scene {
     if (!world) return;
     const resized = world.map.size !== this.drawnSize;
     if (resized) this.drawMap(world.map.size);
-    const pools = JSON.stringify([world.map.size, world.pools]);
-    if (pools !== this.drawnPools) {
-      this.drawPools(world.pools);
-      this.drawnPools = pools;
+    const springs = JSON.stringify([world.map.size, world.springs]);
+    if (springs !== this.drawnSprings) {
+      this.drawSprings(world.springs);
+      this.drawnSprings = springs;
     }
     // Only the place is drawn: the price moves with time, so the side panel shows it.
     const market = JSON.stringify([world.map.size, world.market?.position, world.market?.radius]);
@@ -231,15 +231,15 @@ export class MapScene extends Phaser.Scene {
       this.drawnMarket = market;
     }
     this.syncResidents(world.residents, resized);
-    const rigs = JSON.stringify([
+    const towers = JSON.stringify([
       world.map.size,
-      world.rigs,
+      world.towers,
       world.game.ended,
-      world.pools.map(({ id, position, radius }) => [id, position, radius]),
+      world.springs.map(({ id, position, radius }) => [id, position, radius]),
     ]);
-    if (rigs !== this.drawnRigs) {
-      this.drawRigs(world.rigs, world.pools);
-      this.drawnRigs = rigs;
+    if (towers !== this.drawnTowers) {
+      this.drawTowers(world.towers, world.springs);
+      this.drawnTowers = towers;
     }
     for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
   }
@@ -255,9 +255,9 @@ export class MapScene extends Phaser.Scene {
       }
     }
     const { selected, world } = this.store.getState();
-    const rig = this.rigMarkers.find((marker) => over.includes(marker.machine));
-    if (rig && selected && this.store.isFree(selected)) {
-      this.store.act({ type: 'move_to', residentId: selected, target: rig.position });
+    const tower = this.towerMarkers.find((marker) => over.includes(marker.machine));
+    if (tower && selected && this.store.isFree(selected)) {
+      this.store.act({ type: 'move_to', residentId: selected, target: tower.position });
       return;
     }
     // The machine stands up off the ground, so the ground behind it can lie outside the
@@ -337,67 +337,67 @@ export class MapScene extends Phaser.Scene {
     this.drawnSize = size;
   }
 
-  private drawPools(pools: PoolView[]): void {
+  private drawSprings(springs: SpringView[]): void {
     const projection = this.projection!;
-    for (const pad of this.poolGrounds) pad.destroy();
-    this.poolGrounds = [];
-    for (const { image } of this.poolMarkers) image.destroy();
-    this.poolMarkers = [];
-    for (const label of this.poolLabels) label.destroy();
-    this.poolLabels = [];
-    pools.forEach((pool, index) => {
-      const alpha = pool.reserve > 0 ? 1 : EMPTY_POOL_ALPHA;
+    for (const pad of this.springGrounds) pad.destroy();
+    this.springGrounds = [];
+    for (const { image } of this.springMarkers) image.destroy();
+    this.springMarkers = [];
+    for (const label of this.springLabels) label.destroy();
+    this.springLabels = [];
+    springs.forEach((spring, index) => {
+      const alpha = spring.reserve > 0 ? 1 : EMPTY_SPRING_ALPHA;
       // The pad is square on the ground, so its corners are projected and the picture turned a
       // quarter of the way round, as the map is, then squashed to fit the diamond they make.
-      const { x, y } = projection.toScreen(pool.position);
-      const [near, far] = [-pool.radius, pool.radius];
+      const { x, y } = projection.toScreen(spring.position);
+      const [near, far] = [-spring.radius, spring.radius];
       const corners = [
-        { x: pool.position.x + near, y: pool.position.y + near },
-        { x: pool.position.x + far, y: pool.position.y + near },
-        { x: pool.position.x + far, y: pool.position.y + far },
-        { x: pool.position.x + near, y: pool.position.y + far },
+        { x: spring.position.x + near, y: spring.position.y + near },
+        { x: spring.position.x + far, y: spring.position.y + near },
+        { x: spring.position.x + far, y: spring.position.y + far },
+        { x: spring.position.x + near, y: spring.position.y + far },
       ].map((corner) => projection.toScreen(corner));
       const xs = corners.map((point) => point.x);
       const ys = corners.map((point) => point.y);
-      const turned = this.add.image(0, 0, POOL_TEXTURE).setDisplaySize(POOL_PAD_SIZE, POOL_PAD_SIZE).setRotation(Math.PI / 4);
-      const diagonal = POOL_PAD_SIZE * Math.SQRT2;
-      this.poolGrounds.push(
+      const turned = this.add.image(0, 0, SPRING_TEXTURE).setDisplaySize(SPRING_PAD_SIZE, SPRING_PAD_SIZE).setRotation(Math.PI / 4);
+      const diagonal = SPRING_PAD_SIZE * Math.SQRT2;
+      this.springGrounds.push(
         this.add
           .container((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, [turned])
           .setScale((Math.max(...xs) - Math.min(...xs)) / diagonal, (Math.max(...ys) - Math.min(...ys)) / diagonal)
-          .setDepth(POOL_DEPTH)
+          .setDepth(SPRING_DEPTH)
           .setAlpha(alpha),
       );
 
       // The marker floats over the middle and is sorted with the residents, like the machines.
-      const scale = projection.scaleAt(pool.position);
+      const scale = projection.scaleAt(spring.position);
       const image = this.add
-        .image(x, y, POOL_MARKER_TEXTURE)
+        .image(x, y, SPRING_MARKER_TEXTURE)
         .setOrigin(0.5, 1)
         .setDepth(RESIDENT_DEPTH + y / CANVAS_HEIGHT)
         .setAlpha(alpha);
-      const height = POOL_MARKER_HEIGHT * scale;
-      this.poolMarkers.push({
+      const height = SPRING_MARKER_HEIGHT * scale;
+      this.springMarkers.push({
         image,
-        restingY: y - POOL_MARKER_HOVER * scale,
+        restingY: y - SPRING_MARKER_HOVER * scale,
         width: (height * image.width) / image.height,
         height,
-        phase: index / pools.length,
+        phase: index / springs.length,
       });
 
       const label = this.add
-        .text(x, y + 4, `${pool.id} · ${pool.reserve}`, POOL_LABEL_STYLE)
+        .text(x, y + 4, `${spring.id} · ${spring.reserve}`, SPRING_LABEL_STYLE)
         .setOrigin(0.5, 0)
-        .setDepth(POOL_DEPTH)
+        .setDepth(SPRING_DEPTH)
         .setAlpha(alpha);
-      this.poolLabels.push(label);
+      this.springLabels.push(label);
     });
     this.moveMarkers(performance.now());
   }
 
   /** Turns each marker around its vertical axis and bobs it up and down. */
   private moveMarkers(now: number): void {
-    for (const marker of this.poolMarkers) {
+    for (const marker of this.springMarkers) {
       const pose = markerPose(now, marker.phase);
       marker.image.setDisplaySize(marker.width * pose.width, marker.height).setY(marker.restingY - pose.lift * marker.height);
     }
@@ -437,39 +437,39 @@ export class MapScene extends Phaser.Scene {
     this.marketLabel = this.add
       .text(x, y + 4, '收购点', MARKET_LABEL_STYLE)
       .setOrigin(0.5, 0)
-      .setDepth(POOL_DEPTH);
+      .setDepth(SPRING_DEPTH);
   }
 
-  private drawRigs(rigs: RigView[], pools: PoolView[]): void {
-    for (const marker of this.rigMarkers) marker.root.destroy();
-    this.rigMarkers = [];
-    for (const pool of pools) {
-      const atPool = rigs.filter((rig) => rig.poolId === pool.id);
-      if (atPool.length === 0) continue;
-      // A pool pad is smaller than two machine sprites, so one marker represents the group.
-      const rig = atPool[0]!;
-      const position = rigPositionOnPool(pool);
+  private drawTowers(towers: TowerView[], springs: SpringView[]): void {
+    for (const marker of this.towerMarkers) marker.root.destroy();
+    this.towerMarkers = [];
+    for (const spring of springs) {
+      const atSpring = towers.filter((tower) => tower.springId === spring.id);
+      if (atSpring.length === 0) continue;
+      // A spring pad is smaller than two machine sprites, so one marker represents the group.
+      const tower = atSpring[0]!;
+      const position = towerPositionOnSpring(spring);
       const point = this.projection!.toScreen(position);
       const scale = this.projection!.scaleAt(position);
-      const machine = this.add.image(0, 0, RIG_TEXTURE, RIG_FRAME)
-        .setOrigin(RIG_FOOT_X, 1)
-        .setScale(RIG_HEIGHT / RIG_BOUNDS.height)
+      const machine = this.add.image(0, 0, TOWER_TEXTURE, TOWER_FRAME)
+        .setOrigin(TOWER_FOOT_X, 1)
+        .setScale(TOWER_HEIGHT / TOWER_BOUNDS.height)
         .setInteractive({ pixelPerfect: true, alphaTolerance: 8, useHandCursor: true });
       const lights = this.add.graphics();
-      if (atPool.length === 1) {
+      if (atSpring.length === 1) {
         for (let slot = 0; slot < 4; slot++) {
-          const occupied = rig.slots[slot];
+          const occupied = tower.slots[slot];
           const color = !occupied ? 0x56616b : occupied.status === 'running' ? 0x9cdbb2 : 0xe0a93b;
           lights.fillStyle(INK, 0.9).fillCircle(-23 + slot * 13, 9, 4);
           lights.fillStyle(color).fillCircle(-23 + slot * 13, 9, 2.5);
         }
       }
-      const labelText = atPool.length === 1 ? `矿机 #${rig.id}` : `矿机 ×${atPool.length}`;
+      const labelText = atSpring.length === 1 ? `汲能塔 #${tower.id}` : `汲能塔 ×${atSpring.length}`;
       const label = this.add.text(-4, 17, labelText, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
       const root = this.add.container(point.x, point.y, [machine, lights, label])
         .setDepth(RESIDENT_DEPTH + point.y / CANVAS_HEIGHT)
         .setScale(scale);
-      this.rigMarkers.push({ root, machine, position: pool.position });
+      this.towerMarkers.push({ root, machine, position: spring.position });
     }
   }
 
@@ -599,7 +599,7 @@ export class MapScene extends Phaser.Scene {
 }
 
 function residentLabel(view: ResidentView): string {
-  if (view.mining) return `${view.name} · 采矿中`;
+  if (view.harvesting) return `${view.name} · 汲取中`;
   if (view.walking) return `${view.name} · 行走中`;
   return view.name;
 }

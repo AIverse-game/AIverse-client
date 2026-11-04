@@ -14,7 +14,7 @@ export interface MarkerPose {
   lift: number;
 }
 
-/** Where a pool's floating marker is `timeMs` into its spin and bob; `phase` in [0, 1) offsets one marker from another. */
+/** Where a spring's floating marker is `timeMs` into its spin and bob; `phase` in [0, 1) offsets one marker from another. */
 export function markerPose(timeMs: number, phase = 0): MarkerPose {
   const turn = (timeMs / MARKER_TURN_MS + phase) * 2 * Math.PI;
   const bob = (timeMs / MARKER_BOB_MS + phase) * 2 * Math.PI;

@@ -31,38 +31,38 @@ const WELCOME: ServerMessage = { type: 'welcome', protocolVersion: PROTOCOL_VERS
 
 const world: WorldView = {
   map: { size: 100 },
-  pools: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
+  springs: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
   residents: [
-    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, rigBalance: 0, carriedChips: {}, left: false, rank: 1, tokens: 200, chips: {} },
+    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, towerBalance: 0, carriedCrystals: {}, left: false, rank: 1, energy: 200, crystals: {} },
   ],
   game: { ended: false, remainingSeconds: 90 },
   speech: [],
   offers: [],
   contractProposals: [],
   contracts: [],
-  rigs: [],
-  rigRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, energyPer100: 20 },
+  towers: [],
+  towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 },
 };
 
 describe('GameStore', () => {
-  it('sends rig actions and keeps installed chips out of manual mining', () => {
+  it('sends tower actions and keeps installed crystals out of manual harvesting', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
     const message = { ...world, market: {
       position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0,
-      chips: [{ model: 'MK1', price: 300, tokensPerJob: 30 }], priceHistory: [],
-    }, residents: [{ ...world.residents[0]!, chips: {}, carriedChips: {}, rigBalance: 500, spendableCoins: 9500 }] };
+      crystals: [{ tier: 'C1', price: 300, energyPerJob: 30 }], priceHistory: [],
+    }, residents: [{ ...world.residents[0]!, crystals: {}, carriedCrystals: {}, towerBalance: 500, spendableCoins: 9500 }] };
 
     deliver(WELCOME);
     deliver({ type: 'state', world: message });
-    store.act({ type: 'install_chip', residentId: 'a', rigId: 1, chip: 'MK1', deposit: 500 });
-    deliver({ type: 'action_result', ok: false, code: 'not_enough_items', message: 'no carried chip' });
+    store.act({ type: 'install_crystal', residentId: 'a', towerId: 1, crystal: 'C1', deposit: 500 });
+    deliver({ type: 'action_result', ok: false, code: 'not_enough_items', message: 'no carried crystal' });
 
-    expect(store.bestChip('a')).toBeNull();
+    expect(store.bestCrystal('a')).toBeNull();
     expect(store.isFree('a')).toBe(true);
-    expect(sent.at(-1)).toMatchObject({ type: 'action', action: { type: 'install_chip', deposit: 500 } });
+    expect(sent.at(-1)).toMatchObject({ type: 'action', action: { type: 'install_crystal', deposit: 500 } });
     expect(store.getState().lastAction?.status).toBe('rejected');
-    expect(store.getState().world?.residents[0]?.rigBalance).toBe(500);
+    expect(store.getState().world?.residents[0]?.towerBalance).toBe(500);
   });
   it('greets the server, becomes ready on welcome and keeps the latest world', () => {
     const { connection, sent, deliver } = fakeConnection();
@@ -154,7 +154,7 @@ describe('GameStore', () => {
     let now = 5000;
     const store = new GameStore(connection, () => now);
     expect(store.marketPrice()).toBeNull();
-    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, chips: [], priceHistory: [] };
+    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, crystals: [], priceHistory: [] };
     deliver({ type: 'state', world: { ...world, market } });
     // 20 * 400 / (400 + 100).
     expect(store.marketPrice()).toBeCloseTo(16);
@@ -187,15 +187,15 @@ describe('GameStore', () => {
     expect(store.canAct('a')).toBe(false);
   });
 
-  it('allows only leaving while the resident is mining', () => {
+  it('allows only leaving while the resident is harvesting', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
     deliver(WELCOME);
     deliver({ type: 'state', world });
     expect(store.isFree('a')).toBe(true);
     const [resident] = world.residents;
-    const mining = { poolId: 'p1', amount: 30, chip: 'MK1', remainingSeconds: 10 };
-    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, chips: { MK1: 1 }, mining }] } });
+    const harvesting = { springId: 'p1', amount: 30, crystal: 'C1', remainingSeconds: 10 };
+    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, crystals: { C1: 1 }, harvesting }] } });
     expect(store.canAct('a')).toBe(true);
     expect(store.isFree('a')).toBe(false);
   });
@@ -211,37 +211,37 @@ describe('GameStore', () => {
     expect(store.isFree('a')).toBe(false);
   });
 
-  it('finds the pool a resident stands within reach of', () => {
+  it('finds the spring a resident stands within reach of', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    expect(store.poolInReach('a')).toBeNull();
+    expect(store.springInReach('a')).toBeNull();
     deliver({ type: 'state', world });
-    expect(store.poolInReach('a')?.id).toBe('p1');
+    expect(store.springInReach('a')?.id).toBe('p1');
     const [resident] = world.residents;
     const away = { ...resident!, position: { x: 10, y: 30 } };
     deliver({ type: 'state', world: { ...world, residents: [away] } });
-    expect(store.poolInReach('a')).toBeNull();
+    expect(store.springInReach('a')).toBeNull();
   });
 
-  it('names the best chip a resident owns, by what the market lists', () => {
+  it('names the best crystal a resident owns, by what the market lists', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    expect(store.bestChip('a')).toBeNull();
-    const chips = [
-      { model: 'MK1', price: 300, tokensPerJob: 30 },
-      { model: 'MK2', price: 1200, tokensPerJob: 60 },
-      { model: 'MK3', price: 3000, tokensPerJob: 100 },
+    expect(store.bestCrystal('a')).toBeNull();
+    const crystals = [
+      { tier: 'C1', price: 300, energyPerJob: 30 },
+      { tier: 'C2', price: 1200, energyPerJob: 60 },
+      { tier: 'C3', price: 3000, energyPerJob: 100 },
     ];
-    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, chips, priceHistory: [] };
+    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, crystals, priceHistory: [] };
     const [resident] = world.residents;
-    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, chips: owned, carriedChips: owned }] });
+    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, crystals: owned, carriedCrystals: owned }] });
     deliver({ type: 'state', world: owning({}) });
-    expect(store.bestChip('a')).toBeNull();
-    deliver({ type: 'state', world: owning({ MK1: 3, MK2: 1 }) });
-    expect(store.bestChip('a')?.model).toBe('MK2');
-    deliver({ type: 'state', world: owning({ MK3: 1, MK1: 1 }) });
-    expect(store.bestChip('a')?.model).toBe('MK3');
-    expect(store.bestChip('nobody')).toBeNull();
+    expect(store.bestCrystal('a')).toBeNull();
+    deliver({ type: 'state', world: owning({ C1: 3, C2: 1 }) });
+    expect(store.bestCrystal('a')?.tier).toBe('C2');
+    deliver({ type: 'state', world: owning({ C3: 1, C1: 1 }) });
+    expect(store.bestCrystal('a')?.tier).toBe('C3');
+    expect(store.bestCrystal('nobody')).toBeNull();
   });
 
   it('drops the selection when the selected resident leaves the world', () => {
