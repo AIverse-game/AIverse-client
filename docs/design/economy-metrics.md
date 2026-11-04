@@ -2,7 +2,7 @@
 
 状态：首版已实现。
 更新：2026-11-03。
-相关：[变更 0049](../../changes/0049-coin-ledger-and-economy-report.md)、[晶核与晶核制造](crystals.md)、[挂单交易所](order-book.md)、[按角色的当前对局日志](../../changes/0033-per-resident-logs.md)；服务端 `core/ledger.py`、`game/economy_report.py`，`server/app.py` 的 `on_end` 与 `__main__.py`。
+相关：[变更 0049](../../changes/0049-coin-ledger-and-economy-report.md)、[晶核与炼制](crystals.md)、[挂单交易所](order-book.md)、[按角色的当前对局日志](../../changes/0033-per-resident-logs.md)；服务端 `core/ledger.py`、`game/economy_report.py`，`server/app.py` 的 `on_end` 与 `__main__.py`。
 
 ## 问题背景
 
@@ -39,7 +39,7 @@
 
 ### 用法
 
-- **先测基线**：在硅矿、晶核厂、交易所上线前，用现有规则跑一局真实模型对局，记下各项指标作为基线。脚本机器人之间不交易，快进模拟的居民间占比恒为 0，只能用来检查数值，不能作为基线。
+- **先测基线**：在晶矿、工坊、交易所上线前，用现有规则跑一局真实模型对局，记下各项指标作为基线。脚本机器人之间不交易，快进模拟的居民间占比恒为 0，只能用来检查数值，不能作为基线。
 - 之后每次改经济规则或数值，都对比这些指标，不只看谁赢。
 
 ### 基线（2026-11-03）
