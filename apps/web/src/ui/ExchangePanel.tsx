@@ -14,14 +14,14 @@ const FILLS_SHOWN = 5;
 const formatCoins = (coins: number) => String(Math.round(coins));
 
 /**
- * The anonymous exchange at the market, read-only: one item's book, its fill prices and latest
+ * The anonymous exchange, read-only: one item's book, its fill prices and latest
  * fills, and the selected resident's resting orders. Orders are placed by agents for now.
  */
 export function ExchangePanel() {
   const { world } = useGameState();
   const [chosen, setChosen] = useState<string | null>(null);
   const exchange = world?.exchange;
-  // The exchange is at the market: no market, no exchange.
+  // Shown beside the market, which every real world has.
   if (!world?.market || !exchange || exchange.books.length === 0) return null;
   const book = exchange.books.find((candidate) => candidate.item === chosen) ?? exchange.books[0]!;
 
@@ -44,7 +44,7 @@ export function ExchangePanel() {
       <FillPrices exchange={exchange} item={book.item} />
       <MyOrders exchange={exchange} />
       <p className="muted small">
-        收购点同时是匿名交易所：价格最好的先成交，同价先挂先成交，按挂单方的价格成交。挂单簿只显示价位和数量，不显示是谁。页面暂时只能查看，下单和撤单由 AI 居民进行。
+        匿名交易所，在任何地方都能下单：价格最好的先成交，同价先挂先成交，按挂单方的价格成交。挂单簿只显示价位和数量，不显示是谁。页面暂时只能查看，下单和撤单由 AI 居民进行。
       </p>
     </section>
   );

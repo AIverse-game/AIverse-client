@@ -60,3 +60,4 @@
 | [0052-order-book-exchange](0052-order-book-exchange.md) | 已完成 | 收购点处的匿名挂单交易所：能量、晶砂、C1～C3 连续撮合；服务端与 Agent 工具，页面未接入 |
 | [0053-crafts-and-exchange-on-page](0053-crafts-and-exchange-on-page.md) | 已完成 | 协议 19：页面显示晶矿、工坊、晶砂与挖砂炼制状态，可挖砂、炼制；交易所面板只读显示挂单簿、成交与所选居民的挂单 |
 | [0054-score-counts-held-items](0054-score-counts-held-items.md) | 已完成 | 协议 20：排名按得分，即金币加能量（按收购价）与晶核（按进口价一半）的估值，对局中实时计算 |
+| [0056-order-from-anywhere](0056-order-from-anywhere.md) | 已完成 | 交易所下单不必站在收购点，任何地方都可以；协议未改 |

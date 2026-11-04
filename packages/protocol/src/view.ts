@@ -185,7 +185,7 @@ export const orderSchema = z.object({
   remainingSeconds: z.number().nonnegative(),
 });
 
-/** The anonymous exchange at the market. */
+/** The anonymous exchange, where residents trade from anywhere. */
 export const exchangeSchema = z.object({
   /** One per item traded, in a fixed order. */
   books: z.array(bookSchema),
