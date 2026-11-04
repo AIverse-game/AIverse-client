@@ -7,6 +7,8 @@ const resident = (id: string, x: number, y: number) => ({
   color: '#e4572e',
   position: { x, y },
   coins: 10000,
+  itemValue: 0,
+  score: 10000,
   spendableCoins: 10000,
   towerBalance: 0,
   carriedCrystals: {},

@@ -59,3 +59,4 @@
 | [0051-quarries-and-workshop](0051-quarries-and-workshop.md) | 已完成 | 晶矿挖晶砂、工坊按配方炼晶核（升级链、熟练度），进口价翻倍；服务端与 Agent 工具，页面未接入 |
 | [0052-order-book-exchange](0052-order-book-exchange.md) | 已完成 | 收购点处的匿名挂单交易所：能量、晶砂、C1～C3 连续撮合；服务端与 Agent 工具，页面未接入 |
 | [0053-crafts-and-exchange-on-page](0053-crafts-and-exchange-on-page.md) | 已完成 | 协议 19：页面显示晶矿、工坊、晶砂与挖砂炼制状态，可挖砂、炼制；交易所面板只读显示挂单簿、成交与所选居民的挂单 |
+| [0054-score-counts-held-items](0054-score-counts-held-items.md) | 已完成 | 协议 20：排名按得分，即金币加能量（按收购价）与晶核（按进口价一半）的估值，对局中实时计算 |

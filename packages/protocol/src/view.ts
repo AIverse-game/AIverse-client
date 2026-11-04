@@ -19,13 +19,20 @@ export const residentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   /** Where the resident is when the server sent this; on the way while walking. */
   position: positionSchema,
-  /** Total coins, including those set aside by pending offers and contracts. */
+  /** Total coins, including those set aside by pending offers, contracts, towers and buy orders. */
   coins: z.number().int().nonnegative(),
+  /**
+   * What the resident's energy and crystals count for in the ranking when the server sent this:
+   * energy at the market's unit price, crystals at half their import price; shards count nothing.
+   */
+  itemValue: z.number().int().nonnegative(),
+  /** What the ranking counts: `coins` plus `itemValue`. */
+  score: z.number().int().nonnegative(),
   spendableCoins: z.number().int().nonnegative(),
   towerBalance: z.number().int().nonnegative(),
   /** Left the game: still shown and ranked, but can no longer act. */
   left: z.boolean(),
-  /** Place by coins, 1 for the most; equal totals share a place. Final once the game ends. */
+  /** Place by score, 1 for the highest; equal scores share a place. Final once the game ends. */
   rank: z.number().int().positive(),
   /**
    * Energy owned, including those set aside by pending offers: the resident's stamina. Walking
