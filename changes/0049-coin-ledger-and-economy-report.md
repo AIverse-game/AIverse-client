@@ -57,5 +57,6 @@
 
 ## 交接
 
-- 下一步：用真实模型跑一局，记下 `summary.json` 作为正式基线；然后实现硅矿与芯片厂（[芯片与芯片制造](../docs/design/chips.md)）。
+- 正式基线（2026-11-03 补记）：真实模型对局测得居民间占比 4.0%，详见[经济指标](../docs/design/economy-metrics.md)的“基线”。
+- 下一步：实现硅矿与芯片厂（[芯片与芯片制造](../docs/design/chips.md)）。
 - 已更新 `docs/status.md`。
