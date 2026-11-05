@@ -64,3 +64,4 @@
 | [0057-rank-by-coins-again](0057-rank-by-coins-again.md) | 已完成 | 协议 21：撤销 0054，排名回到只算金币；系统提示鼓励局中适时分批卖出 |
 | [0058-eight-residents](0058-eight-residents.md) | 已完成 | 默认居民增至 8 名；能量泉与晶矿储量按人数成比例；协议未改 |
 | [0059-llm-groups](0059-llm-groups.md) | 已完成 | 模型配置可按居民分组，各组用自己的接口、key 与模型；协议未改 |
+| [0060-agent-trend-observation](0060-agent-trend-observation.md) | 已完成 | AI 每轮看到有界的收购价、匿名成交和亲眼所见储量历史，用短期笔记记录预测；协议未改 |
