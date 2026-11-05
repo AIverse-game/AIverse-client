@@ -78,7 +78,7 @@ Game.start_agent / start_llm_agent / stop_agent（启动参数，或页面的 st
 大模型需要三项设置：API 地址、API key、模型。来源有三处，合并规则是“配置文件覆盖，其余用玩家给的”：
 
 1. **页面**：“AI 驱动”面板。选中居民，填写三项，点“交给 AI”（协议 `start_agent`），就由模型驱动；再点一次会按新配置替换。“停止 AI，改为手动”（`stop_agent`）把居民交回页面。所有页面的居民列表都标出“AI”，面板显示所用模型。页面按居民把填过的设置记在本机 localStorage，没配置过的居民默认填上最近一次用过的。
-2. **服务端配置文件**（`server/config.py` 读取）：YAML，`--config` 指定，默认读服务端的 `src/aiverse_server/agents/config/llm.yml`。`override` 下的 `base_url`、`api_key`、`model` 填了哪项，哪项就对所有由模型驱动的居民生效，代替页面和命令行给的值；`max_tokens` 是共用的每次回复上限，省略时为 8192，必须是正整数。`welcome` 只告诉页面哪些连接项被覆盖（不含具体值），页面把这些输入框置灰，显示“由服务端配置指定”。示例见同目录的 `llm.example.yml`。
+2. **服务端配置文件**（`server/config.py` 读取）：YAML，`--config` 指定，默认读服务端的 `src/aiverse_server/agents/config/llm.yml`。`override` 下的 `base_url`、`api_key`、`model` 填了哪项，哪项就对所有由模型驱动的居民生效，代替页面和命令行给的值；`max_tokens` 是共用的每次回复上限，省略时为 8192，必须是正整数。可选的 `groups` 按居民分组：每组列出居民 id 和一套连接设置，代替 `override` 的同名项、只对所列居民生效，用于让不同居民用不同的接口或模型（[变更 0059](../../changes/0059-llm-groups.md)）。`welcome` 只告诉页面哪些连接项对每名居民都被覆盖（不含具体值），页面把这些输入框置灰，显示“由服务端配置指定”。示例见同目录的 `llm.example.yml`。
 3. **启动参数**：可以重复。
 
    ```sh

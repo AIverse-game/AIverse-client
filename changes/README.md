@@ -63,3 +63,4 @@
 | [0056-order-from-anywhere](0056-order-from-anywhere.md) | 已完成 | 交易所下单不必站在收购点，任何地方都可以；协议未改 |
 | [0057-rank-by-coins-again](0057-rank-by-coins-again.md) | 已完成 | 协议 21：撤销 0054，排名回到只算金币；系统提示鼓励局中适时分批卖出 |
 | [0058-eight-residents](0058-eight-residents.md) | 已完成 | 默认居民增至 8 名；能量泉与晶矿储量按人数成比例；协议未改 |
+| [0059-llm-groups](0059-llm-groups.md) | 已完成 | 模型配置可按居民分组，各组用自己的接口、key 与模型；协议未改 |
