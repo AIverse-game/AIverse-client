@@ -33,7 +33,7 @@ const world: WorldView = {
   map: { size: 100 },
   springs: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
   residents: [
-    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, itemValue: 0, score: 10000, spendableCoins: 10000, towerBalance: 0, carriedCrystals: {}, left: false, rank: 1, energy: 200, crystals: {}, shards: 0, crystalsRefined: 0 },
+    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, towerBalance: 0, carriedCrystals: {}, left: false, rank: 1, energy: 200, crystals: {}, shards: 0, crystalsRefined: 0 },
   ],
   game: { ended: false, remainingSeconds: 90 },
   speech: [],
