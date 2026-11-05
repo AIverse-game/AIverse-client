@@ -62,3 +62,4 @@
 | [0054-score-counts-held-items](0054-score-counts-held-items.md) | 已完成，已由 0057 撤销 | 协议 20：排名按得分，即金币加能量（按收购价）与晶核（按进口价一半）的估值，对局中实时计算 |
 | [0056-order-from-anywhere](0056-order-from-anywhere.md) | 已完成 | 交易所下单不必站在收购点，任何地方都可以；协议未改 |
 | [0057-rank-by-coins-again](0057-rank-by-coins-again.md) | 已完成 | 协议 21：撤销 0054，排名回到只算金币；系统提示鼓励局中适时分批卖出 |
+| [0058-eight-residents](0058-eight-residents.md) | 已完成 | 默认居民增至 8 名；能量泉与晶矿储量按人数成比例；协议未改 |
