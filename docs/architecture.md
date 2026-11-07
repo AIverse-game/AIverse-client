@@ -36,7 +36,7 @@ Python 服务端（aiverse-server）
     harvesting.py   算力泉采集：开始、按游戏时间发放、取消
     market.py   收购点：按随卖出下跌、随时间回升的市场价用金币收购算力
     land.py     地块：网格、保留地块、定价与购买
-    facilities.py 设施：访客流量与广告位收入
+    facilities.py 设施：访客流量，广告位、服务器与会议室，承载费
     trade.py    购买与出售报价：事件种类，物品换金币
     contracts.py 合约：约定未来每次交付自动付款，签订时托管买方货款与供货方押金
   core/       世界模型与共用机制，只依赖 core/ 内的模块

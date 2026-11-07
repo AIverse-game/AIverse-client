@@ -1,7 +1,7 @@
 # 经济指标
 
 状态：首版已实现。
-更新：2026-11-03。
+更新：2026-11-07。
 相关：[变更 0049](../../changes/0049-coin-ledger-and-economy-report.md)、[程序与编写](programs.md)、[挂单交易所](order-book.md)、[按角色的当前对局日志](../../changes/0033-per-resident-logs.md)；服务端 `core/ledger.py`、`game/economy_report.py`，`server/app.py` 的 `on_end` 与 `__main__.py`。
 
 ## 问题背景
@@ -15,7 +15,7 @@
 ### 记账
 
 - 世界中有一本流水账 `World.ledger`：每次金币真实转手记一条（游戏时间、付款方、收款方、金额、渠道；买物品时还有物品和数量）。付款方或收款方可以是 `system`。
-- 渠道：`market`（收购点收算力）、`program_import`（系统卖程序）、`collector_build`、`upkeep`、`rent`（采集节点租金）、`offer`（报价成交）、`contract_payment`（合约交付付款）、`contract_forfeit`（押金赔给买方）、`information`、`exchange`（交易所成交，变更 0052）。预留和退回不记，只记真实转手。
+- 渠道：`market`（收购点收算力）、`program_import`（系统卖程序）、`collector_build`、`upkeep`、`rent`（采集节点租金）、`offer`（报价成交）、`contract_payment`（合约交付付款）、`contract_forfeit`（押金赔给买方）、`information`、`exchange`（交易所成交，变更 0052）、`land`（向镇上买地块，变更 0062）、`visitors`（访客付给设施主人，变更 0062）、`hosting`（设施主人付给服务器主人的承载费，变更 0063）。预留和退回不记，只记真实转手。
 - 在各结算点调用 `record_transfer` 记账，金币仍由结算点自己移动。流水账只追加，上限 20000 条，满了丢掉最早的，并计数丢掉的条数，报告据此标明不完整。
 
 ### 指标
