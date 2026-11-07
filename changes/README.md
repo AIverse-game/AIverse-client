@@ -69,3 +69,4 @@
 | [0062-land-and-ad-slots](0062-land-and-ad-slots.md) | 已完成 | 买地块、工作室制作素材、在地块上建广告位，按访客流量收金币；服务端与 Agent 工具，页面未接入 |
 | [0063-servers-and-meeting-rooms](0063-servers-and-meeting-rooms.md) | 已完成 | 服务器存算力承载附近设施、主人收承载费；会议室要服务器承载，按访客收金币；服务端与 Agent 工具，页面未接入 |
 | [0064-remove-old-gameplay](0064-remove-old-gameplay.md) | 已完成 | 去掉旧玩法：算力、采集、收购点、程序、设施等服务端、协议 23 与页面一起删，行走只花时间 |
+| [0065-compute-and-nodes](0065-compute-and-nodes.md) | 已完成 | 自带算力与订阅、按需的生成式节点，用工作在自己的地块上建广告位；计划加入传送 |

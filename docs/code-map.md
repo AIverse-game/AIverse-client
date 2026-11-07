@@ -33,16 +33,17 @@
 | `src/aiverse_server/core/world.py` | 坐标、居民（含金币、是否出局、行走任务 `WalkJob`）、物品栏（`Inventory`）、事件队列字段、生效的合约（`Contract`、`ContractBook`）、居民记忆（`Memory`，长短期笔记 `Note` 及其上限）、活动日志（`ActivityLog`、`Activity`）、发言记录（`SpeechLog`、`Speech`）、地图与世界模型（含是否结束、游戏时间），越界、重复 id 与事件、行走、记忆、日志和发言一致性校验 |
 | `src/aiverse_server/core/inventory.py` | 居民物品的存入、移出、计数、列出与清空，金币的收付（服务端内部接口，不是原语） |
 | `src/aiverse_server/core/events.py` | 事件队列：事件种类基类 `EventPayload` 与其钩子，发送、同意、拒绝、撤回和收件箱查询 |
-| `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/footfall.py` | 地块与访客（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`；地块网格、按离地图中央远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall` |
+| `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/footfall.py` | 地块与访客（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`（含设施 `Facility`）；地块网格、按离地图中央远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall` |
+| `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`、开工 `start_build_ad`、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
 | `src/aiverse_server/economy/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
 | `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`（押金按责任赔付或退回，并记入 `ContractBook.ended`），托管的货款与押金统计 `contract_coins` |
 | `src/aiverse_server/residents/walking.py` | 行走：速度 `WALK_SPEED`、所需时间、途中位置 `position_at`、出发、到达、中途停下、下一次到达时刻；走路只花时间 |
 | `src/aiverse_server/residents/perception.py` | 感知：感知半径、每轮开始时的 `begin_turn`（范围内的居民、新活动、当前笔记、自上次以来说过和听到的话与公告）、`record_activity` 记录活动 |
 | `src/aiverse_server/residents/memory.py` | 居民自选的记忆：`remember` 写入长期或短期笔记、`forget` 忘掉一条、`forget_expired` 清除过期的短期笔记，短期时长 `SHORT_TERM_SECONDS` |
 | `src/aiverse_server/residents/speech.py` | 对话：听力半径 `HEARING_RADIUS`、当众说或私聊的 `say`（不花东西），听到的人在说话时定下 |
-| `src/aiverse_server/game/actions.py` | 操作原语（`MoveTo`、`RespondToEvent`、`WithdrawEvent`、`OfferToBuy`、`OfferToSell`、`OfferInformation`、`ProposeContract`、`Deliver`、`CancelContract`、`LeaveGame`、`BuyParcel`、`PlaceOrder`、`CancelOrder`、`Say`）及其规则校验与执行 `perform`，执行后记录活动 |
+| `src/aiverse_server/game/actions.py` | 操作原语（`MoveTo`、`RespondToEvent`、`WithdrawEvent`、`OfferToBuy`、`OfferToSell`、`OfferInformation`、`ProposeContract`、`Deliver`、`CancelContract`、`LeaveGame`、`BuyParcel`、`BuyNode`、`BuildAd`、`PlaceOrder`、`CancelOrder`、`Say`）及其规则校验与执行 `perform`，执行后记录活动 |
 | `src/aiverse_server/game/lifecycle.py` | 一局的生命周期：能否行动、是否忙碌、出局、结束（停下行走、终止合约）、金币总额（含报价与合约中预留的）与排名、默认时长 |
-| `src/aiverse_server/game/clock.py` | 游戏时间到点的事：`settle_due` 接回到达的行走者并记录活动、合约与挂单到期，`next_due` 下一个到点时刻 |
+| `src/aiverse_server/game/clock.py` | 游戏时间到点的事：`settle_due` 接回到达的行走者并记录活动、完成到点的工作、让订阅的节点到期、合约与挂单到期，`next_due` 下一个到点时刻 |
 | `src/aiverse_server/game/layout.py` | 固定的初始地图与居民，初始金币，全部出生在地图中央 |
 | `src/aiverse_server/server/protocol.py` | 消息模型、客户端消息解析（错误信息不回显输入）、消息到原语与世界到视图的转换（私聊按连接选择的居民过滤，标出由 Agent 驱动的居民），`start_agent` 的模型设置 |
 | `src/aiverse_server/server/config.py` | 读取大模型的 YAML 配置文件：`override` 全局覆盖模型的地址、key、模型（`Config.llm_override`），拒绝未知的键，错误信息不含设置的值 |
