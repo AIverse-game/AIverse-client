@@ -33,10 +33,11 @@
 | `src/aiverse_server/core/world.py` | 坐标、居民（含金币、是否出局、行走任务 `WalkJob`）、物品栏（`Inventory`）、事件队列字段、生效的合约（`Contract`、`ContractBook`）、居民记忆（`Memory`，长短期笔记 `Note` 及其上限）、活动日志（`ActivityLog`、`Activity`）、发言记录（`SpeechLog`、`Speech`）、地图与世界模型（含是否结束、游戏时间），越界、重复 id 与事件、行走、记忆、日志和发言一致性校验 |
 | `src/aiverse_server/core/inventory.py` | 居民物品的存入、移出、计数、列出与清空，金币的收付（服务端内部接口，不是原语） |
 | `src/aiverse_server/core/events.py` | 事件队列：事件种类基类 `EventPayload` 与其钩子，发送、同意、拒绝、撤回和收件箱查询 |
-| `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/footfall.py` | 地块与访客（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`（含设施 `Facility` 与份额）；地块网格、按离地图中央远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall` |
-| `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`（生成式、渲染式）、开工 `start_build_ad`、`start_make_content`、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
+| `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/footfall.py` | 地块与访客（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`（含设施 `Facility`，广告位或传送门，与份额）、线路 `Link`；地块网格、按离地图中央远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall` |
+| `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`（生成式、渲染式）、开工 `start_build_ad`、`start_build_portal`、`start_make_content`、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
 | `src/aiverse_server/economy/ads.py` | 广告位与内容（[虚拟设施](design/facilities.md)第 3 步）：内容物品 `ad_content`、`place_content`（保鲜期、每个广告位至多 5 份）、每 30 秒按流量与内容数付钱、按份额分给地块的持有人 `pay_visitors`、附近展示内容的广告位平分流量 |
 | `src/aiverse_server/economy/shares.py` | 地块份额（[虚拟设施](design/facilities.md)第 4 步）：分账 `split_income`（凑不整的金币按小数部分大的先得）、份额报价事件 `ShareOffer`（持有人转让份额，可收费可白送）、已许诺份额统计 `reserved_shares` |
+| `src/aiverse_server/economy/portals.py` | 传送门与线路（[虚拟设施](design/facilities.md)第 5 步）：线路提议事件 `LinkProposal`、`link_portals`、居民传送 `teleport`（过路费按份额分给两端的持有人，渠道 `toll`）、有效距离 `effective_distance`（线路让偏远地块离中央更近，流量按它算）、门数与线路数与间距上限 |
 | `src/aiverse_server/economy/joint_purchase.py` | 合买地块（[虚拟设施](design/facilities.md)第 4 步补充）：提议事件 `JointPurchase`（对方出多少钱、拿多少份，提议人那份预留），同意时两人各付镇上、地块归提议人，预留的钱统计 `reserved_purchase_coins` |
 | `src/aiverse_server/economy/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
 | `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`（押金按责任赔付或退回，并记入 `ContractBook.ended`），托管的货款与押金统计 `contract_coins` |
@@ -44,7 +45,7 @@
 | `src/aiverse_server/residents/perception.py` | 感知：感知半径、每轮开始时的 `begin_turn`（范围内的居民、新活动、当前笔记、自上次以来说过和听到的话与公告）、`record_activity` 记录活动 |
 | `src/aiverse_server/residents/memory.py` | 居民自选的记忆：`remember` 写入长期或短期笔记、`forget` 忘掉一条、`forget_expired` 清除过期的短期笔记，短期时长 `SHORT_TERM_SECONDS` |
 | `src/aiverse_server/residents/speech.py` | 对话：听力半径 `HEARING_RADIUS`、当众说或私聊的 `say`（不花东西），听到的人在说话时定下 |
-| `src/aiverse_server/game/actions.py` | 操作原语（`MoveTo`、`RespondToEvent`、`WithdrawEvent`、`OfferToBuy`、`OfferToSell`、`OfferInformation`、`ProposeContract`、`Deliver`、`CancelContract`、`LeaveGame`、`BuyParcel`、`BuyNode`、`BuildAd`、`PlaceOrder`、`CancelOrder`、`Say`）及其规则校验与执行 `perform`，执行后记录活动 |
+| `src/aiverse_server/game/actions.py` | 操作原语（`MoveTo`、`RespondToEvent`、`WithdrawEvent`、`OfferToBuy`、`OfferToSell`、`OfferInformation`、`ProposeContract`、`Deliver`、`CancelContract`、`LeaveGame`、`BuyParcel`、`BuyNode`、`BuildAd`、`BuildPortal`、`LinkPortals`、`Teleport`、`PlaceOrder`、`CancelOrder`、`Say`）及其规则校验与执行 `perform`，执行后记录活动 |
 | `src/aiverse_server/game/lifecycle.py` | 一局的生命周期：能否行动、是否忙碌、出局、结束（停下行走、终止合约）、金币总额（含报价与合约中预留的）与排名、默认时长 |
 | `src/aiverse_server/game/clock.py` | 游戏时间到点的事：`settle_due` 接回到达的行走者并记录活动、完成到点的工作、让订阅的节点到期、合约与挂单到期，`next_due` 下一个到点时刻 |
 | `src/aiverse_server/game/layout.py` | 固定的初始地图与居民，初始金币，全部出生在地图中央 |
