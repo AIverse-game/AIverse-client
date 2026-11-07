@@ -71,3 +71,4 @@
 | [0064-remove-old-gameplay](0064-remove-old-gameplay.md) | 已完成 | 去掉旧玩法：算力、采集、收购点、程序、设施等服务端、协议 23 与页面一起删，行走只花时间 |
 | [0065-compute-and-nodes](0065-compute-and-nodes.md) | 已完成 | 自带算力与订阅、按需的生成式节点，用工作在自己的地块上建广告位；计划加入传送 |
 | [0066-subscription-tail](0066-subscription-tail.md) | 已完成 | 订阅到期时没做完的工作，剩下的部分按自带算力的速度做完 |
+| [0067-content-and-revenue](0067-content-and-revenue.md) | 已完成 | 渲染式节点与渲染工作做内容，放进广告位，保鲜期，按流量和内容数付金币；服务端与 Agent 工具，页面和协议不变 |

@@ -34,7 +34,8 @@
 | `src/aiverse_server/core/inventory.py` | 居民物品的存入、移出、计数、列出与清空，金币的收付（服务端内部接口，不是原语） |
 | `src/aiverse_server/core/events.py` | 事件队列：事件种类基类 `EventPayload` 与其钩子，发送、同意、拒绝、撤回和收件箱查询 |
 | `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/footfall.py` | 地块与访客（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`（含设施 `Facility`）；地块网格、按离地图中央远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall` |
-| `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`、开工 `start_build_ad`、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
+| `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`（生成式、渲染式）、开工 `start_build_ad`、`start_make_content`、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
+| `src/aiverse_server/economy/ads.py` | 广告位与内容（[虚拟设施](design/facilities.md)第 3 步）：内容物品 `ad_content`、`place_content`（保鲜期、每个广告位至多 5 份）、每 30 秒按流量与内容数付给地块主人 `pay_visitors`、附近展示内容的广告位平分流量 |
 | `src/aiverse_server/economy/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
 | `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`（押金按责任赔付或退回，并记入 `ContractBook.ended`），托管的货款与押金统计 `contract_coins` |
 | `src/aiverse_server/residents/walking.py` | 行走：速度 `WALK_SPEED`、所需时间、途中位置 `position_at`、出发、到达、中途停下、下一次到达时刻；走路只花时间 |
