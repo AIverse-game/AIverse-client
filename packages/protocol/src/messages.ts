@@ -3,7 +3,7 @@ import type { Action } from './actions';
 import { worldViewSchema, type ResidentId } from './view';
 
 /** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
-export const PROTOCOL_VERSION = 21;
+export const PROTOCOL_VERSION = 22;
 
 /**
  * Where and what a language model is asked: an OpenAI-compatible chat completions API at

@@ -6,7 +6,7 @@ import { formatDuration } from './format';
 /** Mirrors SPEECH_LENGTH_LIMIT in the server, which counts code points; it trims and checks again. */
 const SPEECH_MAX_LENGTH = 100;
 
-/** Energy one line costs; mirrors SPEECH_COSTS in the server, which charges them. */
+/** Compute one line costs; mirrors SPEECH_COSTS in the server, which charges them. */
 const SPEECH_COSTS = { aloud: 2, toOne: 1 };
 
 /** Value of the listener choice that means speaking aloud rather than to one resident. */
@@ -60,18 +60,18 @@ export function SpeechPanel() {
   // Code points, as the server counts; `maxLength` would count UTF-16 units.
   const length = [...trimmed].length;
   const cost = listener === ALOUD ? SPEECH_COSTS.aloud : SPEECH_COSTS.toOne;
-  // `energy` counts those set aside in offers too, which the server does not take; it decides.
-  const affordable = speaker !== null && speaker.energy >= cost;
+  // `compute` counts those set aside in offers too, which the server does not take; it decides.
+  const affordable = speaker !== null && speaker.compute >= cost;
   const canSend = canSpeak && !gone && !awaiting && affordable && length > 0 && length <= SPEECH_MAX_LENGTH;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!speaker || !canSend) return;
-    // A harvester keeps the energy being dug, so only others run out; a walker is out on arrival.
+    // A harvester keeps the compute being gathered, so only others run out; a walker is out on arrival.
     if (
-      speaker.energy === cost &&
+      speaker.compute === cost &&
       !speaker.harvesting &&
-      !window.confirm(`说完这句会花光 ${speaker.name} 的能量，之后出局（行走中的到达后出局）：不能再行动，金币保留并参与排名。继续？`)
+      !window.confirm(`说完这句会花光 ${speaker.name} 的算力，之后出局（行走中的到达后出局）：不能再行动，金币保留并参与排名。继续？`)
     )
       return;
     store.act({ type: 'say', residentId: speaker.id, text: trimmed, ...(listener === ALOUD ? {} : { to: listener }) });
@@ -125,7 +125,7 @@ export function SpeechPanel() {
           }}
         />
         <button type="submit" disabled={!canSend}>
-          发送（{cost} 能量）
+          发送（{cost} 算力）
         </button>
       </form>
       {canSpeak && length > SPEECH_MAX_LENGTH && (
@@ -135,7 +135,7 @@ export function SpeechPanel() {
       )}
       {canSpeak && !gone && !affordable && (
         <p className="error small" role="alert">
-          能量不够：{listener === ALOUD ? '当众说' : '私聊'}一句要 {cost} 个，{speaker.name} 只有 {speaker.energy} 个。
+          算力不够：{listener === ALOUD ? '当众说' : '私聊'}一句要 {cost} 个，{speaker.name} 只有 {speaker.compute} 个。
         </p>
       )}
       {canSpeak && gone && (
@@ -149,7 +149,7 @@ export function SpeechPanel() {
         </p>
       )}
       <p className="muted small">
-        当众说每句 {SPEECH_COSTS.aloud} 能量，只有附近的居民听得到；私聊每句 {SPEECH_COSTS.toOne} 能量，不论远近只有对方听到。行走、汲取中也能说话。
+        当众说每句 {SPEECH_COSTS.aloud} 算力，只有附近的居民听得到；私聊每句 {SPEECH_COSTS.toOne} 算力，不论远近只有对方听到。行走、采集中也能说话。
         这里只显示所选居民自己发出或收到的私聊。
       </p>
     </section>

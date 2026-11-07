@@ -1,9 +1,9 @@
 import {
   PROTOCOL_VERSION,
   type Action,
-  type CrystalTierView,
+  type ProgramTierView,
   type LLMSettings,
-  type QuarryView,
+  type MineView,
   type RecipeView,
   type SpringView,
   type ResidentId,
@@ -123,7 +123,7 @@ export class GameStore {
   }
 
   /**
-   * Like `canAct`, and the resident is not busy harvesting, digging, refining or walking: then only
+   * Like `canAct`, and the resident is not busy harvesting, gathering, writing or walking: then only
    * talking and leaving go through.
    */
   isFree(id: ResidentId): boolean {
@@ -131,7 +131,7 @@ export class GameStore {
     return (
       this.canAct(id) &&
       resident !== undefined &&
-      [resident.harvesting, resident.digging, resident.refining, resident.walking].every((job) => job === undefined)
+      [resident.harvesting, resident.gathering, resident.writing, resident.walking].every((job) => job === undefined)
     );
   }
 
@@ -146,51 +146,51 @@ export class GameStore {
     return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
   }
 
-  /** The quarry the resident stands within reach of, the nearest if several; null if none. */
-  quarryInReach(id: ResidentId): QuarryView | null {
+  /** The mine the resident stands within reach of, the nearest if several; null if none. */
+  mineInReach(id: ResidentId): MineView | null {
     const { world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
     if (!world || !resident) return null;
-    const distance = (quarry: QuarryView) =>
-      Math.hypot(quarry.position.x - resident.position.x, quarry.position.y - resident.position.y);
-    const reachable = world.quarries.filter((quarry) => distance(quarry) <= quarry.radius);
+    const distance = (mine: MineView) =>
+      Math.hypot(mine.position.x - resident.position.x, mine.position.y - resident.position.y);
+    const reachable = world.mines.filter((mine) => distance(mine) <= mine.radius);
     return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
   }
 
-  /** Whether the resident stands within reach of the workshop. */
-  atWorkshop(id: ResidentId): boolean {
+  /** Whether the resident stands within reach of the studio. */
+  atStudio(id: ResidentId): boolean {
     const { world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
-    const workshop = world?.workshop;
-    if (!resident || !workshop) return false;
-    return Math.hypot(workshop.position.x - resident.position.x, workshop.position.y - resident.position.y) <= workshop.radius;
+    const studio = world?.studio;
+    if (!resident || !studio) return false;
+    return Math.hypot(studio.position.x - resident.position.x, studio.position.y - resident.position.y) <= studio.radius;
   }
 
   /**
-   * Game seconds refining `recipe` would take the resident, quicker for every crystal they refined
-   * before; only for display, the server times the job.
+   * Game seconds writing `recipe` would take the resident, quicker for every program they have
+   * written before; only for display, the server times the job.
    */
-  refineSeconds(id: ResidentId, recipe: RecipeView): number | null {
+  writeSeconds(id: ResidentId, recipe: RecipeView): number | null {
     const { world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
-    const workshop = world?.workshop;
-    if (!resident || !workshop) return null;
-    const share = Math.max(1 - workshop.speedupPerCrystal * resident.crystalsRefined, workshop.fastestShare);
+    const studio = world?.studio;
+    if (!resident || !studio) return null;
+    const share = Math.max(1 - studio.speedupPerProgram * resident.programsWritten, studio.fastestShare);
     return recipe.seconds * share;
   }
 
   /**
-   * Whether the resident surely lacks what `recipe` uses up: owned shards and energy count those
+   * Whether the resident surely lacks what `recipe` uses up: owned data and compute count those
    * set aside too, so having them is no promise the server accepts, but lacking them is a sure
-   * refusal. The lower crystal must be carried.
+   * refusal. The lower program must be carried.
    */
   lacksMaterials(id: ResidentId, recipe: RecipeView): boolean {
     const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
     if (!resident) return true;
     return (
-      resident.shards < recipe.shards ||
-      resident.energy < recipe.energy ||
-      (recipe.consumes !== undefined && !resident.carriedCrystals[recipe.consumes])
+      resident.data < recipe.data ||
+      resident.compute < recipe.compute ||
+      (recipe.consumes !== undefined && !resident.carriedPrograms[recipe.consumes])
     );
   }
 
@@ -203,24 +203,24 @@ export class GameStore {
     return Math.hypot(market.position.x - resident.position.x, market.position.y - resident.position.y) <= market.radius;
   }
 
-  /** The best crystal currently carried; installed and offered crystals cannot harvest manually. */
-  bestCrystal(id: ResidentId): CrystalTierView | null {
+  /** The best program currently carried; installed and offered programs cannot harvest manually. */
+  bestProgram(id: ResidentId): ProgramTierView | null {
     const { world } = this.state;
     const resident = world?.residents.find((candidate) => candidate.id === id);
-    const owned = (world?.market?.crystals ?? []).filter((tier) => (resident?.carriedCrystals[tier.tier] ?? 0) > 0);
-    return owned.reduce<CrystalTierView | null>(
-      (best, tier) => (best === null || tier.energyPerJob > best.energyPerJob ? tier : best),
+    const owned = (world?.market?.programs ?? []).filter((tier) => (resident?.carriedPrograms[tier.tier] ?? 0) > 0);
+    return owned.reduce<ProgramTierView | null>(
+      (best, tier) => (best === null || tier.computePerJob > best.computePerJob ? tier : best),
       null,
     );
   }
 
-  /** Coins one more energy fetches right now by the local clock, or null without a market. */
+  /** Coins one more compute fetches right now by the local clock, or null without a market. */
   marketPrice(): number | null {
     const market = this.state.world?.market;
     return market ? marketPrice(market, this.sinceSnapshot()) : null;
   }
 
-  /** Coins selling `quantity` energy would fetch right now; an estimate, the server decides. */
+  /** Coins selling `quantity` compute would fetch right now; an estimate, the server decides. */
   marketQuote(quantity: number): number | null {
     const market = this.state.world?.market;
     return market ? marketQuote(market, this.sinceSnapshot(), quantity) : null;

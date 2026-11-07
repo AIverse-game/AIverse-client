@@ -25,11 +25,11 @@
 
 - `packages/protocol`：对应的 schema、类型与校验（晶矿编号唯一、在地图内，工坊在地图内，挖砂的晶矿存在），原语类型，协议版本 19。
 - `apps/web`：`state/store.ts` 的忙碌判断含挖砂和炼制，新增 `quarryInReach`、`atWorkshop`、`refineSeconds`；`render/MapScene.ts` 画晶矿与工坊；`ui/ActionPanel.tsx`、`ui/MapPanel.tsx`；新增 `ui/ExchangePanel.tsx`、`ui/exchange.ts`、`ui/PriceChartPlot.tsx`（从收购价走势图抽出的共用 SVG 绘制）；样式。
-- 文档：本说明、[晶核与炼制](../docs/design/crystals.md)、[挂单交易所](../docs/design/order-book.md)、[代码地图](../docs/code-map.md)、`docs/status.md`。
+- 文档：本说明、[晶核与炼制](../docs/design/programs.md)、[挂单交易所](../docs/design/order-book.md)、[代码地图](../docs/code-map.md)、`docs/status.md`。
 
 留给后续：结束时的计分折算（0054）；页面下单与撤单（0055）；晶矿与工坊的贴图；成交进活动日志、成交价单独记历史。
 
-设计文档：修改 [晶核与炼制](../docs/design/crystals.md) 与 [挂单交易所](../docs/design/order-book.md)，写入页面显示的首版取舍。
+设计文档：修改 [晶核与炼制](../docs/design/programs.md) 与 [挂单交易所](../docs/design/order-book.md)，写入页面显示的首版取舍。
 
 ## 关键选择
 

@@ -10,7 +10,7 @@ const calm: MarketView = {
   halfLifeSeconds: 60,
   restingPressure: -200,
   pressure: 0,
-  crystals: [],
+  programs: [],
   priceHistory: [],
 };
 
@@ -48,7 +48,7 @@ describe('market price', () => {
     expect(marketPressure({ ...calm, pressure: 40 }, -5)).toBe(40);
   });
 
-  it.each([0, -1, 1.5, Number.NaN])('quotes nothing for %s energy', (quantity) => {
+  it.each([0, -1, 1.5, Number.NaN])('quotes nothing for %s compute', (quantity) => {
     expect(marketQuote(calm, 0, quantity)).toBe(0);
   });
 });

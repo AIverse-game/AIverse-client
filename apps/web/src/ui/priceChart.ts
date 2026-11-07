@@ -1,6 +1,6 @@
 import type { PricePointView } from '@aiverse/protocol';
 
-// Where the energy price history goes on a line chart: pure geometry, drawn by `PriceChartPanel`.
+// Where the compute price history goes on a line chart: pure geometry, drawn by `PriceChartPanel`.
 
 export interface ChartSize {
   width: number;

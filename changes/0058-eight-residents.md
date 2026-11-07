@@ -21,11 +21,11 @@
 - 测试：`test_harvesting.py`、`test_shards.py` 改按人数检查储量，新增储量随人数增长、4 人时等于原范围，以及种子 42 在 4 人时与之前生成同样能量泉的用例；`test_world.py`、`test_market.py`、`test_websocket.py` 的居民数。
 - `README.md`：功能说明、汲能塔一节的初始储量、代码结构。
 
-客户端：页面按状态里的居民显示，不用改代码。文档：本说明、`README.md`、[汲能塔](../docs/design/towers.md)、[晶核与炼制](../docs/design/crystals.md)、[AI 居民](../docs/design/ai-residents.md)、`docs/status.md`。
+客户端：页面按状态里的居民显示，不用改代码。文档：本说明、`README.md`、[汲能塔](../docs/design/collectors.md)、[晶核与炼制](../docs/design/programs.md)、[AI 居民](../docs/design/ai-residents.md)、`docs/status.md`。
 
 协议未改。
 
-设计文档：在 [汲能塔](../docs/design/towers.md) 记录能量泉储量按人数定，在 [晶核与炼制](../docs/design/crystals.md) 记录晶矿储量。
+设计文档：在 [汲能塔](../docs/design/collectors.md) 记录能量泉储量按人数定，在 [晶核与炼制](../docs/design/programs.md) 记录晶矿储量。
 
 ## 关键选择
 

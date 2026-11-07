@@ -8,7 +8,7 @@ import {
   MAP_DISPLAY_SCALE,
   MARGIN,
   projectMap,
-  towerPositionOnSpring,
+  collectorPositionOnSpring,
   SLAB_DEPTH,
 } from './layout';
 
@@ -86,12 +86,12 @@ describe('projectMap', () => {
   });
 });
 
-describe('towerPositionOnSpring', () => {
+describe('collectorPositionOnSpring', () => {
   it.each([
     { position: { x: 75, y: 75 }, radius: 4 },
     { position: { x: 20, y: 110 }, radius: 2 },
   ])('keeps the marker base within the spring at $position and radius $radius', (spring) => {
-    const position = towerPositionOnSpring(spring);
+    const position = collectorPositionOnSpring(spring);
 
     expect(Math.hypot(position.x - spring.position.x, position.y - spring.position.y)).toBeLessThan(spring.radius);
   });

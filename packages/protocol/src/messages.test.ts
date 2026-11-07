@@ -8,100 +8,100 @@ const resident = (id: string, x: number, y: number) => ({
   position: { x, y },
   coins: 10000,
   spendableCoins: 10000,
-  towerBalance: 0,
-  carriedCrystals: {},
+  collectorBalance: 0,
+  carriedPrograms: {},
   left: false,
   rank: 1,
-  energy: 200,
-  crystals: {},
-  shards: 0,
-  crystalsRefined: 0,
+  compute: 200,
+  programs: {},
+  data: 0,
+  programsWritten: 0,
 });
 
 const game = { ended: false, remainingSeconds: 1200 };
 
-const tower = { id: 1, ownerId: 'a', springId: 'p1', slots: [{
-  id: 1, residentId: 'b', crystal: 'C1', balance: 404, harvested: 30, rentPaid: 90,
-  status: 'running', remainingSeconds: 20, energyPerCycle: 30, rentPerCycle: 90, upkeepPerCycle: 6,
+const collector = { id: 1, ownerId: 'a', springId: 'p1', slots: [{
+  id: 1, residentId: 'b', program: 'v1', balance: 404, harvested: 30, rentPaid: 90,
+  status: 'running', remainingSeconds: 20, computePerCycle: 30, rentPerCycle: 90, upkeepPerCycle: 6,
 }] };
 
 const spring = (id: string, x: number, y: number) => ({ id, position: { x, y }, radius: 4, reserve: 300 });
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game, springs: unknown[] = []) => ({
   type: 'state',
-  world: { map: { size }, springs, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], towers: [], towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 }, quarries: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size }, springs, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], collectors: [], collectorRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 }, mines: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
-const withTower = (equipment: unknown, clock: unknown = game) => {
+const withCollector = (equipment: unknown, clock: unknown = game) => {
   const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)], clock, [spring('p1', 10, 10)]);
-  return { ...message, world: { ...message.world, towers: [equipment] } };
+  return { ...message, world: { ...message.world, collectors: [equipment] } };
 };
 
 it('accepts prepaid automatic harvesting slots', () => {
-  const parsed = parseServerMessage(withTower(tower));
+  const parsed = parseServerMessage(withCollector(collector));
 
   expect(parsed.ok).toBe(true);
 });
 
 it.each([
-  ['unknown owner', { ...tower, ownerId: 'missing' }],
-  ['unknown spring', { ...tower, springId: 'missing' }],
-  ['unknown renter', { ...tower, slots: [{ ...tower.slots[0], residentId: 'missing' }] }],
-  ['negative balance', { ...tower, slots: [{ ...tower.slots[0], balance: -1 }] }],
-  ['unknown crystal', { ...tower, slots: [{ ...tower.slots[0], crystal: 'C4' }] }],
-  ['duplicate slot', { ...tower, slots: [...tower.slots, ...tower.slots] }],
-  ['over capacity', { ...tower, slots: Array.from({ length: 5 }, (_, id) => ({ ...tower.slots[0], id: id + 1 })) }],
-])('refuses a tower with %s', (_, equipment) => {
-  expect(parseServerMessage(withTower(equipment)).ok).toBe(false);
+  ['unknown owner', { ...collector, ownerId: 'missing' }],
+  ['unknown spring', { ...collector, springId: 'missing' }],
+  ['unknown renter', { ...collector, slots: [{ ...collector.slots[0], residentId: 'missing' }] }],
+  ['negative balance', { ...collector, slots: [{ ...collector.slots[0], balance: -1 }] }],
+  ['unknown program', { ...collector, slots: [{ ...collector.slots[0], program: 'v4' }] }],
+  ['duplicate slot', { ...collector, slots: [...collector.slots, ...collector.slots] }],
+  ['over capacity', { ...collector, slots: Array.from({ length: 5 }, (_, id) => ({ ...collector.slots[0], id: id + 1 })) }],
+])('refuses a collector with %s', (_, equipment) => {
+  expect(parseServerMessage(withCollector(equipment)).ok).toBe(false);
 });
 
 it('refuses occupied slots after the game ends', () => {
-  expect(parseServerMessage(withTower(tower, { ended: true, remainingSeconds: 0 })).ok).toBe(false);
+  expect(parseServerMessage(withCollector(collector, { ended: true, remainingSeconds: 0 })).ok).toBe(false);
 });
 
-const quarry = { id: 'q1', position: { x: 20, y: 20 }, radius: 4, reserve: 300 };
-const workshop = {
+const mine = { id: 'm1', position: { x: 20, y: 20 }, radius: 4, reserve: 300 };
+const studio = {
   position: { x: 50, y: 50 },
   radius: 5,
   recipes: [
-    { tier: 'C1', shards: 5, energy: 15, seconds: 15 },
-    { tier: 'C2', shards: 15, energy: 40, consumes: 'C1', seconds: 30 },
+    { tier: 'v1', data: 5, compute: 15, seconds: 15 },
+    { tier: 'v2', data: 15, compute: 40, consumes: 'v1', seconds: 30 },
   ],
-  speedupPerCrystal: 0.1,
+  speedupPerProgram: 0.1,
   fastestShare: 0.5,
 };
 const exchange = {
-  books: [{ item: 'shard', bids: [{ price: 25, quantity: 2 }], asks: [{ price: 30, quantity: 5 }] }],
-  fills: [{ seq: 1, time: 12, item: 'shard', quantity: 3, price: 30, own: 'sold' }],
+  books: [{ item: 'data', bids: [{ price: 25, quantity: 2 }], asks: [{ price: 30, quantity: 5 }] }],
+  fills: [{ seq: 1, time: 12, item: 'data', quantity: 3, price: 30, own: 'sold' }],
   viewerId: 'a',
-  orders: [{ id: 1, side: 'sell', item: 'shard', quantity: 5, price: 30, remainingSeconds: 288 }],
+  orders: [{ id: 1, side: 'sell', item: 'data', quantity: 5, price: 30, remainingSeconds: 288 }],
   maxOrders: 8,
 };
 
 const withCrafts = (patch: Record<string, unknown>, worker: Record<string, unknown> = {}) => {
   const message = state(100, [{ ...resident('a', 20, 20), ...worker }]);
-  return { ...message, world: { ...message.world, quarries: [quarry], workshop, exchange, ...patch } };
+  return { ...message, world: { ...message.world, mines: [mine], studio, exchange, ...patch } };
 };
 
-it('accepts quarries, a workshop, the exchange and a resident digging', () => {
+it('accepts mines, a studio, the exchange and a resident gathering', () => {
   const parsed = parseServerMessage(
-    withCrafts({}, { shards: 12, crystalsRefined: 2, digging: { quarryId: 'q1', amount: 6, remainingSeconds: 4 } }),
+    withCrafts({}, { data: 12, programsWritten: 2, gathering: { mineId: 'm1', amount: 6, remainingSeconds: 4 } }),
   );
 
   expect(parsed.ok).toBe(true);
 });
 
-it('accepts a resident refining a crystal', () => {
-  const parsed = parseServerMessage(withCrafts({}, { refining: { tier: 'C2', remainingSeconds: 20 } }));
+it('accepts a resident writing a program', () => {
+  const parsed = parseServerMessage(withCrafts({}, { writing: { tier: 'v2', remainingSeconds: 20 } }));
 
   expect(parsed.ok).toBe(true);
 });
 
 it.each([
-  ['a quarry outside the map', { quarries: [{ ...quarry, position: { x: 101, y: 20 } }] }, {}],
-  ['a duplicate quarry', { quarries: [quarry, quarry] }, {}],
-  ['a workshop outside the map', { workshop: { ...workshop, position: { x: -1, y: 0 } } }, {}],
-  ['a dig at an unknown quarry', {}, { digging: { quarryId: 'q9', amount: 6, remainingSeconds: 4 } }],
+  ['a mine outside the map', { mines: [{ ...mine, position: { x: 101, y: 20 } }] }, {}],
+  ['a duplicate mine', { mines: [mine, mine] }, {}],
+  ['a studio outside the map', { studio: { ...studio, position: { x: -1, y: 0 } } }, {}],
+  ['a gather at an unknown mine', {}, { gathering: { mineId: 'm9', amount: 6, remainingSeconds: 4 } }],
   ['an order with an unknown side', { exchange: { ...exchange, orders: [{ ...exchange.orders[0], side: 'hold' }] } }, {}],
   ['a fill at no price', { exchange: { ...exchange, fills: [{ ...exchange.fills[0], price: 0 }] } }, {}],
 ])('refuses %s', (_, patch, worker) => {
@@ -118,7 +118,7 @@ const withDeals = (deals: Record<string, unknown[]>) => {
   return { ...message, world: { ...message.world, ...deals } };
 };
 
-const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'energy', quantity: 5, price: 80 };
+const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'compute', quantity: 5, price: 80 };
 
 const proposal = {
   eventId: 2,
@@ -126,7 +126,7 @@ const proposal = {
   toId: 'b',
   supplierId: 'b',
   buyerId: 'a',
-  item: 'energy',
+  item: 'compute',
   quantity: 10,
   price: 100,
   deliveries: 3,
@@ -138,7 +138,7 @@ const contract = {
   id: 1,
   supplierId: 'b',
   buyerId: 'a',
-  item: 'energy',
+  item: 'compute',
   quantity: 10,
   price: 100,
   deliveriesLeft: 2,
@@ -150,12 +150,12 @@ const contract = {
 
 const line = { seq: 1, time: 3.5, speakerId: 'a', text: '有人吗？', listeners: ['b'] };
 
-const crystals = [
-  { tier: 'C1', price: 300, energyPerJob: 30 },
-  { tier: 'C2', price: 1200, energyPerJob: 60 },
+const programs = [
+  { tier: 'v1', price: 300, computePerJob: 30 },
+  { tier: 'v2', price: 1200, computePerJob: 60 },
 ];
 
-const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, crystals, priceHistory: [] };
+const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, programs, priceHistory: [] };
 
 const withMarket = (value: unknown) => {
   const message = state(100, []);
@@ -168,11 +168,11 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
-  it('accepts springs and a resident harvesting one of them with a crystal', () => {
+  it('accepts springs and a resident harvesting one of them with a program', () => {
     const harvester = {
       ...resident('a', 1, 1),
-      crystals: { C1: 2, C2: 1 },
-      harvesting: { springId: 'p1', amount: 60, crystal: 'C2', remainingSeconds: 9.5 },
+      programs: { v1: 2, v2: 1 },
+      harvesting: { springId: 'p1', amount: 60, program: 'v2', remainingSeconds: 9.5 },
     };
     const message = state(100, [harvester], game, [spring('p1', 10, 10), spring('p2', 100, 0)]);
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
@@ -268,26 +268,26 @@ describe('parseServerMessage', () => {
     ['rank below 1', state(100, [{ ...resident('a', 1, 1), rank: 0 }])],
     ['missing game', { type: 'state', world: { map: { size: 100 }, residents: [] } }],
     ['negative remaining time', state(100, [], { ended: false, remainingSeconds: -1 })],
-    ['missing energy', state(100, [{ ...resident('a', 1, 1), energy: undefined }])],
-    ['fractional energy', state(100, [{ ...resident('a', 1, 1), energy: 0.5 }])],
+    ['missing compute', state(100, [{ ...resident('a', 1, 1), compute: undefined }])],
+    ['fractional compute', state(100, [{ ...resident('a', 1, 1), compute: 0.5 }])],
     ['missing springs', { type: 'state', world: { map: { size: 100 }, residents: [], game } }],
     ['spring outside the map', state(100, [], game, [spring('p1', 101, 5)])],
     ['duplicate spring ids', state(100, [], game, [spring('p1', 1, 1), spring('p1', 2, 2)])],
     ['negative reserve', state(100, [], game, [{ ...spring('p1', 1, 1), reserve: -1 }])],
     [
       'harvesting an unknown spring',
-      state(100, [{ ...resident('a', 1, 1), harvesting: { springId: 'p9', amount: 1, crystal: 'C1', remainingSeconds: 1 } }]),
+      state(100, [{ ...resident('a', 1, 1), harvesting: { springId: 'p9', amount: 1, program: 'v1', remainingSeconds: 1 } }]),
     ],
     [
-      'harvesting without saying which crystal',
+      'harvesting without saying which program',
       state(100, [{ ...resident('a', 1, 1), harvesting: { springId: 'p1', amount: 1, remainingSeconds: 1 } }], game, [
         spring('p1', 1, 1),
       ]),
     ],
-    ['missing crystals', state(100, [{ ...resident('a', 1, 1), crystals: undefined }])],
-    ['a crystal count of zero', state(100, [{ ...resident('a', 1, 1), crystals: { C1: 0 } }])],
-    ['market without crystals on sale', withMarket({ ...market, crystals: undefined })],
-    ['a crystal without a price', withMarket({ ...market, crystals: [{ tier: 'C1', energyPerJob: 30 }] })],
+    ['missing programs', state(100, [{ ...resident('a', 1, 1), programs: undefined }])],
+    ['a program count of zero', state(100, [{ ...resident('a', 1, 1), programs: { v1: 0 } }])],
+    ['market without programs on sale', withMarket({ ...market, programs: undefined })],
+    ['a program without a price', withMarket({ ...market, programs: [{ tier: 'v1', computePerJob: 30 }] })],
     [
       'walking off the map',
       state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 100.1, y: 0 }, remainingSeconds: 1 } }]),
@@ -346,8 +346,8 @@ describe('parseServerMessage', () => {
 
 const turn = {
   seq: 1, time: 0, endedAt: 2, summary: '稳健经营',
-  before: { coins: 10000, energy: 200 }, after: { coins: 9700, energy: 200 },
-  calls: [{ name: 'buy_crystal', arguments: "{'model': 'C1'}", time: 1, ok: true, coinsChange: -300, energyChange: 0 }],
+  before: { coins: 10000, compute: 200 }, after: { coins: 9700, compute: 200 },
+  calls: [{ name: 'buy_program', arguments: "{'model': 'v1'}", time: 1, ok: true, coinsChange: -300, computeChange: 0 }],
 };
 
 it('accepts a selected resident timeline with measured resource changes', () => {
@@ -360,7 +360,7 @@ it('accepts a selected resident timeline with measured resource changes', () => 
 });
 
 it.each([
-  { ...turn, after: { coins: -1, energy: 200 } },
+  { ...turn, after: { coins: -1, compute: 200 } },
   { ...turn, calls: [{ ...turn.calls[0], coinsChange: 0.5 }] },
   { ...turn, summary: 'a'.repeat(501) },
 ])('rejects an invalid timeline entry', (invalid) => {

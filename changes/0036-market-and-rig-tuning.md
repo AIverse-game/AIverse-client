@@ -18,7 +18,7 @@
 - Agent：`build_rig` 成功时告诉模型新矿机的编号；在别处的矿机上安装时，拒绝原因说明该矿机在哪个矿池。系统提示同步说明新规则。
 - 协议 16：收购点增加 `restingPressure`，`pressure` 可以为负；`rigRules` 增加 `yieldMultiplier`。页面按新公式推算现价，矿机面板按倍数估算产量。
 
-设计文档：收购点此前没有设计文档，按设计文档规则新建 [token 收购点](../docs/design/energy-market.md)，并在 [总体设计](../docs/design/game-overview.md) 留调整记录；修改 [矿机设计](../docs/design/towers.md)。
+设计文档：收购点此前没有设计文档，按设计文档规则新建 [token 收购点](../docs/design/compute-market.md)，并在 [总体设计](../docs/design/game-overview.md) 留调整记录；修改 [矿机设计](../docs/design/collectors.md)。
 
 ## 关键选择
 

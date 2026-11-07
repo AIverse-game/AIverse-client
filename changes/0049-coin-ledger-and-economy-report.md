@@ -4,7 +4,7 @@
 
 ## 目标与依据
 
-用户（2026-11-03）希望游戏往社会与市场模拟发展，并确认按 [经济指标](../docs/design/economy-metrics.md)、[芯片与芯片制造](../docs/design/crystals.md)、[挂单交易所](../docs/design/order-book.md) 三份设计的建议推进，第一步是记账与经济指标：先用现有规则测出基线，之后每次改经济规则都能比较居民之间的交易是否变得更活跃。
+用户（2026-11-03）希望游戏往社会与市场模拟发展，并确认按 [经济指标](../docs/design/economy-metrics.md)、[芯片与芯片制造](../docs/design/programs.md)、[挂单交易所](../docs/design/order-book.md) 三份设计的建议推进，第一步是记账与经济指标：先用现有规则测出基线，之后每次改经济规则都能比较居民之间的交易是否变得更活跃。
 
 可观察的变化：对局结束时，服务端在日志目录写 `summary.json`，并在控制台打印几行经济摘要，其中最核心的是“居民间流量占比”。游戏规则、协议和页面都不变。
 
@@ -23,7 +23,7 @@
 
 留给后续：页面赛后复盘、跨局对比、物品流转统计；硅矿与芯片厂、挂单交易所分别在后续变更中实现。
 
-设计文档：修改 [经济指标](../docs/design/economy-metrics.md)（状态改为首版已实现，写入用户的确认）；[芯片与芯片制造](../docs/design/crystals.md) 与 [挂单交易所](../docs/design/order-book.md) 只写入用户的确认，设计不变。
+设计文档：修改 [经济指标](../docs/design/economy-metrics.md)（状态改为首版已实现，写入用户的确认）；[芯片与芯片制造](../docs/design/programs.md) 与 [挂单交易所](../docs/design/order-book.md) 只写入用户的确认，设计不变。
 
 ## 关键选择
 
@@ -58,5 +58,5 @@
 ## 交接
 
 - 正式基线（2026-11-03 补记）：真实模型对局测得居民间占比 4.0%，详见[经济指标](../docs/design/economy-metrics.md)的“基线”。
-- 下一步：实现硅矿与芯片厂（[芯片与芯片制造](../docs/design/crystals.md)）。
+- 下一步：实现硅矿与芯片厂（[芯片与芯片制造](../docs/design/programs.md)）。
 - 已更新 `docs/status.md`。

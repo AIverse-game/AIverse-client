@@ -29,9 +29,9 @@
 - 测试：删掉 `tests/unit/game/test_scoring.py` 和其他文件里 0054 加的用例；`test_lifecycle.py` 新增“能量和晶核不影响排名”，`test_system_prompt.py` 新增“只有金币计分”“鼓励局中卖出”，`test_llm_brain.py` 新增结束提醒的文字。
 - `README.md`：功能说明、模型配置的结束提醒、观察、大模型大脑、协议版本与字段、经济报告、代码结构。
 
-客户端：`packages/protocol`（版本 21，删掉 `itemValue`、`score`）、`ui/RankingPanel.tsx`、测试数据；文档（本说明、[0054](0054-score-counts-held-items.md) 的状态、[晶核与炼制](../docs/design/crystals.md)、[总体设计](../docs/design/game-overview.md)的再调整说明、[经济指标](../docs/design/economy-metrics.md)、[代码地图](../docs/code-map.md)、`docs/status.md`）。
+客户端：`packages/protocol`（版本 21，删掉 `itemValue`、`score`）、`ui/RankingPanel.tsx`、测试数据；文档（本说明、[0054](0054-score-counts-held-items.md) 的状态、[晶核与炼制](../docs/design/programs.md)、[总体设计](../docs/design/game-overview.md)的再调整说明、[经济指标](../docs/design/economy-metrics.md)、[代码地图](../docs/code-map.md)、`docs/status.md`）。
 
-设计文档：在 [晶核与炼制](../docs/design/crystals.md)的计分折算后记录撤销与原因，在 [总体设计](../docs/design/game-overview.md)的 0054 调整后加再调整说明。
+设计文档：在 [晶核与炼制](../docs/design/programs.md)的计分折算后记录撤销与原因，在 [总体设计](../docs/design/game-overview.md)的 0054 调整后加再调整说明。
 
 ## 关键选择
 

@@ -179,17 +179,17 @@ h2 {
 }
 
 .residents .coords,
-.residents .energy,
+.residents .compute,
 .springs .coords,
-.springs .energy {
+.springs .compute {
   font-variant-numeric: tabular-nums;
 }
 
-.residents .energy {
+.residents .compute {
   color: #9fe3f0;
 }
 
-.residents .crystals {
+.residents .programs {
   font-size: 12px;
   color: var(--muted);
 }
@@ -213,7 +213,7 @@ h2 {
   color: #9fe3f0;
 }
 
-.springs .energy {
+.springs .compute {
   margin-left: auto;
 }
 
@@ -379,14 +379,14 @@ h2 {
   cursor: pointer;
 }
 
-.buy-crystals {
+.buy-programs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 8px;
 }
 
-.buy-crystals button {
+.buy-programs button {
   padding: 4px 10px;
   border: 1px solid #4fc3d9;
   border-radius: 6px;
@@ -397,7 +397,7 @@ h2 {
   cursor: pointer;
 }
 
-.buy-crystals button:disabled {
+.buy-programs button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -438,7 +438,7 @@ h2 {
   object-fit: contain;
 }
 
-.crystal-icon {
+.program-icon {
   width: 20px;
   height: 20px;
   margin-right: 2px;
@@ -446,7 +446,7 @@ h2 {
   object-fit: contain;
 }
 
-/* A busy resident with crystals outgrows the side column: wrap between items, never inside one. */
+/* A busy resident with programs outgrows the side column: wrap between items, never inside one. */
 .residents button {
   flex-wrap: wrap;
   row-gap: 2px;
@@ -456,11 +456,11 @@ h2 {
   white-space: nowrap;
 }
 
-.residents .crystal + .crystal {
+.residents .program + .program {
   margin-left: 2px;
 }
 
-.buy-crystals .crystal-icon {
+.buy-programs .program-icon {
   width: 24px;
   height: 24px;
 }
@@ -700,15 +700,15 @@ h2 {
 .agent-calls summary { cursor: pointer; color: var(--muted); }
 .agent-calls pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
 
-.tower-card { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
-.tower-card h3 { margin: 0 0 8px; font-size: 15px; }
-.tower-slot { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 4px; }
-.tower-form { display: grid; gap: 8px; margin-top: 12px; }
-.tower-form label { display: grid; gap: 4px; font-size: 13px; }
-.tower-form input, .tower-form select { min-width: 0; padding: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; font: inherit; }
-.tower-panel button { padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-strong); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
-.tower-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
-.tower-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.collector-card { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+.collector-card h3 { margin: 0 0 8px; font-size: 15px; }
+.collector-slot { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 4px; }
+.collector-form { display: grid; gap: 8px; margin-top: 12px; }
+.collector-form label { display: grid; gap: 4px; font-size: 13px; }
+.collector-form input, .collector-form select { min-width: 0; padding: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; font: inherit; }
+.collector-panel button { padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-strong); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.collector-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
+.collector-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .price-chart-summary { margin: 0 0 6px; font-size: 13px; }
 .price-chart-summary strong { font-size: 18px; color: var(--accent); }

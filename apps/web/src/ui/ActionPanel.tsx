@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { formatCoordinate } from '../render/layout';
 import { useGameState, useStore } from '../state/storeContext';
 import type { ActionStatus } from '../state/store';
-import { CrystalIcon } from './CrystalIcon';
+import { ProgramIcon } from './ProgramIcon';
 import { formatPrice } from './format';
 import { useSecondTick } from './useSecondTick';
 
@@ -24,8 +24,8 @@ export function ActionPanel() {
   // Jobs and walks keep the resident busy: everything but talking and leaving waits until they end.
   const free = resident !== null && store.isFree(resident.id);
   const spring = resident ? store.springInReach(resident.id) : null;
-  const quarry = resident ? store.quarryInReach(resident.id) : null;
-  const crystal = resident ? store.bestCrystal(resident.id) : null;
+  const mine = resident ? store.mineInReach(resident.id) : null;
+  const program = resident ? store.bestProgram(resident.id) : null;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -38,9 +38,9 @@ export function ActionPanel() {
     store.act({ type: 'harvest', residentId: resident.id, springId: spring.id });
   };
 
-  const dig = () => {
-    if (!resident || !quarry) return;
-    store.act({ type: 'dig_shards', residentId: resident.id, quarryId: quarry.id });
+  const gather = () => {
+    if (!resident || !mine) return;
+    store.act({ type: 'gather_data', residentId: resident.id, mineId: mine.id });
   };
 
   const leave = () => {
@@ -60,7 +60,7 @@ export function ActionPanel() {
           {resident.walking
             ? '正在行走'
             : `现在位于 (${formatCoordinate(resident.position.x)}, ${formatCoordinate(resident.position.y)})`}
-          ，持有 {resident.energy} 能量
+          ，持有 {resident.compute} 算力
         </p>
       ) : (
         <p className="muted small">先在居民列表或地图上点选一名居民。</p>
@@ -72,20 +72,20 @@ export function ActionPanel() {
       )}
       {resident?.harvesting && (
         <p className="small" role="status">
-          正在用 <CrystalIcon tier={resident.harvesting.crystal} />
-          {resident.harvesting.crystal} 在能量泉 {resident.harvesting.springId} 汲取，完成后获得 {resident.harvesting.amount}{' '}
-          能量；汲取期间守着晶核，只能说话或退出游戏。
+          正在用 <ProgramIcon tier={resident.harvesting.program} />
+          {resident.harvesting.program} 在算力泉 {resident.harvesting.springId} 采集，完成后获得 {resident.harvesting.amount}{' '}
+          算力；采集期间守着程序，只能说话或退出游戏。
         </p>
       )}
-      {resident?.digging && (
+      {resident?.gathering && (
         <p className="small" role="status">
-          正在晶矿 {resident.digging.quarryId} 挖晶砂，完成后获得 {resident.digging.amount} 个晶砂；期间只能说话或退出游戏。
+          正在数据矿 {resident.gathering.mineId} 采集数据，完成后获得 {resident.gathering.amount} 个数据；期间只能说话或退出游戏。
         </p>
       )}
-      {resident?.refining && (
+      {resident?.writing && (
         <p className="small" role="status">
-          正在工坊炼制 <CrystalIcon tier={resident.refining.tier} />
-          {resident.refining.tier}，原料已经扣除；期间只能说话或退出游戏。
+          正在工作室编写 <ProgramIcon tier={resident.writing.tier} />
+          {resident.writing.tier}，原料已经扣除；期间只能说话或退出游戏。
         </p>
       )}
       {resident?.walking && (
@@ -126,34 +126,34 @@ export function ActionPanel() {
       </form>
       <p className="muted small">
         选中居民后，点击地图上的地面也会让其走到该点。居民沿直线匀速走过去，到达前不能做别的；
-        出发时按直线距离扣能量（向上取整），不够则走不了；能量用完，到达后出局。
+        出发时按直线距离扣算力（向上取整），不够则走不了；算力用完，到达后出局。
       </p>
-      <button type="button" className="harvest" disabled={!free || !spring || !crystal || spring.reserve === 0} onClick={harvest}>
-        {crystal && (
+      <button type="button" className="harvest" disabled={!free || !spring || !program || spring.reserve === 0} onClick={harvest}>
+        {program && (
           <>
-            用 <CrystalIcon tier={crystal.tier} />
-            {crystal.tier}{' '}
+            用 <ProgramIcon tier={program.tier} />
+            {program.tier}{' '}
           </>
         )}
-        {spring ? `在能量泉 ${spring.id} 汲取（剩余 ${spring.reserve}）` : '汲取'}
+        {spring ? `在算力泉 ${spring.id} 采集（剩余 ${spring.reserve}）` : '采集'}
       </button>
-      {resident && !resident.left && !ended && (!crystal || !spring) && (
+      {resident && !resident.left && !ended && (!program || !spring) && (
         <p className="muted small">
-          {!crystal && '没有晶核不能汲取，先到收购点买一块。'}
-          {!spring && '走到能量泉的圆圈范围内才能汲取。'}
+          {!program && '没有程序不能采集，先到收购点买一个。'}
+          {!spring && '走到算力泉的圆圈范围内才能采集。'}
         </p>
       )}
-      {world.quarries.length > 0 && (
-        <button type="button" className="harvest" disabled={!free || !quarry || quarry.reserve === 0} onClick={dig}>
-          {quarry ? `在晶矿 ${quarry.id} 挖晶砂（剩余 ${quarry.reserve}）` : '挖晶砂'}
+      {world.mines.length > 0 && (
+        <button type="button" className="harvest" disabled={!free || !mine || mine.reserve === 0} onClick={gather}>
+          {mine ? `在数据矿 ${mine.id} 采集数据（剩余 ${mine.reserve}）` : '采集数据'}
         </button>
       )}
-      {resident && canAct && !quarry && world.quarries.length > 0 && (
-        <p className="muted small">走到晶矿的圆圈范围内才能挖晶砂，不需要晶核。晶砂只用来炼晶核，收购点自己不收也不卖，可以在交易所和其他居民买卖。</p>
+      {resident && canAct && !mine && world.mines.length > 0 && (
+        <p className="muted small">走到数据矿的圆圈范围内才能采集数据，不需要程序。数据只用来写程序，收购点自己不收也不卖，可以在交易所和其他居民买卖。</p>
       )}
-      {resident && world.workshop && <RefineForm resident={resident} free={free} />}
+      {resident && world.studio && <WriteForm resident={resident} free={free} />}
       {resident && world.market && <SellForm resident={resident} free={free} />}
-      {resident && world.market && <BuyCrystalForm resident={resident} free={free} />}
+      {resident && world.market && <BuyProgramForm resident={resident} free={free} />}
       <button type="button" className="leave" disabled={!canAct} onClick={leave}>
         退出游戏
       </button>
@@ -162,7 +162,7 @@ export function ActionPanel() {
   );
 }
 
-/** Selling energy at the market, with what the sale would fetch at the price right now. */
+/** Selling compute at the market, with what the sale would fetch at the price right now. */
 function SellForm({ resident, free }: { resident: ResidentView; free: boolean }) {
   const store = useStore();
   const [quantity, setQuantity] = useState('');
@@ -178,15 +178,15 @@ function SellForm({ resident, free }: { resident: ResidentView; free: boolean })
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!valid) return;
-    // `energy` counts those set aside in offers too: only selling exactly that many empties the
+    // `compute` counts those set aside in offers too: only selling exactly that many empties the
     // resident, and the server refuses more than they carry. The view has no carried count yet,
-    // so with energy set aside this asks needlessly and the server then refuses.
+    // so with compute set aside this asks needlessly and the server then refuses.
     if (
-      amount === resident.energy &&
-      !window.confirm(`卖出全部 ${resident.energy} 能量后 ${resident.name} 会出局：不能再行动，金币保留并参与排名。继续？`)
+      amount === resident.compute &&
+      !window.confirm(`卖出全部 ${resident.compute} 算力后 ${resident.name} 会出局：不能再行动，金币保留并参与排名。继续？`)
     )
       return;
-    store.act({ type: 'sell_energy', residentId: resident.id, quantity: amount });
+    store.act({ type: 'sell_compute', residentId: resident.id, quantity: amount });
   };
 
   return (
@@ -199,12 +199,12 @@ function SellForm({ resident, free }: { resident: ResidentView; free: boolean })
             inputMode="numeric"
             required
             min={1}
-            max={resident.energy}
+            max={resident.compute}
             step={1}
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
           />
-          能量
+          算力
         </label>
         <button type="submit" disabled={!free || !atMarket || !valid}>
           卖给收购点
@@ -212,79 +212,79 @@ function SellForm({ resident, free }: { resident: ResidentView; free: boolean })
       </form>
       {!canAct ? null : atMarket ? (
         <p className="muted small">
-          现价 {price === null ? '—' : formatPrice(price)} 金币 / 能量
+          现价 {price === null ? '—' : formatPrice(price)} 金币 / 算力
           {estimate !== null && `，卖出 ${amount} 个约得 ${estimate.toLocaleString('zh-CN')} 金币（以服务端为准）`}
           。卖得越多单价越低，等一会儿价格会回升。
         </p>
       ) : (
-        <p className="muted small">走到地图中央收购点的圆圈范围内才能卖能量、买晶核。</p>
+        <p className="muted small">走到地图中央收购点的圆圈范围内才能卖算力、买程序。</p>
       )}
     </>
   );
 }
 
-/** Refining at the workshop, one button per recipe with what it uses up and how long it takes. */
-function RefineForm({ resident, free }: { resident: ResidentView; free: boolean }) {
+/** Writing at the studio, one button per recipe with what it uses up and how long it takes. */
+function WriteForm({ resident, free }: { resident: ResidentView; free: boolean }) {
   const store = useStore();
   const { world } = useGameState();
-  const recipes = world?.workshop?.recipes ?? [];
-  const atWorkshop = store.atWorkshop(resident.id);
+  const recipes = world?.studio?.recipes ?? [];
+  const atStudio = store.atStudio(resident.id);
   const canAct = store.canAct(resident.id);
 
-  const refine = (tier: string, energy: number) => {
-    // Owned energy counts what offers and sell orders set aside, so this may ask needlessly.
+  const write = (tier: string, compute: number) => {
+    // Owned compute counts what offers and sell orders set aside, so this may ask needlessly.
     if (
-      energy === resident.energy &&
-      !window.confirm(`炼制会用掉 ${resident.name} 全部的能量，之后会出局。继续？`)
+      compute === resident.compute &&
+      !window.confirm(`编写会用掉 ${resident.name} 全部的算力，之后会出局。继续？`)
     )
       return;
-    store.act({ type: 'refine_crystal', residentId: resident.id, tier });
+    store.act({ type: 'write_program', residentId: resident.id, tier });
   };
 
   return (
     <>
-      <div className="buy-crystals">
+      <div className="buy-programs">
         {recipes.map((recipe) => {
-          const seconds = store.refineSeconds(resident.id, recipe);
+          const seconds = store.writeSeconds(resident.id, recipe);
           return (
             <button
               key={recipe.tier}
               type="button"
-              disabled={!free || !atWorkshop || store.lacksMaterials(resident.id, recipe)}
-              onClick={() => refine(recipe.tier, recipe.energy)}
+              disabled={!free || !atStudio || store.lacksMaterials(resident.id, recipe)}
+              onClick={() => write(recipe.tier, recipe.compute)}
             >
-              炼 <CrystalIcon tier={recipe.tier} />
-              {recipe.tier}：{recipe.shards} 晶砂 + {recipe.energy} 能量
-              {recipe.consumes && ` + 1 块 ${recipe.consumes}`}
+              写 <ProgramIcon tier={recipe.tier} />
+              {recipe.tier}：{recipe.data} 数据 + {recipe.compute} 算力
+              {recipe.consumes && ` + 1 个 ${recipe.consumes}`}
               {seconds !== null && `，约 ${Math.round(seconds)} 秒`}
             </button>
           );
         })}
       </div>
-      {canAct && !atWorkshop && <p className="muted small">走到工坊的圆圈范围内才能炼晶核，原料要带在身上。</p>}
+      {canAct && !atStudio && <p className="muted small">走到工作室的圆圈范围内才能写程序，原料要带在身上。</p>}
     </>
   );
 }
 
-/** Buying crystals at the market, one button per tier at its fixed price. */
-function BuyCrystalForm({ resident, free }: { resident: ResidentView; free: boolean }) {
+/** Buying programs at the market, one button per tier at its fixed price. */
+function BuyProgramForm({ resident, free }: { resident: ResidentView; free: boolean }) {
   const store = useStore();
   const { world } = useGameState();
-  const tiers = world?.market?.crystals ?? [];
+  const tiers = world?.market?.programs ?? [];
   if (tiers.length === 0) return null;
   const atMarket = store.atMarket(resident.id);
 
   return (
-    <div className="buy-crystals">
+    <div className="buy-programs">
       {tiers.map((tier) => (
         <button
           key={tier.tier}
           type="button"
           disabled={!free || !atMarket || resident.spendableCoins < tier.price}
-          onClick={() => store.act({ type: 'buy_crystal', residentId: resident.id, tier: tier.tier })}
+          onClick={() => store.act({ type: 'buy_program', residentId: resident.id, tier: tier.tier })}
         >
-          买 <CrystalIcon tier={tier.tier} />
-          {tier.tier}：{tier.price.toLocaleString('zh-CN')} 金币，每次汲取 {tier.energyPerJob} 能量
+          买 <ProgramIcon tier={tier.tier} />
+          {tier.tier}：{tier.price.toLocaleString('zh-CN')} 金币，每次采集 {tier.computePerJob} 算力
         </button>
       ))}
     </div>

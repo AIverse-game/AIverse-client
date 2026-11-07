@@ -1,4 +1,4 @@
-import type { MarketView, Position, QuarryView, ResidentId, ResidentView, SpringView, TowerView, WorkshopView } from '@aiverse/protocol';
+import type { MarketView, Position, MineView, ResidentId, ResidentView, SpringView, CollectorView, StudioView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import floorCorners from '../assets/floor/metal-floor-corners.png';
 import floorNodes from '../assets/floor/metal-floor-nodes.png';
@@ -8,7 +8,7 @@ import marketSprite from '../assets/market/market-sprite.png';
 import springMarkerSprite from '../assets/pools/pool-marker-sprite.png';
 import springSprite from '../assets/pools/pool-sprite.png';
 import residentSprite from '../assets/residents/resident-sprite.png';
-import towerSprite from '../assets/rigs/mining-rig.png';
+import collectorSprite from '../assets/rigs/mining-rig.png';
 import type { GameStore } from '../state/store';
 import { paintFloorSurface, readFloorSources } from './floorSurface';
 import {
@@ -17,7 +17,7 @@ import {
   CANVAS_WIDTH,
   formatCoordinate,
   projectMap,
-  towerPositionOnSpring,
+  collectorPositionOnSpring,
   SLAB_DEPTH,
   type MapProjection,
 } from './layout';
@@ -41,7 +41,7 @@ const LABEL_OFFSET = 0.04;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
 /**
- * Energy springs: a square pad lying on the ground around their centre, its edges touching the reach
+ * Compute springs: a square pad lying on the ground around their centre, its edges touching the reach
  * circle (so the circle is inscribed in it and the corners stick out), with a marker floating above its middle. Both pictures are the user's pool.png and
  * pool-marker.png beside them, trimmed to the visible pixels (alpha above 8) and scaled down to
  * 256 px wide and 128 px high.
@@ -71,13 +71,13 @@ const MARKET_HEIGHT = 72;
 const MARKET_FOOT_X = 0.65;
 const MARKET_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#f7dc8a', stroke: '#1d1a16', strokeThickness: 3 };
 
-const TOWER_TEXTURE = 'tower';
-const TOWER_FRAME = 'machine';
+const COLLECTOR_TEXTURE = 'collector';
+const COLLECTOR_FRAME = 'machine';
 /** Visible area (alpha > 8) within the user's unchanged 1254 × 1254 transparent PNG. */
-const TOWER_BOUNDS = { x: 87, y: 311, width: 1083, height: 840 };
-const TOWER_HEIGHT = 66;
+const COLLECTOR_BOUNDS = { x: 87, y: 311, width: 1083, height: 840 };
+const COLLECTOR_HEIGHT = 66;
 /** Ground contact near the front foot, measured within the visible frame. */
-const TOWER_FOOT_X = 0.7;
+const COLLECTOR_FOOT_X = 0.7;
 
 /**
  * A resident is the user's resident.png, a spirit that floats, trimmed to the visible pixels
@@ -135,18 +135,18 @@ interface SpringMarker {
 const SPRING_DEPTH = 0.5;
 
 /**
- * Shard quarries and the workshop: a patch of ground the size of their reach with a small drawn
+ * Data mines and the studio: a patch of ground the size of their reach with a small drawn
  * figure in the middle, sorted with the residents. Drawn here until there are pictures for them.
  */
-const QUARRY_FILL = 0x8f6fd6;
-const QUARRY_EDGE = 0xc9b3f5;
-const QUARRY_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#e4d8fb', stroke: '#1d1a16', strokeThickness: 3 };
-const WORKSHOP_FILL = 0x4fa58a;
-const WORKSHOP_EDGE = 0x9cdbb2;
-const WORKSHOP_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#c8f0d7', stroke: '#1d1a16', strokeThickness: 3 };
-/** Quarries with nothing left stay on the map, faded. */
-const EMPTY_QUARRY_ALPHA = 0.35;
-/** Canvas pixels per figure unit of a quarry's or the workshop's figure at the map centre. */
+const MINE_FILL = 0x8f6fd6;
+const MINE_EDGE = 0xc9b3f5;
+const MINE_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#e4d8fb', stroke: '#1d1a16', strokeThickness: 3 };
+const STUDIO_FILL = 0x4fa58a;
+const STUDIO_EDGE = 0x9cdbb2;
+const STUDIO_LABEL_STYLE = { fontFamily: FONT, fontSize: '12px', color: '#c8f0d7', stroke: '#1d1a16', strokeThickness: 3 };
+/** Mines with nothing left stay on the map, faded. */
+const EMPTY_MINE_ALPHA = 0.35;
+/** Canvas pixels per figure unit of a mine's or the studio's figure at the map centre. */
 const SITE_FIGURE_SCALE = 2;
 
 /**
@@ -158,7 +158,7 @@ const RESIDENT_DEPTH = 1;
 const CURSOR_DEPTH = 10;
 
 /**
- * Draws the map as a tilted ground slab, its springs, quarries, workshop, market and residents from the latest
+ * Draws the map as a tilted ground slab, its springs, mines, studio, market and residents from the latest
  * snapshot in the store.
  * Clicking a resident selects it; clicking the ground then asks the server to move it there.
  */
@@ -178,12 +178,12 @@ export class MapScene extends Phaser.Scene {
   private drawnMarket = '';
   /** What the springs were last drawn from, so they are redrawn only when that changes. */
   private drawnSprings = '';
-  /** Patches of the quarries and the workshop, and their figures and labels. */
+  /** Patches of the mines and the studio, and their figures and labels. */
   private sites: Phaser.GameObjects.Graphics | null = null;
   private siteObjects: Phaser.GameObjects.GameObject[] = [];
   private drawnSites = '';
-  private drawnTowers = '';
-  private towerMarkers: { root: Phaser.GameObjects.Container; machine: Phaser.GameObjects.Image; position: Position }[] = [];
+  private drawnCollectors = '';
+  private collectorMarkers: { root: Phaser.GameObjects.Container; machine: Phaser.GameObjects.Image; position: Position }[] = [];
   private axisLabels: Phaser.GameObjects.Text[] = [];
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
@@ -198,7 +198,7 @@ export class MapScene extends Phaser.Scene {
     this.load.image(MARKET_TEXTURE, marketSprite);
     this.load.image(SPRING_TEXTURE, springSprite);
     this.load.image(SPRING_MARKER_TEXTURE, springMarkerSprite);
-    this.load.image(TOWER_TEXTURE, towerSprite);
+    this.load.image(COLLECTOR_TEXTURE, collectorSprite);
     this.load.image(RESIDENT_TEXTURE, residentSprite);
     [floorCorners, floorSparse, floorNodes, floorStrips].forEach((url, index) => {
       this.load.image(FLOOR_TEXTURES[index]!, url);
@@ -206,9 +206,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   create(): void {
-    const texture = this.textures.get(TOWER_TEXTURE);
-    if (!texture.has(TOWER_FRAME)) {
-      texture.add(TOWER_FRAME, 0, TOWER_BOUNDS.x, TOWER_BOUNDS.y, TOWER_BOUNDS.width, TOWER_BOUNDS.height);
+    const texture = this.textures.get(COLLECTOR_TEXTURE);
+    if (!texture.has(COLLECTOR_FRAME)) {
+      texture.add(COLLECTOR_FRAME, 0, COLLECTOR_BOUNDS.x, COLLECTOR_BOUNDS.y, COLLECTOR_BOUNDS.width, COLLECTOR_BOUNDS.height);
     }
     texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.floorSources = readFloorSources(FLOOR_TEXTURES.map((key) => this.textures.get(key).getSourceImage() as HTMLImageElement));
@@ -250,21 +250,21 @@ export class MapScene extends Phaser.Scene {
       this.drawMarket(world.market);
       this.drawnMarket = market;
     }
-    const sites = JSON.stringify([world.map.size, world.quarries, world.workshop?.position, world.workshop?.radius]);
+    const sites = JSON.stringify([world.map.size, world.mines, world.studio?.position, world.studio?.radius]);
     if (sites !== this.drawnSites) {
-      this.drawSites(world.quarries, world.workshop);
+      this.drawSites(world.mines, world.studio);
       this.drawnSites = sites;
     }
     this.syncResidents(world.residents, resized);
-    const towers = JSON.stringify([
+    const collectors = JSON.stringify([
       world.map.size,
-      world.towers,
+      world.collectors,
       world.game.ended,
       world.springs.map(({ id, position, radius }) => [id, position, radius]),
     ]);
-    if (towers !== this.drawnTowers) {
-      this.drawTowers(world.towers, world.springs);
-      this.drawnTowers = towers;
+    if (collectors !== this.drawnCollectors) {
+      this.drawCollectors(world.collectors, world.springs);
+      this.drawnCollectors = collectors;
     }
     for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
   }
@@ -280,9 +280,9 @@ export class MapScene extends Phaser.Scene {
       }
     }
     const { selected, world } = this.store.getState();
-    const tower = this.towerMarkers.find((marker) => over.includes(marker.machine));
-    if (tower && selected && this.store.isFree(selected)) {
-      this.store.act({ type: 'move_to', residentId: selected, target: tower.position });
+    const collector = this.collectorMarkers.find((marker) => over.includes(marker.machine));
+    if (collector && selected && this.store.isFree(selected)) {
+      this.store.act({ type: 'move_to', residentId: selected, target: collector.position });
       return;
     }
     // The machine stands up off the ground, so the ground behind it can lie outside the
@@ -465,7 +465,7 @@ export class MapScene extends Phaser.Scene {
       .setDepth(SPRING_DEPTH);
   }
 
-  private drawSites(quarries: QuarryView[], workshop: WorkshopView | undefined): void {
+  private drawSites(mines: MineView[], studio: StudioView | undefined): void {
     const projection = this.projection!;
     const ground = this.sites!;
     ground.clear();
@@ -489,11 +489,11 @@ export class MapScene extends Phaser.Scene {
       return { x, y };
     };
 
-    for (const quarry of quarries) {
-      const alpha = quarry.reserve > 0 ? 1 : EMPTY_QUARRY_ALPHA;
-      patch(quarry.position, quarry.radius, QUARRY_FILL, QUARRY_EDGE, alpha);
-      const { x, y } = figure(quarry.position, (graphics) => {
-        // A cluster of three upright crystals, the middle one tallest.
+    for (const mine of mines) {
+      const alpha = mine.reserve > 0 ? 1 : EMPTY_MINE_ALPHA;
+      patch(mine.position, mine.radius, MINE_FILL, MINE_EDGE, alpha);
+      const { x, y } = figure(mine.position, (graphics) => {
+        // A cluster of three upright crystal shapes, the middle one tallest.
         for (const [dx, height, width] of [[-9, 18, 7], [9, 14, 6], [0, 28, 9]] as const) {
           const points = [
             new Phaser.Math.Vector2(dx, 0),
@@ -501,19 +501,19 @@ export class MapScene extends Phaser.Scene {
             new Phaser.Math.Vector2(dx, -height),
             new Phaser.Math.Vector2(dx + width / 2, -height * 0.7),
           ];
-          graphics.fillStyle(QUARRY_FILL, alpha).fillPoints(points, true);
+          graphics.fillStyle(MINE_FILL, alpha).fillPoints(points, true);
           graphics.lineStyle(1.5, INK, 0.9 * alpha).strokePoints(points, true);
-          graphics.fillStyle(QUARRY_EDGE, 0.8 * alpha).fillTriangle(dx, -height, dx + width / 2, -height * 0.7, dx, -height * 0.45);
+          graphics.fillStyle(MINE_EDGE, 0.8 * alpha).fillTriangle(dx, -height, dx + width / 2, -height * 0.7, dx, -height * 0.45);
         }
       });
       this.siteObjects.push(
-        this.add.text(x, y + 4, `${quarry.id} · ${quarry.reserve}`, QUARRY_LABEL_STYLE).setOrigin(0.5, 0).setDepth(SPRING_DEPTH).setAlpha(alpha),
+        this.add.text(x, y + 4, `${mine.id} · ${mine.reserve}`, MINE_LABEL_STYLE).setOrigin(0.5, 0).setDepth(SPRING_DEPTH).setAlpha(alpha),
       );
     }
 
-    if (!workshop) return;
-    patch(workshop.position, workshop.radius, WORKSHOP_FILL, WORKSHOP_EDGE, 1);
-    const { x, y } = figure(workshop.position, (graphics) => {
+    if (!studio) return;
+    patch(studio.position, studio.radius, STUDIO_FILL, STUDIO_EDGE, 1);
+    const { x, y } = figure(studio.position, (graphics) => {
       // A small hut with a chimney and a glowing doorway.
       graphics.fillStyle(0x2f5f50).fillRect(-16, -22, 32, 22);
       graphics.fillStyle(0x3b7a66).fillTriangle(-20, -22, 20, -22, 0, -36);
@@ -521,39 +521,39 @@ export class MapScene extends Phaser.Scene {
       graphics.fillStyle(0xf7dc8a).fillRect(-5, -13, 10, 13);
       graphics.lineStyle(1.5, INK, 0.9).strokeRect(-16, -22, 32, 22).strokeTriangle(-20, -22, 20, -22, 0, -36);
     });
-    this.siteObjects.push(this.add.text(x, y + 4, '工坊', WORKSHOP_LABEL_STYLE).setOrigin(0.5, 0).setDepth(SPRING_DEPTH));
+    this.siteObjects.push(this.add.text(x, y + 4, '工作室', STUDIO_LABEL_STYLE).setOrigin(0.5, 0).setDepth(SPRING_DEPTH));
   }
 
-  private drawTowers(towers: TowerView[], springs: SpringView[]): void {
-    for (const marker of this.towerMarkers) marker.root.destroy();
-    this.towerMarkers = [];
+  private drawCollectors(collectors: CollectorView[], springs: SpringView[]): void {
+    for (const marker of this.collectorMarkers) marker.root.destroy();
+    this.collectorMarkers = [];
     for (const spring of springs) {
-      const atSpring = towers.filter((tower) => tower.springId === spring.id);
+      const atSpring = collectors.filter((collector) => collector.springId === spring.id);
       if (atSpring.length === 0) continue;
       // A spring pad is smaller than two machine sprites, so one marker represents the group.
-      const tower = atSpring[0]!;
-      const position = towerPositionOnSpring(spring);
+      const collector = atSpring[0]!;
+      const position = collectorPositionOnSpring(spring);
       const point = this.projection!.toScreen(position);
       const scale = this.projection!.scaleAt(position);
-      const machine = this.add.image(0, 0, TOWER_TEXTURE, TOWER_FRAME)
-        .setOrigin(TOWER_FOOT_X, 1)
-        .setScale(TOWER_HEIGHT / TOWER_BOUNDS.height)
+      const machine = this.add.image(0, 0, COLLECTOR_TEXTURE, COLLECTOR_FRAME)
+        .setOrigin(COLLECTOR_FOOT_X, 1)
+        .setScale(COLLECTOR_HEIGHT / COLLECTOR_BOUNDS.height)
         .setInteractive({ pixelPerfect: true, alphaTolerance: 8, useHandCursor: true });
       const lights = this.add.graphics();
       if (atSpring.length === 1) {
         for (let slot = 0; slot < 4; slot++) {
-          const occupied = tower.slots[slot];
+          const occupied = collector.slots[slot];
           const color = !occupied ? 0x56616b : occupied.status === 'running' ? 0x9cdbb2 : 0xe0a93b;
           lights.fillStyle(INK, 0.9).fillCircle(-23 + slot * 13, 9, 4);
           lights.fillStyle(color).fillCircle(-23 + slot * 13, 9, 2.5);
         }
       }
-      const labelText = atSpring.length === 1 ? `汲能塔 #${tower.id}` : `汲能塔 ×${atSpring.length}`;
+      const labelText = atSpring.length === 1 ? `采集节点 #${collector.id}` : `采集节点 ×${atSpring.length}`;
       const label = this.add.text(-4, 17, labelText, MARKET_LABEL_STYLE).setOrigin(0.5, 0);
       const root = this.add.container(point.x, point.y, [machine, lights, label])
         .setDepth(RESIDENT_DEPTH + point.y / CANVAS_HEIGHT)
         .setScale(scale);
-      this.towerMarkers.push({ root, machine, position: spring.position });
+      this.collectorMarkers.push({ root, machine, position: spring.position });
     }
   }
 
@@ -683,9 +683,9 @@ export class MapScene extends Phaser.Scene {
 }
 
 function residentLabel(view: ResidentView): string {
-  if (view.harvesting) return `${view.name} · 汲取中`;
-  if (view.digging) return `${view.name} · 挖砂中`;
-  if (view.refining) return `${view.name} · 炼制中`;
+  if (view.harvesting) return `${view.name} · 采集中`;
+  if (view.gathering) return `${view.name} · 采集数据中`;
+  if (view.writing) return `${view.name} · 编写中`;
   if (view.walking) return `${view.name} · 行走中`;
   return view.name;
 }

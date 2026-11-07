@@ -40,7 +40,7 @@ function setup() {
 
 const STATE = {
   type: 'state',
-  world: { map: { size: 10 }, springs: [], residents: [], game: { ended: false, remainingSeconds: 60 }, speech: [], offers: [], contractProposals: [], contracts: [], towers: [], towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 }, quarries: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size: 10 }, springs: [], residents: [], game: { ended: false, remainingSeconds: 60 }, speech: [], offers: [], contractProposals: [], contracts: [], collectors: [], collectorRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 }, mines: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 };
 
 describe('createWebSocketConnection', () => {

@@ -7,7 +7,7 @@ import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
 import { PriceChartPanel } from './PriceChartPanel';
 import { RankingPanel } from './RankingPanel';
-import { TowerPanel } from './TowerPanel';
+import { CollectorPanel } from './CollectorPanel';
 import { SpeechPanel } from './SpeechPanel';
 import { TopBar } from './TopBar';
 
@@ -28,7 +28,7 @@ export function App() {
           <ActionPanel />
           <PriceChartPanel />
           <ExchangePanel />
-          <TowerPanel />
+          <CollectorPanel />
           <DealsPanel />
           <AgentPanel />
           <SpeechPanel />

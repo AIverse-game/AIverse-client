@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 export type ResidentId = string;
 export type SpringId = string;
-export type QuarryId = string;
+export type MineId = string;
 
 export const positionSchema = z.object({ x: z.number(), y: z.number() });
 
@@ -19,54 +19,54 @@ export const residentSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   /** Where the resident is when the server sent this; on the way while walking. */
   position: positionSchema,
-  /** Total coins, including those set aside by pending offers, contracts, towers and buy orders. */
+  /** Total coins, including those set aside by pending offers, contracts, collectors and buy orders. */
   coins: z.number().int().nonnegative(),
   spendableCoins: z.number().int().nonnegative(),
-  towerBalance: z.number().int().nonnegative(),
+  collectorBalance: z.number().int().nonnegative(),
   /** Left the game: still shown and ranked, but can no longer act. */
   left: z.boolean(),
   /** Place by coins, 1 for the most; equal totals share a place. Final once the game ends. */
   rank: z.number().int().positive(),
   /**
-   * Energy owned, including those set aside by pending offers: the resident's stamina. Walking
+   * Compute owned, including those set aside by pending offers: the resident's stamina. Walking
    * spends them, harvesting earns them, and a resident who runs out is out of the game.
    */
-  energy: z.number().int().nonnegative(),
+  compute: z.number().int().nonnegative(),
   /**
-   * Crystals owned, tier to count, including those set aside by pending offers; tiers
+   * Programs owned, tier to count, including those set aside by pending offers; tiers
    * with none are left out. Harvesting needs one, and the best one carried does the work.
    */
-  crystals: z.record(z.string(), z.number().int().positive()),
-  carriedCrystals: z.record(z.string(), z.number().int().positive()),
-  /** Shards owned, including those set aside by pending offers and sell orders. */
-  shards: z.number().int().nonnegative(),
-  /** Crystals the resident has refined so far; each makes the next refining job quicker. */
-  crystalsRefined: z.number().int().nonnegative(),
-  /** Present while the resident is busy harvesting; they stay with the crystal until it ends. */
+  programs: z.record(z.string(), z.number().int().positive()),
+  carriedPrograms: z.record(z.string(), z.number().int().positive()),
+  /** Data owned, including those set aside by pending offers and sell orders. */
+  data: z.number().int().nonnegative(),
+  /** Programs the resident has written so far; each makes the next writing job quicker. */
+  programsWritten: z.number().int().nonnegative(),
+  /** Present while the resident is busy harvesting; they stay with the program until it ends. */
   harvesting: z
     .object({
       springId: z.string(),
-      /** Energy paid out when the job ends. */
+      /** Compute paid out when the job ends. */
       amount: z.number().int().positive(),
-      /** Tier of the crystal doing the work. */
-      crystal: z.string(),
+      /** Tier of the program doing the work. */
+      program: z.string(),
       /** Time left in the job when the server sent this. */
       remainingSeconds: z.number().nonnegative(),
     })
     .optional(),
-  /** Present while the resident is busy digging shards at a quarry. */
-  digging: z
+  /** Present while the resident is busy gathering data at a mine. */
+  gathering: z
     .object({
-      quarryId: z.string(),
-      /** Shards paid out when the job ends. */
+      mineId: z.string(),
+      /** Data paid out when the job ends. */
       amount: z.number().int().positive(),
       remainingSeconds: z.number().nonnegative(),
     })
     .optional(),
-  /** Present while the resident is busy refining a crystal at the workshop. */
-  refining: z
+  /** Present while the resident is busy writing a program at the studio. */
+  writing: z
     .object({
-      /** Tier of the crystal the job makes. */
+      /** Tier of the program the job makes. */
       tier: z.string(),
       remainingSeconds: z.number().nonnegative(),
     })
@@ -97,42 +97,42 @@ export const springSchema = z.object({
   position: positionSchema,
   /** Residents within this distance of `position` can harvest here. */
   radius: z.number().positive(),
-  /** Energy left in the ground. */
+  /** Compute left in the ground. */
   reserve: z.number().int().nonnegative(),
 });
 
-/** A shard quarry. Placed when the game starts and never moves; only `reserve` drops. */
-export const quarrySchema = z.object({
+/** A data mine. Placed when the game starts and never moves; only `reserve` drops. */
+export const mineSchema = z.object({
   id: z.string(),
   position: positionSchema,
-  /** Residents within this distance of `position` can dig here. */
+  /** Residents within this distance of `position` can gather here. */
   radius: z.number().positive(),
-  /** Shards left in the ground. */
+  /** Data left in the ground. */
   reserve: z.number().int().nonnegative(),
 });
 
-/** What refining one crystal of `tier` uses up, and how long it takes a beginner. */
+/** What writing one program of `tier` uses up, and how long it takes a beginner. */
 export const recipeSchema = z.object({
   tier: z.string(),
-  shards: z.number().int().nonnegative(),
-  energy: z.number().int().nonnegative(),
-  /** Tier of the crystal it uses up; absent for the first tier. */
+  data: z.number().int().nonnegative(),
+  compute: z.number().int().nonnegative(),
+  /** Tier of the program it uses up; absent for the first tier. */
   consumes: z.string().optional(),
-  /** Game seconds the job takes for a resident who has refined nothing yet. */
+  /** Game seconds the job takes for a resident who has written nothing yet. */
   seconds: z.number().positive(),
 });
 
 /**
- * Where crystals are refined. A job takes a recipe's `seconds`, less `speedupPerCrystal` of them
- * for every crystal the resident refined before, but never less than `fastestShare` of them.
+ * Where programs are written. A job takes a recipe's `seconds`, less `speedupPerProgram` of them
+ * for every program the resident has written before, but never less than `fastestShare` of them.
  */
-export const workshopSchema = z.object({
+export const studioSchema = z.object({
   position: positionSchema,
-  /** Residents within this distance of `position` can refine here. */
+  /** Residents within this distance of `position` can write here. */
   radius: z.number().positive(),
   /** One per tier, worst first. */
   recipes: z.array(recipeSchema),
-  speedupPerCrystal: z.number().nonnegative(),
+  speedupPerProgram: z.number().nonnegative(),
   fastestShare: z.number().positive(),
 });
 
@@ -196,16 +196,16 @@ export const exchangeSchema = z.object({
   maxOrders: z.number().int().positive(),
 });
 
-/** A tier of crystal on sale at the market. Higher tiers draw more energy per job. */
-export const crystalTierSchema = z.object({
+/** A tier of program on sale at the market. Higher tiers draw more compute per job. */
+export const programTierSchema = z.object({
   tier: z.string(),
-  /** Coins one crystal costs; fixed. */
+  /** Coins one program costs; fixed. */
   price: z.number().int().positive(),
-  /** Energy one harvesting job digs out while the spring has that many left. */
-  energyPerJob: z.number().int().positive(),
+  /** Compute one harvesting job draws while the spring has that many left. */
+  computePerJob: z.number().int().positive(),
 });
 
-/** What one more energy fetched at the market at a game time, before rounding. */
+/** What one more compute fetched at the market at a game time, before rounding. */
 export const pricePointSchema = z.object({
   /** Game seconds since the start. */
   time: z.number().nonnegative(),
@@ -213,10 +213,10 @@ export const pricePointSchema = z.object({
 });
 
 /**
- * Where residents sell energy for coins and buy crystals, and what sets the energy price. One more
- * energy fetches `basePrice * depth / (depth + p)` coins, where the distance of the pressure p of
+ * Where residents sell compute for coins and buy programs, and what sets the compute price. One more
+ * compute fetches `basePrice * depth / (depth + p)` coins, where the distance of the pressure p of
  * recent sales from `restingPressure` halves every `halfLifeSeconds` after the server sent this;
- * selling q energy pays `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The
+ * selling q compute pays `floor(basePrice * depth * ln((depth + p + q) / (depth + p)))`. The
  * resting pressure is below zero, so a market nobody sells to pays more than `basePrice`. The
  * server decides each sale.
  */
@@ -229,12 +229,12 @@ export const marketSchema = z.object({
   halfLifeSeconds: z.number().positive(),
   /** Pressure the market drifts to with no sales, above `-depth`. */
   restingPressure: z.number(),
-  /** Recent sales in energy when the server sent this; below zero after a quiet while. */
+  /** Recent sales in compute when the server sent this; below zero after a quiet while. */
   pressure: z.number(),
-  /** Crystals on sale at fixed prices, worst first. */
-  crystals: z.array(crystalTierSchema),
+  /** Programs on sale at fixed prices, worst first. */
+  programs: z.array(programTierSchema),
   /**
-   * The energy price over the game so far, oldest first: noted at every sale (a step, the price
+   * The compute price over the game so far, oldest first: noted at every sale (a step, the price
    * just before and just after) and every few seconds in between, so a market nobody sells to
    * still shows its price climbing.
    */
@@ -267,7 +267,7 @@ export const offerSchema = z.object({
   side: z.enum(['buy', 'sell']),
   fromId: z.string(),
   toId: z.string(),
-  /** Item kind, such as `energy` or a crystal tier. */
+  /** Item kind, such as `compute` or a program tier. */
   item: z.string().min(1),
   quantity: count,
   /** Coins for the whole lot. */
@@ -329,7 +329,7 @@ export const gameSchema = z.object({
 // between the two codebases before it turns into a broken picture.
 const resourceBalanceSchema = z.object({
   coins: z.number().int().nonnegative(),
-  energy: z.number().int().nonnegative(),
+  compute: z.number().int().nonnegative(),
 });
 
 export const agentTurnSchema = z.object({
@@ -347,46 +347,46 @@ export const agentTurnSchema = z.object({
     ok: z.boolean(),
     code: z.string().optional(),
     coinsChange: z.number().int(),
-    energyChange: z.number().int(),
+    computeChange: z.number().int(),
   })).max(128),
 });
 
 export type AgentTurnView = z.infer<typeof agentTurnSchema>;
 
-export const towerSlotSchema = z.object({
+export const collectorSlotSchema = z.object({
   id: z.number().int().positive(),
   residentId: z.string(),
-  crystal: z.enum(['C1', 'C2', 'C3']),
+  program: z.enum(['v1', 'v2', 'v3']),
   balance: z.number().int().nonnegative(),
   harvested: z.number().int().nonnegative(),
   rentPaid: z.number().int().nonnegative(),
   status: z.enum(['running', 'no_funds', 'spring_empty']),
   remainingSeconds: z.number().nonnegative(),
-  energyPerCycle: z.number().int().nonnegative(),
+  computePerCycle: z.number().int().nonnegative(),
   rentPerCycle: z.number().int().nonnegative(),
   upkeepPerCycle: z.number().int().nonnegative(),
 });
 
-export const towerSchema = z.object({
+export const collectorSchema = z.object({
   id: z.number().int().positive(),
   ownerId: z.string(),
   springId: z.string(),
-  slots: z.array(towerSlotSchema),
+  slots: z.array(collectorSlotSchema),
 });
 
-export const towerRulesSchema = z.object({
+export const collectorRulesSchema = z.object({
   price: z.number().int().positive(),
   capacity: z.number().int().positive(),
   cycleSeconds: z.number().positive(),
-  /** A crystal in a tower harvests this many times its `energyPerJob` each cycle. */
+  /** A program in a collector harvests this many times its `computePerJob` each cycle. */
   yieldMultiplier: z.number().int().positive(),
   rentPer100: z.number().int().nonnegative(),
   upkeepPer100: z.number().int().nonnegative(),
 });
 
 export type PricePointView = z.infer<typeof pricePointSchema>;
-export type TowerView = z.infer<typeof towerSchema>;
-export type TowerSlotView = z.infer<typeof towerSlotSchema>;
+export type CollectorView = z.infer<typeof collectorSchema>;
+export type CollectorSlotView = z.infer<typeof collectorSlotSchema>;
 
 export const worldViewSchema = z
   .object({
@@ -394,13 +394,13 @@ export const worldViewSchema = z
     springs: z.array(springSchema),
     residents: z.array(residentSchema),
     game: gameSchema,
-    towers: z.array(towerSchema),
-    towerRules: towerRulesSchema,
+    collectors: z.array(collectorSchema),
+    collectorRules: collectorRulesSchema,
     /** Absent on a map without a market. */
     market: marketSchema.optional(),
-    quarries: z.array(quarrySchema),
-    /** Absent on a map without a workshop. */
-    workshop: workshopSchema.optional(),
+    mines: z.array(mineSchema),
+    /** Absent on a map without a studio. */
+    studio: studioSchema.optional(),
     exchange: exchangeSchema,
     /** The latest lines this connection may see, oldest first: everything aloud, its viewer's whispers. */
     speech: z.array(speechSchema),
@@ -431,18 +431,18 @@ export const worldViewSchema = z
       }
       springs.add(spring.id);
     });
-    if (world.workshop && !inside(world.workshop.position)) {
-      context.addIssue({ code: 'custom', path: ['workshop', 'position'], message: 'outside the map' });
+    if (world.studio && !inside(world.studio.position)) {
+      context.addIssue({ code: 'custom', path: ['studio', 'position'], message: 'outside the map' });
     }
-    const quarries = new Set<QuarryId>();
-    world.quarries.forEach((quarry, index) => {
-      if (!inside(quarry.position)) {
-        context.addIssue({ code: 'custom', path: ['quarries', index, 'position'], message: 'outside the map' });
+    const mines = new Set<MineId>();
+    world.mines.forEach((mine, index) => {
+      if (!inside(mine.position)) {
+        context.addIssue({ code: 'custom', path: ['mines', index, 'position'], message: 'outside the map' });
       }
-      if (quarries.has(quarry.id)) {
-        context.addIssue({ code: 'custom', path: ['quarries', index, 'id'], message: 'duplicate id' });
+      if (mines.has(mine.id)) {
+        context.addIssue({ code: 'custom', path: ['mines', index, 'id'], message: 'duplicate id' });
       }
-      quarries.add(quarry.id);
+      mines.add(mine.id);
     });
     const seen = new Set<ResidentId>();
     world.residents.forEach((resident, index) => {
@@ -456,8 +456,8 @@ export const worldViewSchema = z
       if (resident.harvesting && !springs.has(resident.harvesting.springId)) {
         context.addIssue({ code: 'custom', path: ['residents', index, 'harvesting'], message: 'unknown spring' });
       }
-      if (resident.digging && !quarries.has(resident.digging.quarryId)) {
-        context.addIssue({ code: 'custom', path: ['residents', index, 'digging'], message: 'unknown quarry' });
+      if (resident.gathering && !mines.has(resident.gathering.mineId)) {
+        context.addIssue({ code: 'custom', path: ['residents', index, 'gathering'], message: 'unknown mine' });
       }
       if (resident.walking && !inside(resident.walking.target)) {
         context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
@@ -466,18 +466,18 @@ export const worldViewSchema = z
     if (world.agentTimeline && !seen.has(world.agentTimeline.residentId)) {
       context.addIssue({ code: 'custom', path: ['agentTimeline', 'residentId'], message: 'unknown resident' });
     }
-    const towers = new Set<number>();
-    world.towers.forEach((tower, index) => {
-      const owner = world.residents.find((resident) => resident.id === tower.ownerId);
-      if (towers.has(tower.id) || !springs.has(tower.springId) || !owner || owner.left || tower.slots.length > world.towerRules.capacity) {
-        context.addIssue({ code: 'custom', path: ['towers', index], message: 'invalid tower or owner' });
+    const collectors = new Set<number>();
+    world.collectors.forEach((collector, index) => {
+      const owner = world.residents.find((resident) => resident.id === collector.ownerId);
+      if (collectors.has(collector.id) || !springs.has(collector.springId) || !owner || owner.left || collector.slots.length > world.collectorRules.capacity) {
+        context.addIssue({ code: 'custom', path: ['collectors', index], message: 'invalid collector or owner' });
       }
-      towers.add(tower.id);
+      collectors.add(collector.id);
       const slots = new Set<number>();
-      tower.slots.forEach((slot, slotIndex) => {
+      collector.slots.forEach((slot, slotIndex) => {
         const resident = world.residents.find((person) => person.id === slot.residentId);
         if (slots.has(slot.id) || !resident || resident.left || world.game.ended) {
-          context.addIssue({ code: 'custom', path: ['towers', index, 'slots', slotIndex], message: 'invalid slot or resident' });
+          context.addIssue({ code: 'custom', path: ['collectors', index, 'slots', slotIndex], message: 'invalid slot or resident' });
         }
         slots.add(slot.id);
       });
@@ -520,15 +520,15 @@ export type Position = z.infer<typeof positionSchema>;
 export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
 export type SpringView = z.infer<typeof springSchema>;
-export type QuarryView = z.infer<typeof quarrySchema>;
+export type MineView = z.infer<typeof mineSchema>;
 export type RecipeView = z.infer<typeof recipeSchema>;
-export type WorkshopView = z.infer<typeof workshopSchema>;
+export type StudioView = z.infer<typeof studioSchema>;
 export type BookView = z.infer<typeof bookSchema>;
 export type FillView = z.infer<typeof fillSchema>;
 export type OrderView = z.infer<typeof orderSchema>;
 export type ExchangeView = z.infer<typeof exchangeSchema>;
 export type MarketView = z.infer<typeof marketSchema>;
-export type CrystalTierView = z.infer<typeof crystalTierSchema>;
+export type ProgramTierView = z.infer<typeof programTierSchema>;
 export type GameView = z.infer<typeof gameSchema>;
 export type SpeechView = z.infer<typeof speechSchema>;
 export type OfferView = z.infer<typeof offerSchema>;

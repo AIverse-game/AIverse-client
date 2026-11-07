@@ -38,7 +38,7 @@ export interface MapProjection {
 }
 
 /** Put a machine beside the spring marker while keeping its base within harvesting reach. */
-export function towerPositionOnSpring(spring: { position: Position; radius: number }): Position {
+export function collectorPositionOnSpring(spring: { position: Position; radius: number }): Position {
   const distance = spring.radius * 0.55;
   return {
     x: spring.position.x + distance,

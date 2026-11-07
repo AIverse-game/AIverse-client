@@ -4,7 +4,7 @@
 
 ## 目标与依据
 
-路线图第 ② 步（用户 2026-11-03 确认，见 [晶核与炼制](../docs/design/crystals.md)）：让晶核从只向系统购买的商品，变成居民能用人力原料炼出来的商品，使居民之间出现原料、中间品和成品的买卖，并让“汲取”和“炼制”成为可以分工的两种营生。用户要求改名（变更 0050）和本步在同一次会话分两步完成。
+路线图第 ② 步（用户 2026-11-03 确认，见 [晶核与炼制](../docs/design/programs.md)）：让晶核从只向系统购买的商品，变成居民能用人力原料炼出来的商品，使居民之间出现原料、中间品和成品的买卖，并让“汲取”和“炼制”成为可以分工的两种营生。用户要求改名（变更 0050）和本步在同一次会话分两步完成。
 
 基线（2026-11-03）显示居民间流量占比只有 4.0%，金币几乎都来自收购点；本步之后，晶砂只能在居民之间流通，晶核有了居民自己的供给。
 
@@ -22,11 +22,11 @@
 - 测试：`tests/unit/economy/test_shards.py`、`tests/unit/economy/test_workshop.py`、`tests/unit/agents/test_refining_tools.py`，以及 `tests/unit/core/test_world.py`、`tests/integration/agents/test_agent_loop.py`、`tests/integration/agents/test_llm_brain.py` 中的新增测试；按新价格更新原有测试中的金额。
 - `README.md`：功能说明、工具与观察、代码结构。
 
-客户端：只改文档（本说明、[晶核与炼制](../docs/design/crystals.md)、[挂单交易所](../docs/design/order-book.md) 与其他文档里的硅改为晶砂、`docs/status.md`）。
+客户端：只改文档（本说明、[晶核与炼制](../docs/design/programs.md)、[挂单交易所](../docs/design/order-book.md) 与其他文档里的硅改为晶砂、`docs/status.md`）。
 
 留给后续：协议与页面显示（路线图第 ④ 步）；结束时把能量和晶核折算计入排名；脚本机器人的炼制者策略；晶矿靠感知发现；挖砂和炼制进活动日志。
 
-设计文档：修改 [晶核与炼制](../docs/design/crystals.md)（原“晶核与晶核制造”），状态改为首版已实现。
+设计文档：修改 [晶核与炼制](../docs/design/programs.md)（原“晶核与晶核制造”），状态改为首版已实现。
 
 ## 关键选择
 

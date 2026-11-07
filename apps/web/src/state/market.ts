@@ -3,23 +3,23 @@ import type { MarketView } from '@aiverse/protocol';
 // The market price as the server defines it (see `marketSchema`), followed locally between
 // snapshots like the countdown and the walks. Only for display: the server prices each sale.
 
-/** Recent sales in energy `elapsedSeconds` after the snapshot, drifted towards rest since then. */
+/** Recent sales in compute `elapsedSeconds` after the snapshot, drifted towards rest since then. */
 export function marketPressure(market: MarketView, elapsedSeconds: number): number {
   const drift = 2 ** (-Math.max(elapsedSeconds, 0) / market.halfLifeSeconds);
   return market.restingPressure + (market.pressure - market.restingPressure) * drift;
 }
 
-/** Coins an energy fetches once nobody has sold for a very long while. */
+/** Coins one compute fetches once nobody has sold for a very long while. */
 export function marketTopPrice(market: MarketView): number {
   return (market.basePrice * market.depth) / (market.depth + market.restingPressure);
 }
 
-/** Coins one more energy fetches `elapsedSeconds` after the snapshot, before rounding. */
+/** Coins one more compute fetches `elapsedSeconds` after the snapshot, before rounding. */
 export function marketPrice(market: MarketView, elapsedSeconds: number): number {
   return (market.basePrice * market.depth) / (market.depth + marketPressure(market, elapsedSeconds));
 }
 
-/** Whole coins selling `quantity` energy would fetch `elapsedSeconds` after the snapshot. */
+/** Whole coins selling `quantity` compute would fetch `elapsedSeconds` after the snapshot. */
 export function marketQuote(market: MarketView, elapsedSeconds: number, quantity: number): number {
   if (!Number.isInteger(quantity) || quantity < 1) return 0;
   const depth = market.depth + marketPressure(market, elapsedSeconds);

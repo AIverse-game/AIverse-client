@@ -22,11 +22,11 @@
 - 测试：新增 `tests/unit/game/test_scoring.py`；`test_protocol.py`、`test_economy_report.py` 各加一条，`test_websocket.py` 的欢迎状态。
 - `README.md`：功能说明、协议字段、观察、经济报告、代码结构。
 
-客户端：`packages/protocol`（`itemValue`、`score`，版本 20）、`ui/RankingPanel.tsx`、测试数据；文档（本说明、[晶核与炼制](../docs/design/crystals.md)、[总体设计](../docs/design/game-overview.md)的调整说明、[经济指标](../docs/design/economy-metrics.md)、[代码地图](../docs/code-map.md)、`docs/status.md`）。
+客户端：`packages/protocol`（`itemValue`、`score`，版本 20）、`ui/RankingPanel.tsx`、测试数据；文档（本说明、[晶核与炼制](../docs/design/programs.md)、[总体设计](../docs/design/game-overview.md)的调整说明、[经济指标](../docs/design/economy-metrics.md)、[代码地图](../docs/code-map.md)、`docs/status.md`）。
 
 留给后续：页面下单与撤单（0055）；按试玩调整折算比例。
 
-设计文档：修改 [晶核与炼制](../docs/design/crystals.md)（计分折算及其取舍），在 [总体设计](../docs/design/game-overview.md)“胜负只看金币”后加调整说明。
+设计文档：修改 [晶核与炼制](../docs/design/programs.md)（计分折算及其取舍），在 [总体设计](../docs/design/game-overview.md)“胜负只看金币”后加调整说明。
 
 ## 关键选择
 

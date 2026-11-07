@@ -33,49 +33,49 @@ const world: WorldView = {
   map: { size: 100 },
   springs: [{ id: 'p1', position: { x: 12, y: 20 }, radius: 4, reserve: 300 }],
   residents: [
-    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, towerBalance: 0, carriedCrystals: {}, left: false, rank: 1, energy: 200, crystals: {}, shards: 0, crystalsRefined: 0 },
+    { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, collectorBalance: 0, carriedPrograms: {}, left: false, rank: 1, compute: 200, programs: {}, data: 0, programsWritten: 0 },
   ],
   game: { ended: false, remainingSeconds: 90 },
   speech: [],
   offers: [],
   contractProposals: [],
   contracts: [],
-  towers: [],
-  towerRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 },
-  quarries: [],
+  collectors: [],
+  collectorRules: { price: 9000, capacity: 4, cycleSeconds: 20, yieldMultiplier: 2, rentPer100: 50, upkeepPer100: 20 },
+  mines: [],
   exchange: { books: [], fills: [], orders: [], maxOrders: 8 },
 };
 
-/** `world` with a quarry where resident a stands and a workshop elsewhere; a has refined `refined` crystals. */
-const craftWorld = (refined = 0): WorldView => ({
+/** `world` with a mine where resident a stands and a studio elsewhere; a has written `written` programs. */
+const craftWorld = (written = 0): WorldView => ({
   ...world,
-  residents: [{ ...world.residents[0]!, crystalsRefined: refined }],
-  quarries: [
-    { id: 'q1', position: { x: 13, y: 20 }, radius: 4, reserve: 300 },
-    { id: 'q2', position: { x: 11, y: 20 }, radius: 4, reserve: 300 },
+  residents: [{ ...world.residents[0]!, programsWritten: written }],
+  mines: [
+    { id: 'm1', position: { x: 13, y: 20 }, radius: 4, reserve: 300 },
+    { id: 'm2', position: { x: 11, y: 20 }, radius: 4, reserve: 300 },
   ],
-  workshop: { position: { x: 60, y: 60 }, radius: 5, recipes: [{ tier: 'C1', shards: 5, energy: 15, seconds: 15 }], speedupPerCrystal: 0.1, fastestShare: 0.5 },
+  studio: { position: { x: 60, y: 60 }, radius: 5, recipes: [{ tier: 'v1', data: 5, compute: 15, seconds: 15 }], speedupPerProgram: 0.1, fastestShare: 0.5 },
 });
 
 describe('GameStore', () => {
-  it('sends tower actions and keeps installed crystals out of manual harvesting', () => {
+  it('sends collector actions and keeps installed programs out of manual harvesting', () => {
     const { connection, sent, deliver } = fakeConnection();
     const store = new GameStore(connection);
     const message = { ...world, market: {
       position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0,
-      crystals: [{ tier: 'C1', price: 300, energyPerJob: 30 }], priceHistory: [],
-    }, residents: [{ ...world.residents[0]!, crystals: {}, carriedCrystals: {}, towerBalance: 500, spendableCoins: 9500 }] };
+      programs: [{ tier: 'v1', price: 300, computePerJob: 30 }], priceHistory: [],
+    }, residents: [{ ...world.residents[0]!, programs: {}, carriedPrograms: {}, collectorBalance: 500, spendableCoins: 9500 }] };
 
     deliver(WELCOME);
     deliver({ type: 'state', world: message });
-    store.act({ type: 'install_crystal', residentId: 'a', towerId: 1, crystal: 'C1', deposit: 500 });
-    deliver({ type: 'action_result', ok: false, code: 'not_enough_items', message: 'no carried crystal' });
+    store.act({ type: 'install_program', residentId: 'a', collectorId: 1, program: 'v1', deposit: 500 });
+    deliver({ type: 'action_result', ok: false, code: 'not_enough_items', message: 'no carried program' });
 
-    expect(store.bestCrystal('a')).toBeNull();
+    expect(store.bestProgram('a')).toBeNull();
     expect(store.isFree('a')).toBe(true);
-    expect(sent.at(-1)).toMatchObject({ type: 'action', action: { type: 'install_crystal', deposit: 500 } });
+    expect(sent.at(-1)).toMatchObject({ type: 'action', action: { type: 'install_program', deposit: 500 } });
     expect(store.getState().lastAction?.status).toBe('rejected');
-    expect(store.getState().world?.residents[0]?.towerBalance).toBe(500);
+    expect(store.getState().world?.residents[0]?.collectorBalance).toBe(500);
   });
   it('greets the server, becomes ready on welcome and keeps the latest world', () => {
     const { connection, sent, deliver } = fakeConnection();
@@ -167,7 +167,7 @@ describe('GameStore', () => {
     let now = 5000;
     const store = new GameStore(connection, () => now);
     expect(store.marketPrice()).toBeNull();
-    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, crystals: [], priceHistory: [] };
+    const market = { position: { x: 12, y: 23 }, radius: 4, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 100, programs: [], priceHistory: [] };
     deliver({ type: 'state', world: { ...world, market } });
     // 20 * 400 / (400 + 100).
     expect(store.marketPrice()).toBeCloseTo(16);
@@ -207,8 +207,8 @@ describe('GameStore', () => {
     deliver({ type: 'state', world });
     expect(store.isFree('a')).toBe(true);
     const [resident] = world.residents;
-    const harvesting = { springId: 'p1', amount: 30, crystal: 'C1', remainingSeconds: 10 };
-    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, crystals: { C1: 1 }, harvesting }] } });
+    const harvesting = { springId: 'p1', amount: 30, program: 'v1', remainingSeconds: 10 };
+    deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, programs: { v1: 1 }, harvesting }] } });
     expect(store.canAct('a')).toBe(true);
     expect(store.isFree('a')).toBe(false);
   });
@@ -225,8 +225,8 @@ describe('GameStore', () => {
   });
 
   it.each([
-    ['digging', { digging: { quarryId: 'q1', amount: 6, remainingSeconds: 5 } }],
-    ['refining', { refining: { tier: 'C1', remainingSeconds: 5 } }],
+    ['gathering', { gathering: { mineId: 'm1', amount: 6, remainingSeconds: 5 } }],
+    ['writing', { writing: { tier: 'v1', remainingSeconds: 5 } }],
   ])('allows only talking and leaving while the resident is %s', (_, job) => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
@@ -238,17 +238,17 @@ describe('GameStore', () => {
     expect([store.canAct('a'), store.isFree('a')]).toEqual([true, false]);
   });
 
-  it('finds the nearest quarry a resident stands within reach of', () => {
+  it('finds the nearest mine a resident stands within reach of', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
     deliver(WELCOME);
 
     deliver({ type: 'state', world: craftWorld() });
 
-    expect(store.quarryInReach('a')?.id).toBe('q2');
+    expect(store.mineInReach('a')?.id).toBe('m2');
   });
 
-  it('tells whether a resident stands at the workshop', () => {
+  it('tells whether a resident stands at the studio', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
     deliver(WELCOME);
@@ -256,43 +256,43 @@ describe('GameStore', () => {
 
     deliver({ type: 'state', world: { ...crafted, residents: [{ ...crafted.residents[0]!, position: { x: 63, y: 64 } }] } });
 
-    expect(store.atWorkshop('a')).toBe(true);
+    expect(store.atStudio('a')).toBe(true);
   });
 
-  // The same numbers as the server's test_workshop.py, refine_seconds for the C1 recipe.
+  // The same numbers as the server's test_studio.py, write_seconds for the v1 recipe.
   it.each([
     [0, 15],
     [1, 13.5],
     [3, 10.5],
     [5, 7.5],
     [9, 7.5],
-  ])('estimates refining for a resident who refined %i crystals at %f seconds', (refined, seconds) => {
+  ])('estimates writing for a resident who has written %i programs at %f seconds', (written, seconds) => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
     deliver(WELCOME);
-    const crafted = craftWorld(refined);
+    const crafted = craftWorld(written);
 
     deliver({ type: 'state', world: crafted });
 
-    expect(store.refineSeconds('a', crafted.workshop!.recipes[0]!)).toBeCloseTo(seconds);
+    expect(store.writeSeconds('a', crafted.studio!.recipes[0]!)).toBeCloseTo(seconds);
   });
 
-  const C1: RecipeView = { tier: 'C1', shards: 5, energy: 15, seconds: 15 };
-  const C2: RecipeView = { tier: 'C2', shards: 5, energy: 15, consumes: 'C1', seconds: 30 };
+  const v1: RecipeView = { tier: 'v1', data: 5, compute: 15, seconds: 15 };
+  const v2: RecipeView = { tier: 'v2', data: 5, compute: 15, consumes: 'v1', seconds: 30 };
 
   it.each([
-    ['enough of everything', C1, {}, false],
-    ['too few shards', C1, { shards: 4 }, true],
-    ['too little energy', C1, { energy: 14 }, true],
-    ['no lower crystal carried', C2, {}, true],
-    ['the lower crystal carried', C2, { carriedCrystals: { C1: 1 } }, false],
+    ['enough of everything', v1, {}, false],
+    ['too few data', v1, { data: 4 }, true],
+    ['too little compute', v1, { compute: 14 }, true],
+    ['no lower program carried', v2, {}, true],
+    ['the lower program carried', v2, { carriedPrograms: { v1: 1 } }, false],
   ])('tells whether a resident lacks the materials with %s', (_, recipe, owned, lacks) => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
     deliver(WELCOME);
     const crafted = craftWorld();
 
-    deliver({ type: 'state', world: { ...crafted, residents: [{ ...crafted.residents[0]!, shards: 5, energy: 15, ...owned }] } });
+    deliver({ type: 'state', world: { ...crafted, residents: [{ ...crafted.residents[0]!, data: 5, compute: 15, ...owned }] } });
 
     expect(store.lacksMaterials('a', recipe)).toBe(lacks);
   });
@@ -309,25 +309,25 @@ describe('GameStore', () => {
     expect(store.springInReach('a')).toBeNull();
   });
 
-  it('names the best crystal a resident owns, by what the market lists', () => {
+  it('names the best program a resident owns, by what the market lists', () => {
     const { connection, deliver } = fakeConnection();
     const store = new GameStore(connection);
-    expect(store.bestCrystal('a')).toBeNull();
-    const crystals = [
-      { tier: 'C1', price: 300, energyPerJob: 30 },
-      { tier: 'C2', price: 1200, energyPerJob: 60 },
-      { tier: 'C3', price: 3000, energyPerJob: 100 },
+    expect(store.bestProgram('a')).toBeNull();
+    const programs = [
+      { tier: 'v1', price: 300, computePerJob: 30 },
+      { tier: 'v2', price: 1200, computePerJob: 60 },
+      { tier: 'v3', price: 3000, computePerJob: 100 },
     ];
-    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, crystals, priceHistory: [] };
+    const market = { position: { x: 50, y: 50 }, radius: 5, basePrice: 20, depth: 400, halfLifeSeconds: 60, restingPressure: -200, pressure: 0, programs, priceHistory: [] };
     const [resident] = world.residents;
-    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, crystals: owned, carriedCrystals: owned }] });
+    const owning = (owned: Record<string, number>) => ({ ...world, market, residents: [{ ...resident!, programs: owned, carriedPrograms: owned }] });
     deliver({ type: 'state', world: owning({}) });
-    expect(store.bestCrystal('a')).toBeNull();
-    deliver({ type: 'state', world: owning({ C1: 3, C2: 1 }) });
-    expect(store.bestCrystal('a')?.tier).toBe('C2');
-    deliver({ type: 'state', world: owning({ C3: 1, C1: 1 }) });
-    expect(store.bestCrystal('a')?.tier).toBe('C3');
-    expect(store.bestCrystal('nobody')).toBeNull();
+    expect(store.bestProgram('a')).toBeNull();
+    deliver({ type: 'state', world: owning({ v1: 3, v2: 1 }) });
+    expect(store.bestProgram('a')?.tier).toBe('v2');
+    deliver({ type: 'state', world: owning({ v3: 1, v1: 1 }) });
+    expect(store.bestProgram('a')?.tier).toBe('v3');
+    expect(store.bestProgram('nobody')).toBeNull();
   });
 
   it('drops the selection when the selected resident leaves the world', () => {
