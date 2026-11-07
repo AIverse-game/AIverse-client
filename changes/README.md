@@ -68,3 +68,4 @@
 | [0061-virtual-world-terms](0061-virtual-world-terms.md) | 已完成 | 协议 22：能量、晶砂、晶矿、晶核、工坊、汲能塔改称算力、数据、数据矿、程序、工作室、采集节点，代码、协议与文档一起改，规则不变 |
 | [0062-land-and-ad-slots](0062-land-and-ad-slots.md) | 已完成 | 买地块、工作室制作素材、在地块上建广告位，按访客流量收金币；服务端与 Agent 工具，页面未接入 |
 | [0063-servers-and-meeting-rooms](0063-servers-and-meeting-rooms.md) | 已完成 | 服务器存算力承载附近设施、主人收承载费；会议室要服务器承载，按访客收金币；服务端与 Agent 工具，页面未接入 |
+| [0064-remove-old-gameplay](0064-remove-old-gameplay.md) | 已完成 | 去掉旧玩法：算力、采集、收购点、程序、设施等服务端、协议 23 与页面一起删，行走只花时间 |

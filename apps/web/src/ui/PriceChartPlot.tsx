@@ -1,6 +1,6 @@
 import type { ChartMargins, ChartSize, PriceChart } from './priceChart';
 
-/** Draws a laid-out price chart: grid and labels, the optional reference line, the line itself. */
+/** Draws a laid-out price chart: grid and labels, the line itself. */
 export function PriceChartPlot({
   chart,
   size,
@@ -24,9 +24,6 @@ export function PriceChartPlot({
           </text>
         </g>
       ))}
-      {chart.referenceY !== null && (
-        <line className="reference" x1={margins.left} x2={plotRight} y1={chart.referenceY} y2={chart.referenceY} />
-      )}
       {chart.timeTicks.map((tick, index) => (
         <text
           key={`time-${tick.value}`}

@@ -42,9 +42,9 @@
 | [trade-offers](trade-offers.md) | 已调整 | 交易报价：买卖任一方发起、预留、只给当事人看的页面显示 |
 | [information-selling](information-selling.md) | 已实现（页面未接入） | 信息售卖：可复制的信息报价，成交前只看摘要，卖方保留 |
 | [contracts](contracts.md) | 已调整 | 合约：约定未来每次交付自动付款，单次或多次，买方货款托管，供货方可押押金 |
-| [collectors](collectors.md) | 已调整 | 建造采集节点、安装程序、自动生产、按产量金币租金与出局结算 |
-| [compute-market](compute-market.md) | 已调整 | 算力收购点：随卖出下跌、久无人卖则涨价的市场价，AI 卖出锁价 30 秒 |
-| [programs](programs.md) | 首版已实现（编写页面未接入） | 程序：购买与采集；数据矿与数据、工作室编写、升级链、熟练度与翻倍的进口价 |
-| [order-book](order-book.md) | 首版已实现（页面未接入） | 挂单交易所：匿名限价挂单簿，任何地方都能下单，连续撮合算力、数据与程序 |
+| [collectors](collectors.md) | 已删除（`legacy` 分支） | 建造采集节点、安装程序、自动生产、按产量金币租金与出局结算 |
+| [compute-market](compute-market.md) | 已删除（`legacy` 分支） | 算力收购点：随卖出下跌、久无人卖则涨价的市场价，AI 卖出锁价 30 秒 |
+| [programs](programs.md) | 已删除（`legacy` 分支） | 程序：购买与采集；数据矿与数据、工作室编写、升级链、熟练度与翻倍的进口价 |
+| [order-book](order-book.md) | 已实现，暂无商品（页面未接入） | 挂单交易所：匿名限价挂单簿，任何地方都能下单，连续撮合算力、数据与程序 |
 | [economy-metrics](economy-metrics.md) | 首版已实现 | 经济指标：按渠道记账的金币流水，对局结束输出居民间流量占比等指标 |
-| [facilities](facilities.md) | 设计中 | 虚拟设施：只用算力、时间和空间；金币买高算力节点来建设施、做内容，内容填进设施吸引访客，收入按地块份额分；旧方案在 `legacy` 分支 |
+| [facilities](facilities.md) | 设计中，第 1 步已完成 | 虚拟设施：只用算力、时间和空间；金币买高算力节点来建设施、做内容，内容填进设施吸引访客，收入按地块份额分；旧方案在 `legacy` 分支 |

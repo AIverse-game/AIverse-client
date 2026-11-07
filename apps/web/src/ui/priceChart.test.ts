@@ -5,8 +5,8 @@ const size = { width: 200, height: 100 };
 const margins = { top: 10, right: 10, bottom: 10, left: 10 };
 const time = (seconds: number) => `${seconds}s`;
 const price = (value: number) => value.toFixed(1);
-const layout = (history: { time: number; price: number }[], reference = 20) =>
-  layoutPriceChart(history, size, margins, reference, time, price);
+const layout = (history: { time: number; price: number }[]) =>
+  layoutPriceChart(history, size, margins, time, price);
 
 describe('layoutPriceChart', () => {
   it('draws nothing until the history spans some time', () => {
@@ -61,13 +61,5 @@ describe('layoutPriceChart', () => {
 
     expect(chart.maxPrice - chart.minPrice).toBeGreaterThan(1);
     expect(chart.last.y).toBe(50);
-  });
-
-  it('marks the reference price only when the axis reaches it', () => {
-    const history = [{ time: 0, price: 20 }, { time: 10, price: 30 }];
-
-    expect(layout(history, 25)!.referenceY).not.toBeNull();
-    expect(layout(history, 5)!.referenceY).toBeNull();
-    expect(layout(history, 100)!.referenceY).toBeNull();
   });
 });

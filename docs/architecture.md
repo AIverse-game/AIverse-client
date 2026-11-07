@@ -22,25 +22,22 @@ Python 服务端（aiverse-server）
   agents/     AI 居民：事件驱动的循环、绑定居民的工具、脚本机器人与 OpenAI 兼容接口的模型大脑
   game/       一局的规则与调度
     actions.py  操作原语：玩家与 AI 改变世界的唯一入口
-    lifecycle.py 能否行动、出局（含算力耗尽）、结束、金币排名
-    clock.py    游戏时间到点的事：发放采集、行走到达
-    layout.py   固定的地图、居民与地图中心的收购点，按种子随机放置的算力泉
+    lifecycle.py 能否行动、出局、结束、金币排名
+    clock.py    游戏时间到点的事：行走到达、合约与挂单到期
+    layout.py   固定的地图与居民，全部出生在地图中央
   residents/  居民的行动与认知
     walking.py  行走：速度、途中位置、到达
-    perception.py 感知与发现：每轮开始时看到的周围与新动态
+    perception.py 感知：每轮开始时看到的周围与新动态
     memory.py   Agent 自选的长短期笔记
     speech.py   对话：当众说给附近的人听，或私聊一名居民
   economy/    经济
-    compute.py   算力体力：物品种类、拥有量、走路消耗
-    programs.py    程序：采集必须携带，三个版本在收购点按定价出售
-    harvesting.py   算力泉采集：开始、按游戏时间发放、取消
-    market.py   收购点：按随卖出下跌、随时间回升的市场价用金币收购算力
-    land.py     地块：网格、保留地块、定价与购买
-    facilities.py 设施：访客流量，广告位、服务器与会议室，承载费
+    land.py     地块：网格、定价与购买
+    footfall.py 访客流量：随时间增长，离地图中央越远越少
+    exchange.py 挂单交易所
     trade.py    购买与出售报价：事件种类，物品换金币
     contracts.py 合约：约定未来每次交付自动付款，签订时托管买方货款与供货方押金
   core/       世界模型与共用机制，只依赖 core/ 内的模块
-    world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、生效的合约、算力泉、收购点、游戏时间）与坐标校验
+    world.py    世界模型（含物品栏、金币、出局与结束标记、事件队列、生效的合约、地块、游戏时间）与坐标校验
     inventory.py 居民物品的存入、移出、计数、列出与清空（服务端内部，不是原语）
     events.py   事件队列：居民之间的请求，等待同意、拒绝或撤回
 ```
@@ -49,7 +46,7 @@ Python 服务端（aiverse-server）
 
 ## 坐标系
 
-- 地图是边长为 `size` 个地图单位的正方形（当前 100）。
+- 地图是边长为 `size` 个地图单位的正方形（当前 150）。
 - 原点 (0, 0) 在左上角（西北角），x 向右（东）增大，y 向下（南）增大，与屏幕方向一致。
 - 两轴取值为闭区间 [0, size] 内的实数，不是网格。居民有坐标；以后的地点和物品也使用同一坐标系。
 - 服务端拒绝构造越界或 id 重复的世界；客户端收到不满足这些条件的消息会报错，不会渲染。
@@ -70,7 +67,7 @@ Python 服务端（aiverse-server）
 ## 一次连接如何进行
 
 1. 页面创建 WebSocket 连接，`GameStore` 立即发送 `hello`（连接打开前排队）。
-2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、算力泉、收购点（位置、半径与定价参数、卖出压力）、居民（含金币、出局、名次、算力、采集与行走状态）、对局状态（是否结束、剩余时间）、最近的发言，以及所选居民的报价、合约提议与合约。
+2. 服务端校验 `hello` 和协议版本，回复 `welcome`，再回复 `state`，其中包含地图、居民（含金币、出局、名次与行走状态）、对局状态（是否结束、剩余时间）、最近的发言，以及所选居民的报价、合约提议与合约。
 3. 连接层用 zod 校验每条消息；不合协议时断开并在界面报错。
 4. `GameStore` 更新快照，Phaser 场景和 React 面板随之重绘。
 
@@ -80,7 +77,7 @@ Python 服务端（aiverse-server）
 
 玩家与 AI 改变世界的唯一方式是操作原语，定义在服务端 `actions.py`：每个原语是一个不可变的请求，`perform(world, action)` 按规则校验后返回新的世界，或抛出 `ActionRejected` 且不改动任何东西。玩家手动操作和以后的 AI 使用同一组原语与同一个 `perform`；规则只写在这里，不靠调用方保证。目前把新世界写回共享状态并广播的代码还在 `app.py` 的 WebSocket 处理中，接入 AI 时需要把它收进 `Game` 共用。
 
-客户端可用的原语有 `move_to`（让一名居民按固定速度沿直线走到地图内的目标坐标，到达前忙碌，见下文“行走”；每回合距离待移动规则确定后加入）、`leave_game`（退出游戏，见下文“一局的生命周期”）、`harvest`（在算力泉采集，见下文“算力与算力泉”）、`sell_compute`（在收购点卖算力，见下文“收购点与市场价”）、`buy_program`（在收购点买程序，见下文“程序”）和 `say`（说话，见下文“对话”）。交易与答复事件的原语已在服务端实现，尚未进入协议。其余原语（采集、制作等）按同样方式增加。
+客户端可用的原语有 `move_to`（让一名居民按固定速度沿直线走到地图内的目标坐标，只花时间，到达前忙碌，见下文“行走”；每回合距离待移动规则确定后加入）、`leave_game`（退出游戏，见下文“一局的生命周期”）和 `say`（说话，见下文“对话”）。买地、交易、挂单与答复事件的原语已在服务端实现，尚未进入协议。其余原语按同样方式增加。
 
 居民物品由服务端内部的 `inventory.py` 管理（存入、移出、计数、列出、清空），这些函数同样返回新的世界，但不对客户端和 AI 开放；以后的原语调用它们，并把 `InventoryError` 转成 `ActionRejected`。
 
@@ -104,7 +101,7 @@ Python 服务端（aiverse-server）
 
 - `perform` 先调用 `check_can_act`：游戏结束后一律 `game_over`，出局的居民一律 `resident_left`。
 - 出局（原语 `LeaveGame`，或服务端直接调用 `leave_game`）：撤销与该居民有关的报价并退回双方预留，终止其合约并把余款退回买方，清空物品，保留金币，标记 `left`。居民留在世界和排名中，游戏照常进行。
-- 结束：`app.py` 的 `Game` 在创建时记下开局时刻（单调时钟，一局默认 `GAME_DURATION` 即 20 分钟）。应用 lifespan 中的计时任务到点调用 `end_game` 并广播；每帧处理前也检查一次（`Game.tick`）。`end_game` 停止所有采集、撤销所有报价、终止所有合约并设 `World.ended`，世界从此不变。
+- 结束：`app.py` 的 `Game` 在创建时记下开局时刻（单调时钟，一局默认 `GAME_DURATION` 即 20 分钟）。应用 lifespan 中的计时任务到点调用 `end_game` 并广播；每帧处理前也检查一次（`Game.tick`）。`end_game` 停下所有行走、撤销所有报价、终止所有合约并设 `World.ended`，世界从此不变。
 - 视图：每名居民带公开的金币总额（余额加待处理购买报价和合约中的预留）、`left` 与 `rank`（相同并列）；世界带 `game.ended` 与发送时的 `remainingSeconds`。客户端以收到状态的本地时刻为起点倒计时，不比较两台机器的时钟。
 
 一次手动操作：
@@ -116,38 +113,16 @@ Python 服务端（aiverse-server）
 
 以后加入回合推进时，原语改为在回合结算时统一执行，结算后同样推送 `state`，客户端这一侧的流程不需要改变。
 
-## 算力与算力泉
+## 地块与访客
 
-见服务端 `compute.py`、`harvesting.py` 与 [变更 0012](../changes/0012-tokens-and-mining.md)：
-
-- 算力是居民的体力，也是物品种类 `"compute"`，因此用现有的买卖报价交易。视图中的 `compute` 是拥有量：携带的加出售报价中预留的。
-- `MoveTo` 先按直线距离扣算力（每单位 0.5，向上取整），不够时以 `not_enough_compute` 拒绝。
-- `perform` 执行原语后调用 `knock_out_exhausted`：这次原语让其拥有量由正变零的居民按 `leave_game` 出局；判断时进行中的采集已采集的算力也算拥有。
-- 算力泉在创建世界时由 `layout.scatter_springs(seed)` 放置，之后不移动、不增减，只有储量下降。`Harvest` 要求居民站在算力泉半径内，开始时从算力泉扣出算力，`HARVEST_SECONDS` 后发放；期间居民忙碌，除 `LeaveGame` 外以 `busy` 拒绝。出局时算力退回算力泉，游戏结束时任务作废。
-- 游戏时间是 `World.time`。`Game.tick` 在每帧处理前和计时任务醒来时推进它，用 `clock.settle_due` 发放到期的采集、接回到达的行走者并记录活动，到点时结束游戏，有变化就广播；计时任务等待对局结束和最早一个采集或行走结束中较早的那个。
-
-## 收购点与市场价
-
-见服务端 `market.py` 与 [变更 0016](../changes/0016-token-market.md)：
-
-- 除开局资金外，金币唯一的新来源。地图中心有一个收购点（`World.market`），算力泉离它至少 `MARKET_CLEARANCE`。`SellCompute` 要求居民站在收购点半径内，卖出携带的算力，按市场价得到金币；卖光拥有的算力照常出局。
-- 价格由“近期卖出压力” S 决定：边际单价 `基准价 × 深度 / (深度 + S)`，一次卖出的收入是从 S 到 S + q 的积分并向下取整，S 按半衰期指数回落。`Market` 只记录压力和测得压力的游戏时刻，任意时刻的价格由公式算出，不需要计时器。
-- 视图中的 `market` 带定价参数和发送时的压力；客户端按收到状态的本地时刻推算当前单价和估算收入（`apps/web/src/state/market.ts`），只用于显示；`priceHistory` 是服务端记录的价格点（卖出时与无人卖出时每 5 秒各记），页面直接画成折线，不自行推算。
-
-## 程序
-
-见服务端 `programs.py` 与 [变更 0017](../changes/0017-mining-chips.md)：
-
-- 程序是以版本命名的物品（`"v1"`、`"v2"`、`"v3"`），版本表 `PROGRAM_TIERS` 给出价格和每次采集的产量。`BuyProgram` 要求居民站在收购点半径内，用携带的金币按定价买一个。
-- `Harvest` 用 `best_program` 找出携带的最好一个，没有时以 `no_program` 拒绝；产量取该版本的 `compute_per_job`，版本记在 `HarvestJob.program`。世界校验采集中的居民必须携带这个程序；采集期间的忙碌规则让它既不能走开也不能被报价卖出。
-- 视图中的 `programs` 是拥有的程序（含报价中预留的），`market.programs` 是价目。页面用 `GameStore.bestProgram` 显示将要用的程序，贴图见 `apps/web/src/ui/ProgramIcon.tsx`。
+见服务端 `land.py`、`footfall.py` 与[虚拟设施](design/facilities.md)：地图划成 10 × 10 的地块，站在没人买的地块里可以花 800～3000 金币（越靠近地图中央越贵）买下，整局归买主；`footfall` 给出一个位置的访客流量（随时间增长，离中央越远越少，附近站着的居民另加）。目前没有设施，访客不付钱；地块与流量还没有进入协议。
 
 ## 对话
 
 见服务端 `speech.py`、[变更 0018](../changes/0018-speech.md) 与 [变更 0019](../changes/0019-speech-cost-and-privacy.md)：
 
 - 原语 `Say` 不带 `to` 时当众说：说话那一刻 `HEARING_RADIUS`（20，与感知半径相同）内仍在局中的其他居民听到，行走者按途中位置；带 `to` 时只有那名居民听到，不论远近。谁听到记在发言的 `listeners` 里，之后走近的人听不到。
-- 说话像退出游戏一样不受忙碌限制，不进活动日志。每句从携带的算力中扣 `SPEECH_COSTS`：当众说 2 个、私聊 1 个，花掉最后一个照常出局。世界保留最近 `SPEECH_LIMIT`（200）句，`Memory.speech_seen` 记着居民看过的最后一句。
+- 说话像退出游戏一样不受忙碌限制，不进活动日志，也不花东西。世界保留最近 `SPEECH_LIMIT`（200）句，`Memory.speech_seen` 记着居民看过的最后一句。
 - `begin_turn` 的 `Perception.speech` 是自上次查看以来自己说的和听到的话。
 - 视图因连接而异：每个连接有一个 `view_as` 选择的居民（`Outbox.viewer`），`world_view` 只放进当众说的话和该居民发出或收到的私聊，取其中最近 50 句；`Game.broadcast_world` 按不同的选择各编码一次。页面在 `GameStore.select` 时发送 `view_as`，所以不相关的私聊不会到达浏览器。页面的“对话”面板见 `apps/web/src/ui/SpeechPanel.tsx`。报价、合约提议与合约按同样的方式只发给以参与者身份查看的连接，页面的“交易与合约”面板见 `apps/web/src/ui/DealsPanel.tsx`。
 
@@ -155,8 +130,8 @@ Python 服务端（aiverse-server）
 
 见服务端 `walking.py` 与 [变更 0014](../changes/0014-walking-speed.md)：
 
-- `MoveTo` 出发时按直线距离扣算力，然后开始一次行走（`WalkJob`：目标、出发与到达时刻），速度 `WALK_SPEED` = 每秒 2.5 地图单位。行走期间居民忙碌，除 `LeaveGame` 外以 `busy` 拒绝；`Resident.position` 仍是出发点，`walking.position_at` 给出途中位置，感知与视图都用它。
-- 到达由 `Game.tick` 处理；花光最后一个算力的行走者到达后才出局（`lifecycle.knock_out_arrivals`），`knock_out_exhausted` 跳过仍在路上的居民。中途出局或游戏结束时停在当时的位置。
+- `MoveTo` 开始一次行走，只花时间（`WalkJob`：目标、出发与到达时刻），速度 `WALK_SPEED` = 每秒 2.5 地图单位。行走期间居民忙碌，除 `LeaveGame`、`Say` 和撤单外以 `busy` 拒绝；`Resident.position` 仍是出发点，`walking.position_at` 给出途中位置，感知与视图都用它。
+- 到达由 `Game.tick` 处理。中途出局或游戏结束时停在当时的位置。
 - 视图中行走者的 `position` 是发送时的途中位置，另有 `walking`（`target`、`remainingSeconds`）。
 
 ## 每轮开始的感知
@@ -174,7 +149,3 @@ AI 每轮开始时调用 `Game.begin_turn(resident_id)`：先 `tick` 把世界�
 ## AI 行动时间线
 
 协议 14 的 `state.world.agentTimeline` 包含所选居民 id 和最近 30 个完成的 AI 轮次。`Game` 保存有界页面投影，`world_view` 按 `view_as` 选取；完整观察与异常不进协议。客户端 `ui/AgentTimelinePanel.tsx` 在地图下展示，并核对居民 id 避免切换期间显示旧记录。经营方针通过 `start_agent.strategy` 传入模型，最多 1000 个 Unicode 字符，修改后需重新交给 AI。
-
-## 采集节点与预存结算
-
-见 [采集节点设计](design/collectors.md)。协议 15 增加 `build_collector`、`install_program`、`fund_collector`、`remove_program`，网页及 Agent 同用服务端原语。采集节点、槽位与预存属于不可变世界，安装从背包取出程序；按实际产量从槽位余额同时支付租金、维护费并从有限算力泉给算力，预存计入排名。居民携带程序和可用金币由独立视图字段提供。`clock.settle_due` 按实际到点时刻依次处理，出局与结束先清理槽位和退款；角色出局后的未来周期不产生算力或租金。采集节点公开列表进入 AI 观察，便于发现租用机会。协议 16（[变更 0036](../changes/0036-market-and-rig-tuning.md)）：`collectorRules` 增加 `yieldMultiplier`，收购点增加 `restingPressure` 且 `pressure` 可以为负，页面据此推算现价与采集节点产量。

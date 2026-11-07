@@ -178,65 +178,8 @@ h2 {
   flex: 1;
 }
 
-.residents .coords,
-.residents .compute,
-.springs .coords,
-.springs .compute {
+.residents .coords {
   font-variant-numeric: tabular-nums;
-}
-
-.residents .compute {
-  color: #9fe3f0;
-}
-
-.residents .programs {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.springs {
-  display: grid;
-  gap: 4px;
-  margin: 0 0 4px;
-  padding: 0 6px;
-  list-style: none;
-  font-size: 14px;
-}
-
-.springs li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-}
-
-.springs .name {
-  color: #9fe3f0;
-}
-
-.springs .compute {
-  margin-left: auto;
-}
-
-.market-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  margin: 0 0 4px;
-  padding: 0 6px;
-}
-
-.market-info .coords,
-.market-info .price {
-  font-variant-numeric: tabular-nums;
-}
-
-.market-info .price {
-  margin-left: auto;
-  color: #f7dc8a;
-}
-
-.springs li.empty {
-  color: var(--muted);
 }
 
 .selected {
@@ -245,8 +188,7 @@ h2 {
   gap: 8px;
 }
 
-.move-form,
-.sell-form {
+.move-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -254,16 +196,14 @@ h2 {
   margin-top: 8px;
 }
 
-.move-form label,
-.sell-form label {
+.move-form label {
   display: flex;
   align-items: center;
   gap: 4px;
   font-size: 14px;
 }
 
-.move-form input,
-.sell-form input {
+.move-form input {
   width: 72px;
   padding: 4px 6px;
   border: 1px solid var(--border);
@@ -285,19 +225,7 @@ h2 {
   cursor: pointer;
 }
 
-.sell-form button {
-  padding: 4px 12px;
-  border: none;
-  border-radius: 6px;
-  background: #e0a93b;
-  color: #1d1a16;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.move-form button:disabled,
-.sell-form button:disabled {
+.move-form button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -320,19 +248,9 @@ h2 {
   color: var(--muted);
 }
 
-.tag-harvesting {
-  border-color: #4fc3d9;
-  color: #9fe3f0;
-}
-
 .tag-walking {
   border-color: #d9b44f;
   color: #f0dc9f;
-}
-
-.tag-crafting {
-  border-color: #a98be0;
-  color: #d6c6f5;
 }
 
 .ranking {
@@ -366,47 +284,6 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 
-.harvest {
-  display: block;
-  margin-top: 4px;
-  padding: 4px 12px;
-  border: none;
-  border-radius: 6px;
-  background: #4fc3d9;
-  color: #1d1a16;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.buy-programs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.buy-programs button {
-  padding: 4px 10px;
-  border: 1px solid #4fc3d9;
-  border-radius: 6px;
-  background: transparent;
-  color: #9fe3f0;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.buy-programs button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.harvest:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .leave {
   margin-top: 8px;
   padding: 4px 12px;
@@ -438,15 +315,7 @@ h2 {
   object-fit: contain;
 }
 
-.program-icon {
-  width: 20px;
-  height: 20px;
-  margin-right: 2px;
-  vertical-align: middle;
-  object-fit: contain;
-}
-
-/* A busy resident with programs outgrows the side column: wrap between items, never inside one. */
+/* A busy resident outgrows the side column: wrap between items, never inside one. */
 .residents button {
   flex-wrap: wrap;
   row-gap: 2px;
@@ -454,15 +323,6 @@ h2 {
 
 .residents button > span {
   white-space: nowrap;
-}
-
-.residents .program + .program {
-  margin-left: 2px;
-}
-
-.buy-programs .program-icon {
-  width: 24px;
-  height: 24px;
 }
 
 .speech {
@@ -700,21 +560,10 @@ h2 {
 .agent-calls summary { cursor: pointer; color: var(--muted); }
 .agent-calls pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 6px 0; }
 
-.collector-card { margin-top: 14px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
-.collector-card h3 { margin: 0 0 8px; font-size: 15px; }
-.collector-slot { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 4px; }
-.collector-form { display: grid; gap: 8px; margin-top: 12px; }
-.collector-form label { display: grid; gap: 4px; font-size: 13px; }
-.collector-form input, .collector-form select { min-width: 0; padding: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; font: inherit; }
-.collector-panel button { padding: 6px 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-strong); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
-.collector-panel button:disabled { opacity: 0.45; cursor: not-allowed; }
-.collector-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
-
 .price-chart-summary { margin: 0 0 6px; font-size: 13px; }
 .price-chart-summary strong { font-size: 18px; color: var(--accent); }
 .price-chart-plot { display: block; width: 100%; height: auto; }
 .price-chart-plot .grid { stroke: var(--border); stroke-width: 1; }
-.price-chart-plot .reference { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 3; }
 .price-chart-plot .tick { fill: var(--muted); font-size: 10px; }
 .price-chart-plot .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
 .price-chart-plot .latest { fill: var(--accent); }

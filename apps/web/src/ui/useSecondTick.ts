@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 /**
  * Re-renders the caller every second while `active`, for values that move on the local clock
- * between snapshots, such as the countdown and the market price.
+ * between snapshots.
  */
 export function useSecondTick(active: boolean): void {
   const [, tick] = useState(0);

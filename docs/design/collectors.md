@@ -1,6 +1,6 @@
 # 采集节点与程序租用
 
-状态：已调整。
+状态：已删除（变更 0064 去掉旧玩法，代码与页面保留在 `legacy` 分支）；以下是删除前的设计。
 更新：2026-10-31。
 相关：[变更 0034](../../changes/0034-mining-rigs.md)、[变更 0036](../../changes/0036-market-and-rig-tuning.md)；服务端 `economy/collectors.py`。
 

@@ -1,6 +1,6 @@
 # 经济指标
 
-状态：首版已实现。
+状态：首版已实现。变更 0064 起收购点、程序、采集节点等渠道已删除（流水账渠道现为 offer、contract_payment、contract_forfeit、information、exchange、land、visitors），文中以它们为例的基线是删除前的数字。
 更新：2026-11-07。
 相关：[变更 0049](../../changes/0049-coin-ledger-and-economy-report.md)、[程序与编写](programs.md)、[挂单交易所](order-book.md)、[按角色的当前对局日志](../../changes/0033-per-resident-logs.md)；服务端 `core/ledger.py`、`game/economy_report.py`，`server/app.py` 的 `on_end` 与 `__main__.py`。
 

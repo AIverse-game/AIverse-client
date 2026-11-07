@@ -21,8 +21,15 @@ export function ExchangePanel() {
   const { world } = useGameState();
   const [chosen, setChosen] = useState<string | null>(null);
   const exchange = world?.exchange;
-  // Shown beside the market, which every real world has.
-  if (!world?.market || !exchange || exchange.books.length === 0) return null;
+  if (!exchange) return null;
+  if (exchange.books.length === 0) {
+    return (
+      <section className="panel exchange">
+        <h2>交易所</h2>
+        <p className="muted small">目前没有可以交易的商品，等居民做出可交易的内容后这里才有挂单簿。</p>
+      </section>
+    );
+  }
   const book = exchange.books.find((candidate) => candidate.item === chosen) ?? exchange.books[0]!;
 
   return (
@@ -92,8 +99,7 @@ function FillPrices({ exchange, item }: { exchange: ExchangeView; item: string }
   const history = fillPrices(exchange.fills, item);
   const latest = latestFills(exchange.fills, item, FILLS_SHOWN);
   if (latest.length === 0) return <p className="muted small">最近没有{itemName(item)}成交。</p>;
-  // No reference price: the line is read against itself.
-  const chart = layoutPriceChart(history, SIZE, MARGINS, Number.NaN, formatDuration, formatCoins);
+  const chart = layoutPriceChart(history, SIZE, MARGINS, formatDuration, formatCoins);
   return (
     <>
       <p className="price-chart-summary">

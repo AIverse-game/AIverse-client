@@ -1,12 +1,13 @@
-import type { FillView, PricePointView } from '@aiverse/protocol';
+import type { FillView } from '@aiverse/protocol';
+import type { PricePointView } from './priceChart';
 
 // What the exchange panel shows about one item, from the fills the server sent.
 
-const ITEM_NAMES: Readonly<Record<string, string>> = { compute: '算力', data: '数据', material: '素材' };
+const ITEM_NAMES: ReadonlyMap<string, string> = new Map();
 
-/** The item as the page names it; program tiers keep their own names. */
+/** The item as the page names it; an item with no name here keeps its own. */
 export function itemName(item: string): string {
-  return ITEM_NAMES[item] ?? item;
+  return ITEM_NAMES.get(item) ?? item;
 }
 
 /** The unit price of every fill of `item` among `fills` (oldest first), for a line chart. */

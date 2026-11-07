@@ -1,6 +1,6 @@
 # 挂单交易所
 
-状态：首版已实现（服务端、Agent 工具与页面只读显示；页面下单未做）。
+状态：首版已实现（服务端、Agent 工具与页面只读显示；页面下单未做）。变更 0064 起算力、数据、程序、素材都已删除，交易所暂时没有商品，机制保留，待内容成为第一种商品；文中以这些商品为例的部分是删除前的设计。
 更新：2026-11-04。
 相关：[交易报价](trade-offers.md)、[算力收购点](compute-market.md)、[程序与编写](programs.md)、[经济指标](economy-metrics.md)；[变更 0052](../../changes/0052-order-book-exchange.md)、[变更 0053](../../changes/0053-crafts-and-exchange-on-page.md)、[变更 0056](../../changes/0056-order-from-anywhere.md)；服务端 `core/orders.py`、`economy/exchange.py`。
 

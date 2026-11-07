@@ -5,12 +5,12 @@ import { formatDuration } from './format';
 /** A resident's display name; the id when the resident is unknown. */
 export type NameOf = (id: ResidentId) => string;
 
-/** A lot of items as players read it: compute by count, other kinds such as data or program tiers by piece. */
+/** A lot of items as players read it, by piece. */
 export function formatItems(item: string, quantity: number): string {
-  return item === 'compute' ? `${quantity} 算力` : `${quantity} 个 ${itemName(item)}`;
+  return `${quantity} 个 ${itemName(item)}`;
 }
 
-/** A trade offer, such as “乙 以 80 金币卖给 甲 5 算力”. */
+/** A trade offer, such as “乙 以 80 金币卖给 甲 5 个 poster”. */
 export function describeOffer(offer: OfferView, nameOf: NameOf): string {
   const items = formatItems(offer.item, offer.quantity);
   return offer.side === 'sell'
@@ -20,7 +20,7 @@ export function describeOffer(offer: OfferView, nameOf: NameOf): string {
 
 type Terms = Pick<ContractProposalView, 'supplierId' | 'buyerId' | 'item' | 'quantity' | 'price'>;
 
-/** What a contract settles, such as “乙 每交付 10 算力，甲 付 100 金币”. */
+/** What a contract settles, such as “乙 每交付 10 个 poster，甲 付 100 金币”. */
 export function describeTerms(terms: Terms, nameOf: NameOf): string {
   const items = formatItems(terms.item, terms.quantity);
   return `${nameOf(terms.supplierId)} 每交付 ${items}，${nameOf(terms.buyerId)} 付 ${terms.price} 金币`;

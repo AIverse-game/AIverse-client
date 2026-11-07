@@ -8,7 +8,6 @@ import {
   MAP_DISPLAY_SCALE,
   MARGIN,
   projectMap,
-  collectorPositionOnSpring,
   SLAB_DEPTH,
 } from './layout';
 
@@ -83,17 +82,6 @@ describe('projectMap', () => {
     // The top-left canvas corner is off the map; far above it is past the horizon.
     expect(toMap(0, 0)).toBeNull();
     expect(toMap(origin.x, -1e6)).toBeNull();
-  });
-});
-
-describe('collectorPositionOnSpring', () => {
-  it.each([
-    { position: { x: 75, y: 75 }, radius: 4 },
-    { position: { x: 20, y: 110 }, radius: 2 },
-  ])('keeps the marker base within the spring at $position and radius $radius', (spring) => {
-    const position = collectorPositionOnSpring(spring);
-
-    expect(Math.hypot(position.x - spring.position.x, position.y - spring.position.y)).toBeLessThan(spring.radius);
   });
 });
 

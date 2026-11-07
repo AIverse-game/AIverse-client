@@ -37,15 +37,6 @@ export interface MapProjection {
   toMap(x: number, y: number): Position | null;
 }
 
-/** Put a machine beside the spring marker while keeping its base within harvesting reach. */
-export function collectorPositionOnSpring(spring: { position: Position; radius: number }): Position {
-  const distance = spring.radius * 0.55;
-  return {
-    x: spring.position.x + distance,
-    y: spring.position.y,
-  };
-}
-
 const cosYaw = Math.cos(YAW);
 const sinYaw = Math.sin(YAW);
 const cosPitch = Math.cos(PITCH);

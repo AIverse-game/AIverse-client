@@ -1,17 +1,12 @@
 import {
   PROTOCOL_VERSION,
   type Action,
-  type ProgramTierView,
   type LLMSettings,
-  type MineView,
-  type RecipeView,
-  type SpringView,
   type ResidentId,
   type ServerMessage,
   type WorldView,
 } from '@aiverse/protocol';
 import type { GameConnection } from '../net/connection';
-import { marketPrice, marketQuote } from './market';
 
 /** Outcome of the latest operation primitive this client sent. */
 export type ActionStatus = { status: 'pending' } | { status: 'accepted' } | { status: 'rejected'; reason: string };
@@ -35,7 +30,7 @@ export interface ClientState {
    * remaining time; a local time, so the two machines' clocks need not agree.
    */
   deadline: number | null;
-  /** When the latest snapshot arrived on this client's clock, to follow the market price since. */
+  /** When the latest snapshot arrived on this client's clock, to count timers down since. */
   receivedAt: number | null;
 }
 
@@ -123,107 +118,11 @@ export class GameStore {
   }
 
   /**
-   * Like `canAct`, and the resident is not busy harvesting, gathering, writing or walking: then only
-   * talking and leaving go through.
+   * Like `canAct`, and the resident is not busy walking: then only talking and leaving go through.
    */
   isFree(id: ResidentId): boolean {
     const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
-    return (
-      this.canAct(id) &&
-      resident !== undefined &&
-      [resident.harvesting, resident.gathering, resident.writing, resident.walking].every((job) => job === undefined)
-    );
-  }
-
-  /** The spring the resident stands within reach of, the nearest if several; null if none. */
-  springInReach(id: ResidentId): SpringView | null {
-    const { world } = this.state;
-    const resident = world?.residents.find((candidate) => candidate.id === id);
-    if (!world || !resident) return null;
-    const distance = (spring: SpringView) =>
-      Math.hypot(spring.position.x - resident.position.x, spring.position.y - resident.position.y);
-    const reachable = world.springs.filter((spring) => distance(spring) <= spring.radius);
-    return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
-  }
-
-  /** The mine the resident stands within reach of, the nearest if several; null if none. */
-  mineInReach(id: ResidentId): MineView | null {
-    const { world } = this.state;
-    const resident = world?.residents.find((candidate) => candidate.id === id);
-    if (!world || !resident) return null;
-    const distance = (mine: MineView) =>
-      Math.hypot(mine.position.x - resident.position.x, mine.position.y - resident.position.y);
-    const reachable = world.mines.filter((mine) => distance(mine) <= mine.radius);
-    return reachable.sort((a, b) => distance(a) - distance(b))[0] ?? null;
-  }
-
-  /** Whether the resident stands within reach of the studio. */
-  atStudio(id: ResidentId): boolean {
-    const { world } = this.state;
-    const resident = world?.residents.find((candidate) => candidate.id === id);
-    const studio = world?.studio;
-    if (!resident || !studio) return false;
-    return Math.hypot(studio.position.x - resident.position.x, studio.position.y - resident.position.y) <= studio.radius;
-  }
-
-  /**
-   * Game seconds writing `recipe` would take the resident, quicker for every program they have
-   * written before; only for display, the server times the job.
-   */
-  writeSeconds(id: ResidentId, recipe: RecipeView): number | null {
-    const { world } = this.state;
-    const resident = world?.residents.find((candidate) => candidate.id === id);
-    const studio = world?.studio;
-    if (!resident || !studio) return null;
-    const share = Math.max(1 - studio.speedupPerProgram * resident.programsWritten, studio.fastestShare);
-    return recipe.seconds * share;
-  }
-
-  /**
-   * Whether the resident surely lacks what `recipe` uses up: owned data and compute count those
-   * set aside too, so having them is no promise the server accepts, but lacking them is a sure
-   * refusal. The lower program must be carried.
-   */
-  lacksMaterials(id: ResidentId, recipe: RecipeView): boolean {
-    const resident = this.state.world?.residents.find((candidate) => candidate.id === id);
-    if (!resident) return true;
-    return (
-      resident.data < recipe.data ||
-      resident.compute < recipe.compute ||
-      (recipe.consumes !== undefined && !resident.carriedPrograms[recipe.consumes])
-    );
-  }
-
-  /** Whether the resident stands within reach of the market. */
-  atMarket(id: ResidentId): boolean {
-    const { world } = this.state;
-    const resident = world?.residents.find((candidate) => candidate.id === id);
-    const market = world?.market;
-    if (!resident || !market) return false;
-    return Math.hypot(market.position.x - resident.position.x, market.position.y - resident.position.y) <= market.radius;
-  }
-
-  /** The best program currently carried; installed and offered programs cannot harvest manually. */
-  bestProgram(id: ResidentId): ProgramTierView | null {
-    const { world } = this.state;
-    const resident = world?.residents.find((candidate) => candidate.id === id);
-    const owned = (world?.market?.programs ?? []).filter((tier) => (resident?.carriedPrograms[tier.tier] ?? 0) > 0);
-    return owned.reduce<ProgramTierView | null>(
-      (best, tier) => (best === null || tier.computePerJob > best.computePerJob ? tier : best),
-      null,
-    );
-  }
-
-  /** Coins one more compute fetches right now by the local clock, or null without a market. */
-  marketPrice(): number | null {
-    const market = this.state.world?.market;
-    return market ? marketPrice(market, this.sinceSnapshot()) : null;
-  }
-
-  /** Coins selling `quantity` compute would fetch right now; an estimate, the server decides. */
-  marketQuote(quantity: number): number | null {
-    const market = this.state.world?.market;
-    return market ? marketQuote(market, this.sinceSnapshot(), quantity) : null;
+    return this.canAct(id) && resident !== undefined && resident.walking === undefined;
   }
 
   /** Seconds left in the game by the local clock; only for display, the server ends it. */
@@ -307,7 +206,7 @@ export class GameStore {
     }
   }
 
-  /** Seconds since the latest snapshot arrived; prices stand still once the game is over. */
+  /** Seconds since the latest snapshot arrived; timers stand still once the game is over. */
   private sinceSnapshot(): number {
     const { receivedAt, world } = this.state;
     if (receivedAt === null || world?.game.ended) return 0;

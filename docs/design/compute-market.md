@@ -1,6 +1,6 @@
 # 算力收购点
 
-状态：已调整。
+状态：已删除（变更 0064 去掉旧玩法，代码与页面保留在 `legacy` 分支）；以下是删除前的设计。
 更新：2026-10-31。
 相关：[变更 0016](../../changes/0016-token-market.md)、[变更 0036](../../changes/0036-market-and-rig-tuning.md)、[变更 0039](../../changes/0039-price-history-chart.md)；服务端 `economy/market.py`，客户端 `apps/web/src/state/market.ts`。
 

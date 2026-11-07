@@ -1,6 +1,10 @@
-import type { PricePointView } from '@aiverse/protocol';
+/** A price at a game time, in seconds since the start. */
+export interface PricePointView {
+  time: number;
+  price: number;
+}
 
-// Where the compute price history goes on a line chart: pure geometry, drawn by `PriceChartPanel`.
+// Where a price history goes on a line chart: pure geometry, drawn by `PriceChartPlot`.
 
 export interface ChartSize {
   width: number;
@@ -30,8 +34,6 @@ export interface PriceChart {
   last: { x: number; y: number };
   timeTicks: ChartTick[];
   priceTicks: ChartTick[];
-  /** Where `referencePrice` falls on the price axis; null when it lies outside it. */
-  referenceY: number | null;
   minPrice: number;
   maxPrice: number;
 }
@@ -49,14 +51,12 @@ const round = (value: number) => Math.round(value * 100) / 100;
 /**
  * Lays out `history` (oldest first) in a chart of `size` with the plot inset by `margins`: time
  * runs from the first point to the last along the bottom, price from just below the lowest to
- * just above the highest up the side. `referencePrice` is the base price the line is read
- * against. Null while there are fewer than two points, or all at one instant: no line yet.
+ * just above the highest up the side. Null while there are fewer than two points, or all at one instant: no line yet.
  */
 export function layoutPriceChart(
   history: readonly PricePointView[],
   size: ChartSize,
   margins: ChartMargins,
-  referencePrice: number,
   formatTime: (seconds: number) => string,
   formatPrice: (price: number) => string,
 ): PriceChart | null {
@@ -93,14 +93,12 @@ export function layoutPriceChart(
     label: formatTime(time),
     value: time,
   }));
-  const inRange = referencePrice >= minPrice && referencePrice <= maxPrice;
 
   return {
     path,
     last: { x: round(x(last.time)), y: round(y(last.price)) },
     timeTicks,
     priceTicks,
-    referenceY: inRange ? round(y(referencePrice)) : null,
     minPrice,
     maxPrice,
   };

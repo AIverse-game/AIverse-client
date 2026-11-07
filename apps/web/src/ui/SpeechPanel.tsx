@@ -6,9 +6,6 @@ import { formatDuration } from './format';
 /** Mirrors SPEECH_LENGTH_LIMIT in the server, which counts code points; it trims and checks again. */
 const SPEECH_MAX_LENGTH = 100;
 
-/** Compute one line costs; mirrors SPEECH_COSTS in the server, which charges them. */
-const SPEECH_COSTS = { aloud: 2, toOne: 1 };
-
 /** Value of the listener choice that means speaking aloud rather than to one resident. */
 const ALOUD = '';
 
@@ -50,7 +47,7 @@ export function SpeechPanel() {
   if (!world) return null;
   const names = new Map(world.residents.map((resident) => [resident.id, resident]));
   const speaker = world.residents.find((candidate) => candidate.id === selected) ?? null;
-  // Speaking works while walking or harvesting, so only leaving or the end of the game stops it.
+  // Speaking works while walking, so only leaving or the end of the game stops it.
   const canSpeak = speaker !== null && store.canAct(speaker.id);
   const others = world.residents.filter((resident) => resident.id !== speaker?.id && !resident.left);
   const listener = choice.speaker === speaker?.id ? choice.to : ALOUD;
@@ -59,21 +56,11 @@ export function SpeechPanel() {
   const trimmed = text.trim();
   // Code points, as the server counts; `maxLength` would count UTF-16 units.
   const length = [...trimmed].length;
-  const cost = listener === ALOUD ? SPEECH_COSTS.aloud : SPEECH_COSTS.toOne;
-  // `compute` counts those set aside in offers too, which the server does not take; it decides.
-  const affordable = speaker !== null && speaker.compute >= cost;
-  const canSend = canSpeak && !gone && !awaiting && affordable && length > 0 && length <= SPEECH_MAX_LENGTH;
+  const canSend = canSpeak && !gone && !awaiting && length > 0 && length <= SPEECH_MAX_LENGTH;
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!speaker || !canSend) return;
-    // A harvester keeps the compute being gathered, so only others run out; a walker is out on arrival.
-    if (
-      speaker.compute === cost &&
-      !speaker.harvesting &&
-      !window.confirm(`说完这句会花光 ${speaker.name} 的算力，之后出局（行走中的到达后出局）：不能再行动，金币保留并参与排名。继续？`)
-    )
-      return;
     store.act({ type: 'say', residentId: speaker.id, text: trimmed, ...(listener === ALOUD ? {} : { to: listener }) });
     setAwaiting(true);
     setRefusal(null);
@@ -125,17 +112,12 @@ export function SpeechPanel() {
           }}
         />
         <button type="submit" disabled={!canSend}>
-          发送（{cost} 算力）
+          发送
         </button>
       </form>
       {canSpeak && length > SPEECH_MAX_LENGTH && (
         <p className="error small" role="alert">
           一句最多 {SPEECH_MAX_LENGTH} 字，现在 {length} 字。
-        </p>
-      )}
-      {canSpeak && !gone && !affordable && (
-        <p className="error small" role="alert">
-          算力不够：{listener === ALOUD ? '当众说' : '私聊'}一句要 {cost} 个，{speaker.name} 只有 {speaker.compute} 个。
         </p>
       )}
       {canSpeak && gone && (
@@ -149,7 +131,7 @@ export function SpeechPanel() {
         </p>
       )}
       <p className="muted small">
-        当众说每句 {SPEECH_COSTS.aloud} 算力，只有附近的居民听得到；私聊每句 {SPEECH_COSTS.toOne} 算力，不论远近只有对方听到。行走、采集中也能说话。
+        说话不花东西：当众说只有附近的居民听得到；私聊不论远近只有对方听到。行走中也能说话。
         这里只显示所选居民自己发出或收到的私聊。
       </p>
     </section>

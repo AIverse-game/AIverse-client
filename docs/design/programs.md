@@ -1,6 +1,6 @@
 # 程序与编写
 
-状态：首版已实现（服务端、Agent 工具与页面显示；计分折算在变更 0057 撤销）。
+状态：已删除（变更 0064 去掉旧玩法，代码与页面保留在 `legacy` 分支）；以下是删除前的设计。
 更新：2026-11-04。
 相关：[变更 0017](../../changes/0017-mining-chips.md)、[变更 0050](../../changes/0050-energy-and-crystal-terms.md)、[变更 0051](../../changes/0051-quarries-and-workshop.md)、[变更 0053](../../changes/0053-crafts-and-exchange-on-page.md)、[变更 0054](../../changes/0054-score-counts-held-items.md)、[变更 0057](../../changes/0057-rank-by-coins-again.md)；[采集节点](collectors.md)、[挂单交易所](order-book.md)、[经济指标](economy-metrics.md)；服务端 `economy/programs.py`、`economy/gathering.py`、`economy/studio.py`、`economy/harvesting.py`、`game/layout.py`。
 

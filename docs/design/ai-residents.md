@@ -1,6 +1,6 @@
 # AI 居民
 
-状态：首版已实现，已用真实模型试玩。
+状态：首版已实现，已用真实模型试玩。变更 0064 删掉旧玩法后，文中的观察、工具和脚本机器人策略里涉及算力、程序、算力泉、收购点、数据、工作室、素材和设施的部分已不存在，现状见服务端 `README.md` 的“AI 居民”。
 更新：2026-11-05。
 相关：[决策 0003](../decisions/0003-event-driven-agents-and-openrouter.md)、[决策 0004](../decisions/0004-player-configured-llm-endpoints.md)、[变更 0020](../../changes/0020-agent-loop.md)、[变更 0022](../../changes/0022-llm-config-from-page.md)；代码在服务端 `src/aiverse_server/agents/`。
 
