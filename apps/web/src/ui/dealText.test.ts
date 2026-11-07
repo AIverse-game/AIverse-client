@@ -27,6 +27,10 @@ describe('deal text', () => {
     expect(formatItems('v1', 1)).toBe('1 个 v1');
   });
 
+  it('names data and materials in Chinese', () => {
+    expect([formatItems('data', 6), formatItems('material', 3)]).toEqual(['6 个 数据', '3 个 素材']);
+  });
+
   it('says who sells or buys what for how much', () => {
     expect(describeOffer(offer, nameOf)).toBe('乙 以 80 金币卖给 甲 5 算力');
     expect(describeOffer({ ...offer, side: 'buy', fromId: 'a', toId: 'b' }, nameOf)).toBe('甲 出 80 金币买 乙 的 5 算力');

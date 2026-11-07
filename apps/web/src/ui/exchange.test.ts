@@ -7,6 +7,7 @@ const FILLS = [fill(1, 'data', 30), fill(2, 'compute', 16), fill(3, 'data', 32),
 
 it.each([
   ['compute', '算力'],
+  ['material', '素材'],
   ['data', '数据'],
   ['v2', 'v2'],
 ])('names %s as %s', (item, name) => {

@@ -1,12 +1,13 @@
 import type { ContractProposalView, OfferView, ResidentId } from '@aiverse/protocol';
+import { itemName } from './exchange';
 import { formatDuration } from './format';
 
 /** A resident's display name; the id when the resident is unknown. */
 export type NameOf = (id: ResidentId) => string;
 
-/** A lot of items as players read it: compute by count, other kinds such as program tiers by piece. */
+/** A lot of items as players read it: compute by count, other kinds such as data or program tiers by piece. */
 export function formatItems(item: string, quantity: number): string {
-  return item === 'compute' ? `${quantity} 算力` : `${quantity} 个 ${item}`;
+  return item === 'compute' ? `${quantity} 算力` : `${quantity} 个 ${itemName(item)}`;
 }
 
 /** A trade offer, such as “乙 以 80 金币卖给 甲 5 算力”. */

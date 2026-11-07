@@ -63,10 +63,10 @@ export const residentSchema = z.object({
       remainingSeconds: z.number().nonnegative(),
     })
     .optional(),
-  /** Present while the resident is busy writing a program at the studio. */
+  /** Present while the resident is busy writing a program or making materials at the studio. */
   writing: z
     .object({
-      /** Tier of the program the job makes. */
+      /** Tier of the program the job makes, or `material` while making materials. */
       tier: z.string(),
       remainingSeconds: z.number().nonnegative(),
     })

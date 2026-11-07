@@ -37,6 +37,7 @@
 | `src/aiverse_server/economy/programs.py` | 程序：版本表 `PROGRAM_TIERS`（价格、每次产量）、携带的最好一个 `best_program`、在收购点购买 `buy_program` |
 | `src/aiverse_server/economy/harvesting.py` | 算力泉采集：需要程序、产量按最好的一个，开始、按游戏时间发放、取消、忙碌检查（含行走）、下一次完成时刻 |
 | `src/aiverse_server/economy/market.py` | 收购点：定价常量、随时间回落的卖出压力 `pressure_at`、边际单价 `unit_price`、卖出收入 `quote`、卖出 `sell_compute` |
+| `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/facilities.py` | 地块与设施（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`、`Facility`；地块网格、保留地块、按离收购点远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall`、广告位 `build_ad`、按周期分摊流量付款 `finish_facilities` |
 | `src/aiverse_server/economy/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
 | `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`（押金按责任赔付或退回，并记入 `ContractBook.ended`），托管的货款与押金统计 `contract_coins` |
 | `src/aiverse_server/residents/walking.py` | 行走：速度 `WALK_SPEED`、所需时间、途中位置 `position_at`、出发、到达、中途停下、下一次到达时刻 |

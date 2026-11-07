@@ -82,7 +82,10 @@ export function ActionPanel() {
           正在数据矿 {resident.gathering.mineId} 采集数据，完成后获得 {resident.gathering.amount} 个数据；期间只能说话或退出游戏。
         </p>
       )}
-      {resident?.writing && (
+      {resident?.writing && resident.writing.tier === 'material' && (
+        <p className="small" role="status">正在工作室制作素材，原料已经扣除；期间只能说话或退出游戏。</p>
+      )}
+      {resident?.writing && resident.writing.tier !== 'material' && (
         <p className="small" role="status">
           正在工作室编写 <ProgramIcon tier={resident.writing.tier} />
           {resident.writing.tier}，原料已经扣除；期间只能说话或退出游戏。

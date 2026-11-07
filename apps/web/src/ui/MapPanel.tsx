@@ -38,7 +38,9 @@ export function MapPanel() {
                 {resident.agent && <span className="tag tag-agent">AI</span>}
                 {resident.harvesting && <span className="tag tag-harvesting">采集中</span>}
                 {resident.gathering && <span className="tag tag-crafting">采集数据中</span>}
-                {resident.writing && <span className="tag tag-crafting">编写中</span>}
+                {resident.writing && (
+                  <span className="tag tag-crafting">{resident.writing.tier === 'material' ? '制作中' : '编写中'}</span>
+                )}
                 {resident.walking && <span className="tag tag-walking">行走中</span>}
                 <span className="programs">
                   {Object.entries(resident.programs).map(([tier, count]) => (

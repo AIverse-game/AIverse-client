@@ -66,3 +66,4 @@
 | [0059-llm-groups](0059-llm-groups.md) | 已完成 | 模型配置可按居民分组，各组用自己的接口、key 与模型；协议未改 |
 | [0060-agent-trend-observation](0060-agent-trend-observation.md) | 已完成 | AI 每轮看到有界的收购价、匿名成交和亲眼所见储量历史，用短期笔记记录预测；协议未改 |
 | [0061-virtual-world-terms](0061-virtual-world-terms.md) | 已完成 | 协议 22：能量、晶砂、晶矿、晶核、工坊、汲能塔改称算力、数据、数据矿、程序、工作室、采集节点，代码、协议与文档一起改，规则不变 |
+| [0062-land-and-ad-slots](0062-land-and-ad-slots.md) | 已完成 | 买地块、工作室制作素材、在地块上建广告位，按访客流量收金币；服务端与 Agent 工具，页面未接入 |

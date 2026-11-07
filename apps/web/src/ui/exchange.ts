@@ -2,7 +2,7 @@ import type { FillView, PricePointView } from '@aiverse/protocol';
 
 // What the exchange panel shows about one item, from the fills the server sent.
 
-const ITEM_NAMES: Readonly<Record<string, string>> = { compute: '算力', data: '数据' };
+const ITEM_NAMES: Readonly<Record<string, string>> = { compute: '算力', data: '数据', material: '素材' };
 
 /** The item as the page names it; program tiers keep their own names. */
 export function itemName(item: string): string {
