@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { GameStore } from '../state/store';
 import { activeContents } from '../state/facilityContents';
 import { wheelScrollDelta } from '../ui/mapScroll';
+import { CoinBurstLayer } from './CoinBurstLayer';
 import { FacilityLayer } from './FacilityLayer';
 import { GroundLayer } from './GroundLayer';
 import { LabelLayer } from './LabelLayer';
@@ -41,6 +42,7 @@ export class MapRenderer {
   private readonly camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 1, 4000);
   private readonly ground: GroundLayer;
   private readonly facilities: FacilityLayer;
+  private readonly coins: CoinBurstLayer;
   private readonly lobby: LobbyLandmark;
   private readonly residents: ResidentLayer;
   private readonly visitors: VisitorLayer;
@@ -79,6 +81,7 @@ export class MapRenderer {
     parent.appendChild(this.cursor);
     this.ground = new GroundLayer(this.scene);
     this.facilities = new FacilityLayer(this.scene);
+    this.coins = new CoinBurstLayer(this.scene);
     this.lobby = new LobbyLandmark(this.scene);
     this.residents = new ResidentLayer(this.scene, this.labels, (x, y) => this.lobby.groundHeight(x, y));
     this.visitors = new VisitorLayer(this.scene, (x, y) => this.lobby.groundHeight(x, y));
@@ -115,6 +118,7 @@ export class MapRenderer {
     this.visitors.dispose();
     this.residents.dispose();
     this.lobby.dispose();
+    this.coins.dispose();
     this.facilities.dispose();
     this.ground.dispose();
     this.labels.dispose();
@@ -165,6 +169,7 @@ export class MapRenderer {
 
   private syncFacilities(world: WorldView): void {
     this.facilities.sync(world.parcels, world.map, (facility) => activeContents(facility, (time) => this.store.countdown(time)));
+    this.coins.sync(world.parcels, (parcelId) => this.facilities.anchor(parcelId));
     if (world.game.ended) {
       this.nextContentExpiry = null;
       return;
@@ -200,6 +205,7 @@ export class MapRenderer {
     this.residents.update(now, elapsed);
     this.visitors.sync(this.store.getVisitors());
     this.visitors.update(now);
+    this.coins.update(elapsed / 1000, this.camera);
     if (this.view) {
       const position = cameraPosition(this.view);
       this.camera.position.set(position.x, position.y, position.z);

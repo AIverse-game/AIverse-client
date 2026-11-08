@@ -13,6 +13,15 @@ interface Built {
   wrapper: THREE.Group;
   /** Invisible box that stands for the facility under the pointer; portals have none. */
   target: THREE.Mesh | null;
+  anchor: FacilityAnchor;
+}
+
+/** The point over a facility's roof that effects hang from. */
+export interface FacilityAnchor {
+  /** Middle of the roof in the scene. */
+  top: THREE.Vector3;
+  /** Width of the plot, in map units, which says how big to draw an effect. */
+  side: number;
 }
 
 function create(kind: FacilityView['kind'], contents: number): ModelHandle {
@@ -60,6 +69,11 @@ export class FacilityLayer {
     return [...this.built.values()].flatMap((built) => (built.target ? [built.target] : []));
   }
 
+  /** Where effects over the facility on a parcel go, or null when it has none. */
+  anchor(parcelId: string): FacilityAnchor | null {
+    return this.built.get(parcelId)?.anchor ?? null;
+  }
+
   update(time: number, dt: number): void {
     for (const { handle } of this.built.values()) handle.update(time, dt);
   }
@@ -87,7 +101,8 @@ export class FacilityLayer {
       target.userData = { parcelId: parcel.id };
       this.root.add(target);
     }
-    return { signature, handle, wrapper, target };
+    const anchor = { top: new THREE.Vector3(shape.centre.x, shape.height, shape.centre.y), side: shape.side };
+    return { signature, handle, wrapper, target, anchor };
   }
 
   private remove(id: string): void {

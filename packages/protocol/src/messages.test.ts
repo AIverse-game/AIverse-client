@@ -91,6 +91,23 @@ it('accepts a built game hall with shares and rejects an invalid parcel owner', 
   expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, facility: { ...parcel.facility, expiresIn: [30] } }] } }).ok).toBe(false);
 });
 
+it.each([
+  ['a payout', { at: 60, coins: 22 }, true],
+  ['a payout of nothing', { at: 60, coins: 0 }, false],
+  ['a fractional payout', { at: 60, coins: 2.5 }, false],
+  ['a payout with no payday', { coins: 22 }, false],
+  ['a payout at a negative payday', { at: -30, coins: 22 }, false],
+  ['a payout at the very start', { at: 0, coins: 22 }, true],
+])('on a facility, %s is parsed as expected', (_, income, ok) => {
+  const message = state(150, [resident('a', 75, 75)]);
+  const facility = { kind: 'ad', contents: 0, expiresIn: [], income };
+  const parcel = { id: 'L7-7', col: 7, row: 7, ownerId: 'a', shares: { a: 100 }, facility };
+
+  const result = parseServerMessage({ ...message, world: { ...message.world, parcels: [parcel] } });
+
+  expect(result.ok).toBe(ok);
+});
+
 const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'poster', quantity: 5, price: 80 };
 
 const proposal = {

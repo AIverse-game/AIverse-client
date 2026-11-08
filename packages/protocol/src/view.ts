@@ -191,10 +191,19 @@ export const mapSchema = z.object({
   parcelPrices: z.array(z.array(z.number().int().positive())),
 });
 
+export const incomeSchema = z.object({
+  /** Game time of the payday that paid the facility; one later than the page last saw is a new payout. */
+  at: z.number().nonnegative(),
+  /** Whole coins paid then, sponsors and admission fees together. */
+  coins: z.number().int().positive(),
+});
+
 export const facilitySchema = z.object({
   kind: z.enum(['ad', 'portal', 'game_hall', 'workspace']),
   contents: z.number().int().min(0).max(5),
   expiresIn: z.array(z.number().positive()).max(5),
+  /** What it was paid at the payday that last paid it; absent when none has. */
+  income: incomeSchema.optional(),
 }).refine((facility) => facility.contents === facility.expiresIn.length, 'content count differs from expiry list');
 
 export const parcelSchema = z.object({
@@ -349,6 +358,7 @@ export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
 export type ParcelView = z.infer<typeof parcelSchema>;
 export type FacilityView = z.infer<typeof facilitySchema>;
+export type IncomeView = z.infer<typeof incomeSchema>;
 export type JobView = z.infer<typeof jobSchema>;
 export type BookView = z.infer<typeof bookSchema>;
 export type FillView = z.infer<typeof fillSchema>;
