@@ -7,6 +7,7 @@ import floorStrips from '../assets/floor/metal-floor-strips.png';
 import type { GameStore } from '../state/store';
 import { activeContents } from '../state/facilityContents';
 import { createBlockResident, type BlockResident } from './blockResident';
+import { hitFacility } from './facilityGeometry';
 import { drawFacility } from './facilityModels';
 import { paintFloorSurface, readFloorSources } from './floorSurface';
 import {
@@ -154,16 +155,23 @@ export class MapScene extends Phaser.Scene {
       }
     }
     const { selected } = this.store.getState();
-    const target = this.projection?.toMap(pointer.x, pointer.y);
     const world = this.store.getState().world;
-    if (target && world) {
+    const projection = this.projection;
+    const facility = world && projection && [...world.parcels]
+      .filter((parcel) => parcel.facility && parcel.facility.kind !== 'portal')
+      .sort((a, b) => b.col + b.row - a.col - a.row)
+      .find((parcel) => hitFacility(projection, parcel, world.map.parcelSize, pointer.x, pointer.y));
+    const groundTarget = projection?.toMap(pointer.x, pointer.y);
+    if (facility) {
+      this.store.selectParcel(facility.id);
+    } else if (groundTarget && world) {
       const count = Math.max(1, Math.floor(world.map.size / world.map.parcelSize));
-      const col = Math.min(Math.floor(target.x / world.map.parcelSize), count - 1);
-      const row = Math.min(Math.floor(target.y / world.map.parcelSize), count - 1);
+      const col = Math.min(Math.floor(groundTarget.x / world.map.parcelSize), count - 1);
+      const row = Math.min(Math.floor(groundTarget.y / world.map.parcelSize), count - 1);
       this.store.selectParcel(`L${col}-${row}`);
     }
-    if (selected && target && this.store.isFree(selected) && pointer.event.shiftKey) {
-      this.store.act({ type: 'move_to', residentId: selected, target });
+    if (selected && groundTarget && this.store.isFree(selected) && pointer.event.shiftKey) {
+      this.store.act({ type: 'move_to', residentId: selected, target: groundTarget });
     }
   }
 
