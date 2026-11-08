@@ -247,3 +247,32 @@ it('sends the trimmed strategy alongside model settings', () => {
 
   expect(sent.at(-1)).toEqual({ type: 'start_agent', residentId: 'a', llm: { model: 'm' }, strategy: '稳健经营' });
 });
+
+describe('GameStore visitors', () => {
+  const walker = { id: 1, position: { x: 0, y: 0 }, legs: [{ start: { x: 0, y: 0 }, end: { x: 10, y: 0 } }] };
+
+  it('has no visitors before the server sends any', () => {
+    const { connection } = fakeConnection();
+
+    const store = new GameStore(connection);
+
+    expect(store.getVisitors()).toBeNull();
+  });
+
+  it('keeps the latest visitors with their arrival time without telling listeners', () => {
+    const { connection, deliver } = fakeConnection();
+    let time = 4000;
+    const store = new GameStore(connection, () => time);
+    let told = 0;
+    store.subscribe(() => told++);
+
+    deliver({ type: 'visitors', speed: 2.5, visitors: [walker] });
+    const first = store.getVisitors();
+    time = 6000;
+    deliver({ type: 'visitors', speed: 2.5, visitors: [] });
+
+    expect(first).toEqual({ speed: 2.5, visitors: [walker], receivedAt: 4000 });
+    expect(store.getVisitors()).toEqual({ speed: 2.5, visitors: [], receivedAt: 6000 });
+    expect(told).toBe(0);
+  });
+});

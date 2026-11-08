@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { Action } from './actions';
-import { worldViewSchema, type ResidentId } from './view';
+import { positionSchema, worldViewSchema, type ResidentId } from './view';
 
 /** Bump together with PROTOCOL_VERSION in the Python server on incompatible changes. */
-export const PROTOCOL_VERSION = 26;
+export const PROTOCOL_VERSION = 27;
 
 /**
  * Where and what a language model is asked: an OpenAI-compatible chat completions API at
@@ -37,6 +37,20 @@ export type ClientMessage =
   /** Allowed only after `welcome`. Stop the agent driving the resident, if any. */
   | { type: 'stop_agent'; residentId: ResidentId };
 
+/** A straight stretch of a visitor's walk; the next one may start elsewhere, after a portal. */
+const legSchema = z.object({ start: positionSchema, end: positionSchema });
+
+export const visitorSchema = z.object({
+  id: z.number().int().nonnegative(),
+  /** Where the visitor is when the server sent this. */
+  position: positionSchema,
+  /**
+   * The stretches it has still to walk at the message's `speed`, the first starting at `position`;
+   * empty while it stands. Past the last one it stands at its end.
+   */
+  legs: z.array(legSchema).default([]),
+});
+
 // Authority -> client. Every message is a JSON text frame; the client validates it
 // because the server is a separate codebase that can fall out of step.
 export const serverMessageSchema = z.discriminatedUnion('type', [
@@ -50,6 +64,15 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
     llmOverrides: z.array(z.string()).default([]),
   }),
   z.object({ type: z.literal('state'), world: worldViewSchema }),
+  // The scripted visitors on the map, kept out of `state` because they move all the time. Each
+  // message is a snapshot to play on locally and replaces the last: a visitor missing from it has
+  // left the map. Sent on hello and then every couple of seconds; never when the world has none.
+  z.object({
+    type: z.literal('visitors'),
+    /** Map units a walking visitor covers per second. */
+    speed: z.number().positive(),
+    visitors: z.array(visitorSchema),
+  }),
   // Reply to the sender's `action`. On success the new world follows as a `state` sent to
   // every connection; `code` and `message` explain a rejection.
   z.object({
@@ -73,6 +96,7 @@ export const serverMessageSchema = z.discriminatedUnion('type', [
 ]);
 
 export type ServerMessage = z.infer<typeof serverMessageSchema>;
+export type VisitorView = z.infer<typeof visitorSchema>;
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
 

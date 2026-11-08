@@ -4,6 +4,7 @@ import {
   type LLMSettings,
   type ResidentId,
   type ServerMessage,
+  type VisitorView,
   type WorldView,
 } from '@aiverse/protocol';
 import type { GameConnection } from '../net/connection';
@@ -35,6 +36,16 @@ export interface ClientState {
   receivedAt: number | null;
 }
 
+/**
+ * The latest `visitors` message and when it arrived on this client's clock (`performance.now()`
+ * milliseconds), which is where its walks start from.
+ */
+export interface VisitorSnapshot {
+  speed: number;
+  visitors: readonly VisitorView[];
+  receivedAt: number;
+}
+
 const INITIAL_STATE: ClientState = {
   connection: 'connecting',
   world: null,
@@ -55,6 +66,7 @@ const INITIAL_STATE: ClientState = {
  */
 export class GameStore {
   private state = INITIAL_STATE;
+  private visitors: VisitorSnapshot | null = null;
   private readonly listeners = new Set<() => void>();
   private readonly detach: (() => void)[];
 
@@ -74,6 +86,13 @@ export class GameStore {
   }
 
   getState = (): ClientState => this.state;
+
+  /**
+   * The visitors as of the latest message, or null before one comes. Kept out of `ClientState`:
+   * they refresh every couple of seconds and only the map reads them, per frame, so no listener is
+   * told. A new snapshot is a new object.
+   */
+  getVisitors = (): VisitorSnapshot | null => this.visitors;
 
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
@@ -175,6 +194,9 @@ export class GameStore {
         this.update({ world: message.world, selected: stillThere ? selected : null, deadline, receivedAt });
         return;
       }
+      case 'visitors':
+        this.visitors = { speed: message.speed, visitors: message.visitors, receivedAt: this.now() };
+        return;
       case 'action_result':
         this.update({
           lastAction: message.ok

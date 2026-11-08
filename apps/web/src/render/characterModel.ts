@@ -59,45 +59,77 @@ export interface Character {
   dispose(): void;
 }
 
+export type MaterialSet = 'head' | 'body' | 'arm' | 'leg';
+
+/** What of an `NpcPose` turns a part, and which way. */
+interface Motion {
+  limb: keyof NpcPose;
+  sign: 1 | -1;
+}
+
+export interface CharacterPart {
+  /** Width, height and depth in figure units. */
+  size: readonly [number, number, number];
+  /** The joint the part turns about, in figure units: x and y, with z always 0. */
+  joint: readonly [number, number];
+  /** Height of the part's middle above its joint. */
+  centre: number;
+  materials: MaterialSet;
+  /** The pose angle that turns the part; the head about y, the limbs about x. Null stays put. */
+  motion: Motion | null;
+}
+
+/** The six boxes of the figure, shared by the single character and the instanced crowd. */
+export const CHARACTER_PARTS: readonly CharacterPart[] = [
+  { size: [8, 8, 8], joint: [0, 24], centre: 4, materials: 'head', motion: { limb: 'head', sign: 1 } },
+  { size: [8, 12, 4], joint: [0, 18], centre: 0, materials: 'body', motion: null },
+  { size: [4, 12, 4], joint: [-6, 22], centre: -4, materials: 'arm', motion: { limb: 'arm', sign: 1 } },
+  { size: [4, 12, 4], joint: [6, 22], centre: -4, materials: 'arm', motion: { limb: 'arm', sign: -1 } },
+  { size: [4, 12, 4], joint: [-2, 12], centre: -6, materials: 'leg', motion: { limb: 'leg', sign: 1 } },
+  { size: [4, 12, 4], joint: [2, 12], centre: -6, materials: 'leg', motion: { limb: 'leg', sign: -1 } },
+];
+
+/** The faces of each kind of part, with the coat's colour on the body and arms. Fresh every call. */
+export function characterMaterials(coat: number): Record<MaterialSet, THREE.Material[]> {
+  const { front, side, back, legSide } = sharedTextures();
+  const { armSide, bodyFront } = coatTexturesFor(coat);
+  const textured = (map: THREE.Texture) => new THREE.MeshLambertMaterial({ map });
+  return {
+    head: [textured(side), textured(side), solid(HAIR), solid(SKIN), textured(front), textured(back)],
+    arm: [textured(armSide), textured(armSide), solid(coat), solid(SKIN), textured(armSide), textured(armSide)],
+    leg: [textured(legSide), textured(legSide), solid(PANTS), solid(SHOE), textured(legSide), textured(legSide)],
+    body: [solid(coat), solid(coat), solid(coat), solid(coat), textured(bodyFront), solid(coat)],
+  };
+}
+
 /**
  * The blocky character of the pivot demo: six boxes, with the head, arms and legs each turning about
  * a joint of their own. `coat` colours the body and arms so residents can be told apart.
  */
 export function createCharacter(coat: number): Character {
-  const { front, side, back, legSide } = sharedTextures();
-  const { armSide, bodyFront } = coatTexturesFor(coat);
-  const textured = (map: THREE.Texture) => new THREE.MeshLambertMaterial({ map });
-  const head = [textured(side), textured(side), solid(HAIR), solid(SKIN), textured(front), textured(back)];
-  const arm = [textured(armSide), textured(armSide), solid(coat), solid(SKIN), textured(armSide), textured(armSide)];
-  const leg = [textured(legSide), textured(legSide), solid(PANTS), solid(SHOE), textured(legSide), textured(legSide)];
-  const body = [solid(coat), solid(coat), solid(coat), solid(coat), textured(bodyFront), solid(coat)];
-  const materials = [...head, ...arm, ...leg, ...body];
+  const sets = characterMaterials(coat);
+  const materials = Object.values(sets).flat();
 
   const root = new THREE.Group();
-  const part = (w: number, h: number, d: number, mats: THREE.Material[], x: number, y: number, centre: number) => {
+  const pivots = CHARACTER_PARTS.map((part) => {
     const pivot = new THREE.Group();
-    pivot.position.set(x, y, 0);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mats);
-    mesh.position.y = centre;
+    pivot.position.set(part.joint[0], part.joint[1], 0);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...part.size), sets[part.materials]);
+    mesh.position.y = part.centre;
     pivot.add(mesh);
     root.add(pivot);
     return pivot;
-  };
-  const headPivot = part(8, 8, 8, head, 0, 24, 4);
-  part(8, 12, 4, body, 0, 18, 0);
-  const armR = part(4, 12, 4, arm, -6, 22, -4);
-  const armL = part(4, 12, 4, arm, 6, 22, -4);
-  const legR = part(4, 12, 4, leg, -2, 12, -6);
-  const legL = part(4, 12, 4, leg, 2, 12, -6);
+  });
 
   return {
     root,
-    setPose({ arm: swing, leg: stride, head: turn }) {
-      armR.rotation.x = swing;
-      armL.rotation.x = -swing;
-      legR.rotation.x = stride;
-      legL.rotation.x = -stride;
-      headPivot.rotation.y = turn;
+    setPose(pose) {
+      CHARACTER_PARTS.forEach(({ motion }, index) => {
+        if (!motion) return;
+        const turn = motion.sign * pose[motion.limb];
+        if (motion.limb === 'head') pivots[index]!.rotation.y = turn;
+        else pivots[index]!.rotation.x = turn;
+      });
     },
     setOpacity(opacity) {
       for (const material of materials) {

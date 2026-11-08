@@ -20,6 +20,33 @@ const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   world: { map: { size, parcelSize: 10, blockCells: 1, venueCells: 1, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
+describe('visitors message', () => {
+  const visitors = (value: unknown) => ({ type: 'visitors', speed: 2.5, visitors: value });
+
+  it('accepts standing and walking visitors and treats missing legs as standing', () => {
+    const message = visitors([
+      { id: 1, position: { x: 5, y: 5 } },
+      { id: 2, position: { x: 0, y: 0 }, legs: [{ start: { x: 0, y: 0 }, end: { x: 10, y: 0 } }, { start: { x: 60, y: 0 }, end: { x: 70, y: 0 } }] },
+    ]);
+
+    const parsed = parseServerMessage(message);
+
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok && parsed.value.type === 'visitors') {
+      expect(parsed.value.visitors[0]!.legs).toEqual([]);
+      expect(parsed.value.visitors[1]!.legs).toHaveLength(2);
+    }
+  });
+
+  it.each([
+    ['a speed of nothing', { ...visitors([]), speed: 0 }],
+    ['a visitor without a position', visitors([{ id: 1 }])],
+    ['a leg without an end', visitors([{ id: 1, position: { x: 0, y: 0 }, legs: [{ start: { x: 0, y: 0 } }] }])],
+  ])('refuses %s', (_, message) => {
+    expect(parseServerMessage(message).ok).toBe(false);
+  });
+});
+
 const exchange = {
   books: [{ item: 'poster', bids: [{ price: 25, quantity: 2 }], asks: [{ price: 30, quantity: 5 }] }],
   fills: [{ seq: 1, time: 12, item: 'poster', quantity: 3, price: 30, own: 'sold' }],

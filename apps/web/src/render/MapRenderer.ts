@@ -13,6 +13,7 @@ import {
 } from './mapCamera';
 import { ResidentLayer } from './ResidentLayer';
 import { LIGHT_SCALE } from './sceneKit';
+import { VisitorLayer } from './VisitorLayer';
 
 const BACKGROUND = 0x0d141e;
 /** How far outside the map edge the tick labels sit, as a fraction of the map side. */
@@ -42,6 +43,7 @@ export class MapRenderer {
   private readonly facilities: FacilityLayer;
   private readonly lobby: LobbyLandmark;
   private readonly residents: ResidentLayer;
+  private readonly visitors: VisitorLayer;
   private readonly labels: LabelLayer;
   private readonly cursor: HTMLDivElement;
   private readonly raycaster = new THREE.Raycaster();
@@ -79,6 +81,7 @@ export class MapRenderer {
     this.facilities = new FacilityLayer(this.scene);
     this.lobby = new LobbyLandmark(this.scene);
     this.residents = new ResidentLayer(this.scene, this.labels, (x, y) => this.lobby.groundHeight(x, y));
+    this.visitors = new VisitorLayer(this.scene, (x, y) => this.lobby.groundHeight(x, y));
 
     const canvas = this.renderer.domElement;
     canvas.addEventListener('pointerdown', this.onPointerDown);
@@ -109,6 +112,7 @@ export class MapRenderer {
     canvas.removeEventListener('pointercancel', this.onPointerCancel);
     canvas.removeEventListener('contextmenu', this.onContextMenu);
     canvas.removeEventListener('wheel', this.onWheel);
+    this.visitors.dispose();
     this.residents.dispose();
     this.lobby.dispose();
     this.facilities.dispose();
@@ -194,6 +198,8 @@ export class MapRenderer {
     this.facilities.update(now / 1000, elapsed / 1000);
     this.lobby.update(now / 1000, elapsed / 1000);
     this.residents.update(now, elapsed);
+    this.visitors.sync(this.store.getVisitors());
+    this.visitors.update(now);
     if (this.view) {
       const position = cameraPosition(this.view);
       this.camera.position.set(position.x, position.y, position.z);
