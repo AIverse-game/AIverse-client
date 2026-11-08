@@ -74,3 +74,4 @@
 | [0067-content-and-revenue](0067-content-and-revenue.md) | 已完成 | 渲染式节点与渲染工作做内容，放进广告位，保鲜期，按流量和内容数付金币；服务端与 Agent 工具，页面和协议不变 |
 | [0068-parcel-shares](0068-parcel-shares.md) | 已完成 | 每块地分 100 份，广告位收入按份额分给持有人，份额可以转让；服务端与 Agent 工具，页面和协议不变 |
 | [0069-joint-purchase](0069-joint-purchase.md) | 已完成 | 两人合买地块：提议人写明对方出多少钱、拿多少份，买地人仍是提议人；服务端与 Agent 工具，页面和协议不变 |
+| [0071-venues](0071-venues.md) | 已完成 | 游戏厅与工作空间：用生成式工作建出，游戏厅展示新的内容物品 `game_content`，首版不产生收入；服务端与 Agent 工具，页面和协议不变 |
