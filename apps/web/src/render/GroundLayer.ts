@@ -1,4 +1,4 @@
-import { blockRectOf, blockRects, islandRect, parcelRect, type MapGridSpec, type ParcelView, type Rect } from '@aiverse/protocol';
+import { blockRectOf, blockRects, islandRect, parcelRect, venueRect, type MapGridSpec, type ParcelView, type Rect } from '@aiverse/protocol';
 import * as THREE from 'three';
 import floorCorners from '../assets/floor/metal-floor-corners.png';
 import floorNodes from '../assets/floor/metal-floor-nodes.png';
@@ -34,7 +34,7 @@ export class GroundLayer {
   private models: ModelHandle[] = [];
   private tint: THREE.Mesh | null = null;
   private frame: THREE.Mesh | null = null;
-  private map: MapGridSpec = { size: 0, parcelSize: 0, blockCells: 1 };
+  private map: MapGridSpec = { size: 0, parcelSize: 0, blockCells: 1, venueCells: 1 };
   private tintSignature = '';
   private frameSignature = '';
   private floorMaterial: THREE.MeshBasicMaterial | null = null;
@@ -81,7 +81,7 @@ export class GroundLayer {
     this.fixed.add(this.lines(inner, GRID_COLOR, 0.3));
   }
 
-  /** Tints the islands of blocks that have an owner and frames the selected parcel; each is rebuilt only when it changed. */
+  /** Tints the islands of blocks that have an owner and frames the selected parcel, or the whole square of the venue on it; each is rebuilt only when it changed. */
   setParcels(parcels: readonly ParcelView[], selectedId: string | null): void {
     const tintSignature = parcels.map((parcel) => parcel.id).join('|');
     if (tintSignature !== this.tintSignature) {
@@ -95,13 +95,20 @@ export class GroundLayer {
       this.tint = new THREE.Mesh(quads([...owned.values()], TINT_HEIGHT), new THREE.MeshBasicMaterial({ color: OWNED_COLOR, transparent: true, opacity: 0.16, depthWrite: false }));
       this.root.add(this.tint);
     }
-    if (selectedId !== this.frameSignature) {
-      this.frameSignature = selectedId ?? '';
+    const selectedKind = parcels.find((parcel) => parcel.id === selectedId)?.facility?.kind;
+    const venue = selectedKind === 'game_hall' || selectedKind === 'workspace';
+    const frameSignature = `${selectedId ?? ''}:${venue}`;
+    if (frameSignature !== this.frameSignature) {
+      this.frameSignature = frameSignature;
       if (this.frame) this.disposeMesh(this.frame);
       this.frame = null;
       const match = selectedId?.match(/^L(\d+)-(\d+)$/);
       if (!match) return;
-      const { x0, z0, x1, z1 } = parcelRect(this.map, Number(match[1]), Number(match[2]));
+      const col = Number(match[1]), row = Number(match[2]);
+      const land = venue ? venueRect(this.map, col, row) : parcelRect(this.map, col, row);
+      // A venue's frame stops at the edge of its island, as its model does.
+      const island = venue ? islandRect(blockRectOf(this.map, col, row)) : land;
+      const x0 = Math.max(land.x0, island.x0), z0 = Math.max(land.z0, island.z0), x1 = Math.min(land.x1, island.x1), z1 = Math.min(land.z1, island.z1);
       const w = FRAME_WIDTH;
       this.frame = new THREE.Mesh(
         quads([

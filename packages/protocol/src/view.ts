@@ -184,6 +184,8 @@ export const mapSchema = z.object({
   parcelSize: z.number().positive(),
   /** Parcels along each side of a block, which is bought whole. */
   blockCells: z.number().int().positive(),
+  /** Parcels along each side of the square a game hall or workspace takes up, with its north-west corner on the parcel it is built on. */
+  venueCells: z.number().int().positive(),
   /** Whether the middle block is the spawn lobby, which nobody owns. */
   lobby: z.boolean(),
   parcelPrices: z.array(z.array(z.number().int().positive())),

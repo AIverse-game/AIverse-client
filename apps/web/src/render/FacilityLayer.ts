@@ -1,4 +1,4 @@
-import { parcelRect, type FacilityView, type MapGridSpec, type ParcelView } from '@aiverse/protocol';
+import { blockRectOf, islandRect, parcelRect, venueRect, type FacilityView, type MapGridSpec, type ParcelView } from '@aiverse/protocol';
 import * as THREE from 'three';
 import { createArcade } from './arcadeModel';
 import { createBillboard } from './billboardModel';
@@ -29,7 +29,7 @@ export class FacilityLayer {
   private readonly root = new THREE.Group();
   private readonly built = new Map<string, Built>();
   private layoutKey = '';
-  private map: MapGridSpec = { size: 1, parcelSize: 1, blockCells: 1 };
+  private map: MapGridSpec = { size: 1, parcelSize: 1, blockCells: 1, venueCells: 1 };
 
   constructor(scene: THREE.Scene) {
     scene.add(this.root);
@@ -37,7 +37,7 @@ export class FacilityLayer {
 
   /** Brings the models in line with the parcels; `contents` says how many items a facility shows now. */
   sync(parcels: readonly ParcelView[], map: MapGridSpec, contents: (facility: FacilityView) => number): void {
-    const layoutKey = `${map.size}:${map.parcelSize}:${map.blockCells}`;
+    const layoutKey = `${map.size}:${map.parcelSize}:${map.blockCells}:${map.venueCells}`;
     if (layoutKey !== this.layoutKey) this.clear();
     this.layoutKey = layoutKey;
     this.map = map;
@@ -69,7 +69,11 @@ export class FacilityLayer {
   }
 
   private place(parcel: ParcelView, kind: FacilityView['kind'], contents: number, signature: string): Built {
-    const shape = plotShape(kind, parcelRect(this.map, parcel.col, parcel.row));
+    // A game hall or workspace takes up a square of parcels from its own one, and is kept on the island.
+    const venue = kind === 'game_hall' || kind === 'workspace';
+    const shape = venue
+      ? plotShape(kind, venueRect(this.map, parcel.col, parcel.row), islandRect(blockRectOf(this.map, parcel.col, parcel.row)))
+      : plotShape(kind, parcelRect(this.map, parcel.col, parcel.row));
     const handle = create(kind, contents);
     const wrapper = new THREE.Group();
     wrapper.position.set(shape.centre.x, shape.floor, shape.centre.y);

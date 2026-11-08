@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseServerMessage } from './messages';
-import { blockRectOf, blockRects, gridCount, inLobby, islandRect, lobbyRect, parcelAt, parcelRect, sameBlock } from './mapGrid';
+import { blockRectOf, blockRects, gridCount, inLobby, islandRect, lobbyRect, parcelAt, parcelRect, sameBlock, venueFits, venueRect, venueTaking } from './mapGrid';
 
 const resident = (id: string, x: number, y: number) => ({
   id,
@@ -17,7 +17,7 @@ const game = { ended: false, remainingSeconds: 1200 };
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   type: 'state',
-  world: { map: { size, parcelSize: 10, blockCells: 1, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size, parcelSize: 10, blockCells: 1, venueCells: 1, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
 const exchange = {
@@ -253,7 +253,7 @@ it('counts bounded timeline text in Unicode code points like the server', () => 
 });
 
 describe('mapGrid', () => {
-  const map = { size: 150, parcelSize: 10, blockCells: 3 };
+  const map = { size: 150, parcelSize: 10, blockCells: 3, venueCells: 2 };
 
   it('lays blocks of three by three parcels side by side with no gap', () => {
     expect(gridCount(map)).toBe(15);
@@ -279,8 +279,26 @@ describe('mapGrid', () => {
     expect(sameBlock(map, { col: 2, row: 2 }, { col: 3, row: 2 })).toBe(false);
   });
 
+  it('lets a venue take up a square of parcels from its north-west corner, inside its block', () => {
+    expect(venueRect(map, 4, 1)).toEqual({ x0: 40, z0: 10, x1: 60, z1: 30 });
+    expect(venueFits(map, 3, 0)).toBe(true);
+    expect(venueFits(map, 4, 1)).toBe(true);
+    expect(venueFits(map, 5, 1)).toBe(false);
+    expect(venueFits(map, 4, 2)).toBe(false);
+  });
+
+  it('finds the venue that takes up a parcel but not the venue parcel itself', () => {
+    const venues = [{ col: 3, row: 0 }];
+
+    expect(venueTaking(map, venues, 4, 1)).toEqual({ col: 3, row: 0 });
+    expect(venueTaking(map, venues, 3, 1)).toEqual({ col: 3, row: 0 });
+    expect(venueTaking(map, venues, 3, 0)).toBeUndefined();
+    expect(venueTaking(map, venues, 5, 0)).toBeUndefined();
+    expect(venueTaking(map, venues, 3, 2)).toBeUndefined();
+  });
+
   it('keeps one parcel per ten units when there are no blocks', () => {
-    const plain = { size: 105, parcelSize: 10, blockCells: 1 };
+    const plain = { size: 105, parcelSize: 10, blockCells: 1, venueCells: 1 };
 
     expect(gridCount(plain)).toBe(10);
     expect(parcelRect(plain, 9, 9)).toEqual({ x0: 90, z0: 90, x1: 105, z1: 105 });

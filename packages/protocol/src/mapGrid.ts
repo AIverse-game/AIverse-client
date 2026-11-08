@@ -8,6 +8,8 @@ export interface MapGridSpec {
   parcelSize: number;
   /** Parcels along each side of a block, which is bought whole. */
   blockCells: number;
+  /** Parcels along each side of the square a game hall or workspace takes up, with its north-west corner on the parcel it is built on. */
+  venueCells: number;
 }
 
 export interface Rect {
@@ -32,6 +34,28 @@ export function parcelRect(map: MapGridSpec, col: number, row: number): Rect {
   const [x0, x1] = span(map, count, col, col);
   const [z0, z1] = span(map, count, row, row);
   return { x0, z0, x1, z1 };
+}
+
+/** The square a venue built on a parcel takes up: `venueCells` parcels each way, the parcel at its north-west corner. */
+export function venueRect(map: MapGridSpec, col: number, row: number): Rect {
+  const count = gridCount(map);
+  const last = Math.max(1, map.venueCells) - 1;
+  const [x0, x1] = span(map, count, col, Math.min(col + last, count - 1));
+  const [z0, z1] = span(map, count, row, Math.min(row + last, count - 1));
+  return { x0, z0, x1, z1 };
+}
+
+/** Whether a venue built on a parcel stays inside that parcel's block. */
+export function venueFits(map: MapGridSpec, col: number, row: number): boolean {
+  const cells = Math.max(1, map.blockCells);
+  const venue = Math.max(1, map.venueCells);
+  return (col % cells) + venue <= cells && (row % cells) + venue <= cells;
+}
+
+/** The parcel of a venue, among `venues`, whose square takes up the parcel at `col`, `row` without being that parcel. */
+export function venueTaking<T extends { col: number; row: number }>(map: MapGridSpec, venues: readonly T[], col: number, row: number): T | undefined {
+  const venue = Math.max(1, map.venueCells);
+  return venues.find((anchor) => (anchor.col !== col || anchor.row !== row) && col >= anchor.col && col < anchor.col + venue && row >= anchor.row && row < anchor.row + venue);
 }
 
 /** The squares of every block, row by row. */

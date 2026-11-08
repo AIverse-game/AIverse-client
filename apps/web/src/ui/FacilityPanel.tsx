@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parcelAt, sameBlock, type BuildFacilityAction, type MapGridSpec } from '@aiverse/protocol';
+import { parcelAt, sameBlock, venueFits, venueTaking, type BuildFacilityAction, type MapGridSpec } from '@aiverse/protocol';
 import { activeContents } from '../state/facilityContents';
 import { useGameState, useStore } from '../state/storeContext';
 import { useSecondTick } from './useSecondTick';
@@ -29,7 +29,20 @@ export function FacilityPanel() {
   const atParcel = resident && standsInBlockOf(world.map, resident.position, selectedParcel);
   const canOperate = resident && store.canAct(resident.id);
   const own = parcel?.ownerId === selected;
-  const canBuild = canOperate && own && !parcel.facility && !parcelJob;
+  // A game hall or workspace, built or being built, takes up a square of parcels from the one it stands on.
+  const venues = [
+    ...world.parcels.filter((item) => item.facility?.kind === 'game_hall' || item.facility?.kind === 'workspace'),
+    ...world.jobs.filter((job) => job.kind === 'build_game_hall' || job.kind === 'build_workspace').flatMap((job) => world.parcels.filter((item) => item.id === job.parcelId)),
+  ];
+  const takenBy = coordinates ? venueTaking(world.map, venues, Number(coordinates[1]), Number(coordinates[2])) : undefined;
+  // Whether a venue could start here: its square lies in the block and every parcel of it is the owner's, bare and not taken up.
+  const side = world.map.venueCells;
+  const venueFitsHere = coordinates !== null && venueFits(world.map, Number(coordinates[1]), Number(coordinates[2])) && Array.from({ length: side * side }, (_, index) => {
+    const col = Number(coordinates[1]) + (index % side), row = Number(coordinates[2]) + Math.floor(index / side);
+    const item = world.parcels.find((other) => other.col === col && other.row === row);
+    return item?.ownerId === selected && !item.facility && !world.jobs.some((job) => job.parcelId === item.id) && !venueTaking(world.map, venues, col, row);
+  }).every(Boolean);
+  const canBuild = canOperate && own && !parcel.facility && !parcelJob && !takenBy;
   const availableContent = parcel?.facility?.kind === 'game_hall' ? carried?.gameContent : carried?.adContent;
   const contentFacility = parcel?.facility?.kind === 'ad' || parcel?.facility?.kind === 'game_hall';
   const shown = parcel?.facility ? activeContents(parcel.facility, (time) => store.countdown(time)) : 0;
@@ -42,13 +55,13 @@ export function FacilityPanel() {
         <p className="small"><strong>{selectedParcel}</strong> · {parcel ? `产权人 ${nameOf(parcel.ownerId)}` : '未出售'}</p>
         {parcel && <>
           <p className="small">份额：{Object.entries(parcel.shares).map(([id, count]) => `${nameOf(id)} ${count}%`).join('，')}</p>
-          <p className="small">设施：{parcel.facility ? names[parcel.facility.kind] : '空地'}{contentFacility ? ` · 展示 ${shown}/5` : ''}</p>
+          <p className="small">设施：{parcel.facility ? names[parcel.facility.kind] : takenBy ? `被 ${takenBy.id} 的场馆占用` : '空地'}{contentFacility ? ` · 展示 ${shown}/5` : ''}</p>
         </>}
         {parcelJob && <p className="small" role="status">{jobNames[parcelJob.kind] ?? parcelJob.kind}中，约 {Math.ceil(store.countdown(parcelJob.remainingSeconds))} 秒</p>}
         {!parcel && <button type="button" disabled={!canOperate || !atParcel || !!resident?.walking} onClick={() => resident && store.act({ type: 'buy_parcel', residentId: resident.id })}>购买所站街区（{price ?? '…'} 金币）</button>}
         {own && <>
-          {!parcel.facility && <div className="facility-actions">{(Object.keys(names) as BuildFacilityAction['kind'][]).map((kind) =>
-            <button key={kind} type="button" disabled={!canBuild} onClick={() => resident && store.act({ type: 'build_facility', residentId: resident.id, parcelId: parcel.id, kind, source })}>建{names[kind]}</button>
+          {!parcel.facility && !takenBy && <div className="facility-actions">{(Object.keys(names) as BuildFacilityAction['kind'][]).map((kind) =>
+            <button key={kind} type="button" disabled={!canBuild || ((kind === 'game_hall' || kind === 'workspace') && !venueFitsHere)} title={(kind === 'game_hall' || kind === 'workspace') ? `占 ${world.map.venueCells} × ${world.map.venueCells} 块地，本块在西北角${venueFitsHere ? '' : '（这里放不下：方块要在街区内，四块地都得是自己的空地）'}` : undefined} onClick={() => resident && store.act({ type: 'build_facility', residentId: resident.id, parcelId: parcel.id, kind, source })}>建{names[kind]}</button>
           )}</div>}
           {contentFacility && <button type="button" disabled={!canOperate || !availableContent || shown >= 5} onClick={() => resident && store.act({ type: 'place_content', residentId: resident.id, parcelId: parcel.id })}>放入内容</button>}
         </>}

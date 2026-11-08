@@ -27,13 +27,19 @@ export interface PlotShape {
   height: number;
 }
 
-/** Where a facility's model stands on its parcel and how big it is drawn. */
-export function plotShape(kind: Kind, parcel: Rect): PlotShape {
+/**
+ * Where a facility's model stands on the land it takes up and how big it is drawn. With an
+ * `island`, the model is kept to the part of the land the island covers, so it never hangs over the edge.
+ */
+export function plotShape(kind: Kind, land: Rect, island?: Rect): PlotShape {
   const { margin, span, slab, top } = SPECS[kind];
-  const side = (parcel.x1 - parcel.x0) * (1 - 2 * margin);
+  const area = island
+    ? { x0: Math.max(land.x0, island.x0), z0: Math.max(land.z0, island.z0), x1: Math.min(land.x1, island.x1), z1: Math.min(land.z1, island.z1) }
+    : land;
+  const side = Math.min(area.x1 - area.x0, area.z1 - area.z0) * (1 - 2 * margin);
   const scale = side / span;
   return {
-    centre: { x: (parcel.x0 + parcel.x1) / 2, y: (parcel.z0 + parcel.z1) / 2 },
+    centre: { x: (area.x0 + area.x1) / 2, y: (area.z0 + area.z1) / 2 },
     side,
     scale,
     floor: slab * scale,

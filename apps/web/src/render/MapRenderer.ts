@@ -123,8 +123,8 @@ export class MapRenderer {
   private sync(): void {
     const { world, selected, selectedParcel } = this.store.getState();
     if (!world) return;
-    const { size, parcelSize, blockCells, lobby } = world.map;
-    const layout = `${size}:${parcelSize}:${blockCells}:${lobby}`;
+    const { size, parcelSize, blockCells, venueCells, lobby } = world.map;
+    const layout = `${size}:${parcelSize}:${blockCells}:${venueCells}:${lobby}`;
     const resized = layout !== this.drawnLayout;
     if (resized) this.rebuild(world.map);
     this.ground.setParcels(world.parcels, selectedParcel);
@@ -136,7 +136,7 @@ export class MapRenderer {
   private rebuild(map: WorldView['map']): void {
     const { size } = map;
     this.drawnSize = size;
-    this.drawnLayout = `${size}:${map.parcelSize}:${map.blockCells}:${map.lobby}`;
+    this.drawnLayout = `${size}:${map.parcelSize}:${map.blockCells}:${map.venueCells}:${map.lobby}`;
     this.ground.build(map);
     if (map.lobby) this.lobby.build(map);
     else this.lobby.dispose();

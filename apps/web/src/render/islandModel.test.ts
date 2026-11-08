@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { createIslandRock, islandLinks } from './islandModel';
 
-const islands = blockRects({ size: 150, parcelSize: 10, blockCells: 3 }).map(islandRect);
+const islands = blockRects({ size: 150, parcelSize: 10, blockCells: 3, venueCells: 2 }).map(islandRect);
 
 describe('islandLinks', () => {
   it('links every island to its eastern and southern neighbour, at the middle of the sides that face', () => {
@@ -15,7 +15,7 @@ describe('islandLinks', () => {
   });
 
   it('joins a narrow last column of islands at the middle of its sides, as the server does', () => {
-    const narrow = blockRects({ size: 160, parcelSize: 10, blockCells: 3 }).map(islandRect);
+    const narrow = blockRects({ size: 160, parcelSize: 10, blockCells: 3, venueCells: 2 }).map(islandRect);
 
     const links = islandLinks(narrow);
 

@@ -24,4 +24,29 @@ describe('plotShape', () => {
     expect(plotShape('workspace', at(0, 0)).side).toBeCloseTo(9.4);
     expect(plotShape('portal', at(0, 0)).side).toBeCloseTo(7.6);
   });
+
+  it('keeps a venue on its island, centred on the part of its square the island covers', () => {
+    const square = { x0: 0, z0: 0, x1: 20, z1: 20 };
+    const island = { x0: 2, z0: 2, x1: 28, z1: 28 };
+
+    const shape = plotShape('workspace', square, island);
+
+    expect(shape.centre).toEqual({ x: 11, y: 11 });
+    expect(shape.side).toBeCloseTo(18 * 0.94);
+  });
+
+  it('draws a venue the same size wherever it stands in its block and never past the island', () => {
+    const island = { x0: 2, z0: 2, x1: 28, z1: 28 };
+    const squares = [{ x0: 0, z0: 0, x1: 20, z1: 20 }, { x0: 10, z0: 10, x1: 30, z1: 30 }, { x0: 10, z0: 0, x1: 30, z1: 20 }];
+
+    const shapes = squares.map((square) => plotShape('game_hall', square, island));
+
+    for (const shape of shapes) {
+      expect(shape.side).toBeCloseTo(shapes[0]!.side);
+      expect(shape.centre.x - shape.side / 2).toBeGreaterThanOrEqual(island.x0);
+      expect(shape.centre.x + shape.side / 2).toBeLessThanOrEqual(island.x1);
+      expect(shape.centre.y - shape.side / 2).toBeGreaterThanOrEqual(island.z0);
+      expect(shape.centre.y + shape.side / 2).toBeLessThanOrEqual(island.z1);
+    }
+  });
 });
