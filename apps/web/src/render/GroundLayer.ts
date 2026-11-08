@@ -1,27 +1,22 @@
-import { blockRectOf, blockRects, ISLAND_INSET, islandRect, parcelRect, type MapGridSpec, type ParcelView, type Rect } from '@aiverse/protocol';
+import { blockRectOf, blockRects, islandRect, parcelRect, type MapGridSpec, type ParcelView, type Rect } from '@aiverse/protocol';
 import * as THREE from 'three';
 import floorCorners from '../assets/floor/metal-floor-corners.png';
 import floorNodes from '../assets/floor/metal-floor-nodes.png';
 import floorSparse from '../assets/floor/metal-floor-sparse.png';
 import floorStrips from '../assets/floor/metal-floor-strips.png';
+import { createIslandBridges, createIslandRock, islandLinks } from './islandModel';
 import { paintFloor } from './mapFloor';
+import type { ModelHandle } from './sceneKit';
 
-const SLAB_LIT = 0x243846;
-const SLAB_SHADED = 0x172633;
 const GRID_COLOR = 0x6e91a4;
-const ROAD_COLOR = 0x1c1636;
 const RIM_COLOR = 0x5fe3f2;
-const ROAD_LINE_COLOR = 0x8f6bff;
 const OWNED_COLOR = 0x54cadc;
 const SELECTED_COLOR = 0xffdb84;
-/** Each tier of rock under an island: its width as a share of the island's, and its depth in map units. */
-const ROCK_TIERS: Array<[number, number]> = [[1, 1.4], [0.8, 1.4], [0.55, 1.6], [0.3, 1.6]];
 const FRAME_WIDTH = 0.25;
 
 /** Heights of the flat layers above the floor, so they never fight each other. */
 const TINT_HEIGHT = 0.02;
 const GRID_HEIGHT = 0.03;
-const ROAD_HEIGHT = 0.015;
 const FRAME_HEIGHT = 0.07;
 
 function quads(rects: Array<{ x0: number; z0: number; x1: number; z1: number }>, y: number): THREE.BufferGeometry {
@@ -32,10 +27,11 @@ function quads(rects: Array<{ x0: number; z0: number; x1: number; z1: number }>,
   return geometry;
 }
 
-/** One floating island per block, the roads between them, owned blocks' tint and the selected parcel's frame. */
+/** One floating island per block, the light bridges between them, owned blocks' tint and the selected parcel's frame. */
 export class GroundLayer {
   private readonly root = new THREE.Group();
   private fixed = new THREE.Group();
+  private models: ModelHandle[] = [];
   private tint: THREE.Mesh | null = null;
   private frame: THREE.Mesh | null = null;
   private map: MapGridSpec = { size: 0, parcelSize: 0, blockCells: 1 };
@@ -48,9 +44,10 @@ export class GroundLayer {
     scene.add(this.root);
   }
 
-  /** Builds the parts that depend only on the layout of the map: an island per block, the bridges between them, the lines on them. */
+  /** Builds the parts that depend only on the layout of the map: an island per block, the light bridges between them, the lines on them. */
   build(map: MapGridSpec): void {
     const { size } = map;
+    this.disposeModels();
     this.clear(this.fixed);
     this.root.remove(this.fixed);
     this.fixed = new THREE.Group();
@@ -63,8 +60,8 @@ export class GroundLayer {
 
     const blocks = blockRects(map).map(islandRect);
     this.fixed.add(this.plates(blocks, size));
-    this.fixed.add(this.rock(blocks));
-    this.fixed.add(this.bridges(map, size));
+    this.models = [createIslandRock(blocks), createIslandBridges(islandLinks(blocks))];
+    for (const model of this.models) this.root.add(model.root);
 
     const outline = (rect: Rect, y: number) => [
       rect.x0, y, rect.z0, rect.x1, y, rect.z0, rect.x1, y, rect.z0, rect.x1, y, rect.z1,
@@ -132,52 +129,30 @@ export class GroundLayer {
     return new THREE.Mesh(geometry, this.floorMaterial!);
   }
 
-  /** The rock under each island: a few tiers, each narrower than the one above, so it hangs in the air like a floating island. */
-  private rock(islands: Rect[]): THREE.Group {
-    const group = new THREE.Group();
-    const lit = new THREE.MeshBasicMaterial({ color: SLAB_LIT });
-    const shaded = new THREE.MeshBasicMaterial({ color: SLAB_SHADED });
-    const sides = [shaded, shaded, shaded, shaded, lit, lit];
-    for (const island of islands) {
-      const width = island.x1 - island.x0;
-      let top = -0.01;
-      ROCK_TIERS.forEach(([shrink, depth]) => {
-        const side = width * shrink;
-        const tier = new THREE.Mesh(new THREE.BoxGeometry(side, depth, side), sides);
-        tier.position.set((island.x0 + island.x1) / 2, top - depth / 2, (island.z0 + island.z1) / 2);
-        group.add(tier);
-        top -= depth;
-      });
-    }
-    return group;
-  }
-
-  /** The roads: flat strips across the gaps between neighbouring islands, drawn only for the look. */
-  private bridges(map: MapGridSpec, size: number): THREE.Group {
-    const group = new THREE.Group();
-    const strips: Rect[] = [];
-    const lines: number[] = [];
-    const edges = new Set<number>();
-    for (const block of blockRects(map)) for (const edge of [block.x0, block.x1, block.z0, block.z1]) if (edge > 0 && edge < size) edges.add(edge);
-    for (const edge of edges) {
-      strips.push({ x0: edge - ISLAND_INSET, z0: ISLAND_INSET, x1: edge + ISLAND_INSET, z1: size - ISLAND_INSET });
-      strips.push({ x0: ISLAND_INSET, z0: edge - ISLAND_INSET, x1: size - ISLAND_INSET, z1: edge + ISLAND_INSET });
-      lines.push(edge, ROAD_HEIGHT + 0.005, ISLAND_INSET, edge, ROAD_HEIGHT + 0.005, size - ISLAND_INSET, ISLAND_INSET, ROAD_HEIGHT + 0.005, edge, size - ISLAND_INSET, ROAD_HEIGHT + 0.005, edge);
-    }
-    group.add(new THREE.Mesh(quads(strips, ROAD_HEIGHT), new THREE.MeshBasicMaterial({ color: ROAD_COLOR, side: THREE.DoubleSide })));
-    group.add(this.lines(lines, ROAD_LINE_COLOR, 0.8));
-    return group;
-  }
-
   private lines(positions: number[], color: number, opacity: number): THREE.LineSegments {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     return new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
   }
 
+  /** Moves the bridges' lights; `time` is seconds on a steady clock. */
+  update(time: number, dt: number): void {
+    for (const model of this.models) model.update(time, dt);
+  }
+
   dispose(): void {
     this.disposed = true;
+    this.disposeModels();
     this.clear(this.root);
+  }
+
+  /** The models own their materials and share the rest, so they go before the sweep over what remains. */
+  private disposeModels(): void {
+    for (const model of this.models) {
+      this.root.remove(model.root);
+      model.dispose();
+    }
+    this.models = [];
   }
 
   private async loadFloor(): Promise<void> {

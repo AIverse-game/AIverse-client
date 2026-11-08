@@ -190,6 +190,7 @@ export class MapRenderer {
       const world = this.store.getState().world;
       if (world) this.syncFacilities(world);
     }
+    this.ground.update(now / 1000, elapsed / 1000);
     this.facilities.update(now / 1000, elapsed / 1000);
     this.lobby.update(now / 1000, elapsed / 1000);
     this.residents.update(now, elapsed);

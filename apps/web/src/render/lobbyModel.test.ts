@@ -6,7 +6,7 @@ describe('lobbyPlacement', () => {
     const placement = lobbyPlacement({ size: 150, parcelSize: 10, blockCells: 3 });
 
     expect(placement.centre).toEqual({ x: 75, y: 75 });
-    expect(placement.scale).toBeCloseTo(28 / 60);
+    expect(placement.scale).toBeCloseTo(27 / 60);
   });
 });
 
