@@ -33,10 +33,11 @@
 | `src/aiverse_server/core/world.py` | 坐标、居民（含金币、是否出局、行走任务 `WalkJob`）、物品栏（`Inventory`）、事件队列字段、生效的合约（`Contract`、`ContractBook`）、居民记忆（`Memory`，长短期笔记 `Note` 及其上限）、活动日志（`ActivityLog`、`Activity`）、发言记录（`SpeechLog`、`Speech`）、地图与世界模型（含是否结束、游戏时间），越界、重复 id 与事件、行走、记忆、日志和发言一致性校验 |
 | `src/aiverse_server/core/inventory.py` | 居民物品的存入、移出、计数、列出与清空，金币的收付（服务端内部接口，不是原语） |
 | `src/aiverse_server/core/events.py` | 事件队列：事件种类基类 `EventPayload` 与其钩子，发送、同意、拒绝、撤回和收件箱查询 |
-| `src/aiverse_server/core/land.py`、`economy/land.py`、`economy/footfall.py` | 地块与访客（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`（含设施 `Facility`，广告位、传送门、游戏厅或工作空间，与份额）、线路 `Link`；地块网格、按离地图中央远近定价、`buy_parcel`；访客 `visitors`、流量 `footfall` |
+| `src/aiverse_server/core/land.py`、`economy/land.py` | 地块（[虚拟设施](design/facilities.md)）：不可变的 `Parcel`（含设施 `Facility`，广告位、传送门、游戏厅或工作空间，与份额）、线路 `Link`；地块网格、按离地图中央远近定价、`buy_parcel` |
 | `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`（生成式、渲染式）、开工 `start_build_ad`、`start_build_portal`、`start_build_venue`（游戏厅、工作空间）、`start_make_content`（广告或游戏）、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
 | `src/aiverse_server/economy/ads.py` | 广告位、游戏厅与内容（[虚拟设施](design/facilities.md)第 3、6 步）：内容物品 `ad_content` 与 `game_content`、`place_content`（保鲜期、每个广告位或游戏厅至多 5 份，游戏厅不付钱）、每 30 秒按流量与内容数付钱、按份额分给地块的持有人 `pay_visitors`、附近展示内容的广告位平分流量 |
 | `src/aiverse_server/economy/shares.py` | 地块份额（[虚拟设施](design/facilities.md)第 4 步）：分账 `split_income`（凑不整的金币按小数部分大的先得）、份额报价事件 `ShareOffer`（持有人转让份额，可收费可白送）、已许诺份额统计 `reserved_shares` |
+| `src/aiverse_server/core/sponsors.py`、`economy/sponsors.py` | 赞助商（[虚拟设施](design/facilities.md)第 7 步的第二部分，[变更 0073](../changes/0073-sponsors.md)）：不可变的 `Sponsor`、`SponsorBook`；三个默认赞助商、每 30 秒的全局付款日 `pay_sponsors`（出价高的先买，预算不够按同一比例缩水，按份额分给持有人，渠道 `sponsors`）、预算上限、下一个付款日 |
 | `src/aiverse_server/core/visitors.py`、`economy/visitors.py` | 脚本访客（[虚拟设施](design/facilities.md)第 7 步的第一部分，[变更 0072](../changes/0072-visitors.md)）：不可变的 `Visitor`、`Crowd`；200 个游客从中央入口进城，按带随机项的偏好依次逛展示着内容的广告位，路过或停留够 4 秒算一次展示，累计到各地块；随机用种子加编号的哈希；还不付钱 |
 | `src/aiverse_server/economy/portals.py` | 传送门与线路（[虚拟设施](design/facilities.md)第 5 步）：线路提议事件 `LinkProposal`、`link_portals`、居民传送 `teleport`（过路费按份额分给两端的持有人，渠道 `toll`）、有效距离 `effective_distance`（线路让偏远地块离中央更近，备用，占位的流量暂不用）、访客用的路线 `Router`、门数与线路数与间距上限 |
 | `src/aiverse_server/economy/joint_purchase.py` | 合买地块（[虚拟设施](design/facilities.md)第 4 步补充）：提议事件 `JointPurchase`（对方出多少钱、拿多少份，提议人那份预留），同意时两人各付镇上、地块归提议人，预留的钱统计 `reserved_purchase_coins` |
