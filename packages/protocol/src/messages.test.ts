@@ -16,7 +16,7 @@ const game = { ended: false, remainingSeconds: 1200 };
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   type: 'state',
-  world: { map: { size }, residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size, parcelSize: 10, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
 const exchange = {
@@ -52,6 +52,16 @@ const withDeals = (deals: Record<string, unknown[]>) => {
   const message = state(100, [resident('a', 1, 1), resident('b', 2, 2)]);
   return { ...message, world: { ...message.world, ...deals } };
 };
+
+it('accepts a built game hall with shares and rejects an invalid parcel owner', () => {
+  const message = state(150, [resident('a', 75, 75)]);
+  const parcel = { id: 'L7-7', col: 7, row: 7, ownerId: 'a', shares: { a: 100 }, facility: { kind: 'game_hall', contents: 2, expiresIn: [30, 250] } };
+  const world = { ...message.world, parcels: [parcel], jobs: [{ id: 1, ownerId: 'a', kind: 'make_game', remainingSeconds: 30 }] };
+  expect(parseServerMessage({ ...message, world }).ok).toBe(true);
+  expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, ownerId: 'missing' }] } }).ok).toBe(false);
+  expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, shares: { a: 99 } }] } }).ok).toBe(false);
+  expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, facility: { ...parcel.facility, expiresIn: [30] } }] } }).ok).toBe(false);
+});
 
 const offer = { eventId: 1, side: 'sell', fromId: 'b', toId: 'a', item: 'poster', quantity: 5, price: 80 };
 

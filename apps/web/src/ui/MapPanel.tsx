@@ -4,7 +4,7 @@ import { useGameState, useStore } from '../state/storeContext';
 /** Map facts and residents as text, to cross-check the drawing; picks who to operate. */
 export function MapPanel() {
   const store = useStore();
-  const { world, selected } = useGameState();
+  const { world, selected, selectedParcel } = useGameState();
   if (!world) return null;
   const size = formatCoordinate(world.map.size);
 
@@ -15,6 +15,8 @@ export function MapPanel() {
         {size} × {size}，原点 (0, 0) 是西北角，画在地图最上方的顶角；x 向右下、y 向左下增大。
       </p>
       <p className="muted small">地图已放大 3 倍，可在地图区域内滚动查看。</p>
+      <p className="muted small">点击地块查看和建设；选中居民后按住 Shift 点击地图可让其行走。</p>
+      <p className="small">当前地块：{selectedParcel ?? '未选择'}</p>
       <h2 className="subheading">居民</h2>
       {world.residents.length === 0 ? (
         <p className="muted small">地图上暂无居民。</p>

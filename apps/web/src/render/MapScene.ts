@@ -1,11 +1,13 @@
-import type { Position, ResidentId, ResidentView } from '@aiverse/protocol';
+import type { Position, ResidentId, ResidentView, WorldView } from '@aiverse/protocol';
 import * as Phaser from 'phaser';
 import floorCorners from '../assets/floor/metal-floor-corners.png';
 import floorNodes from '../assets/floor/metal-floor-nodes.png';
 import floorSparse from '../assets/floor/metal-floor-sparse.png';
 import floorStrips from '../assets/floor/metal-floor-strips.png';
-import residentSprite from '../assets/residents/resident-sprite.png';
 import type { GameStore } from '../state/store';
+import { activeContents } from '../state/facilityContents';
+import { createBlockResident, type BlockResident } from './blockResident';
+import { drawFacility } from './facilityModels';
 import { paintFloorSurface, readFloorSources } from './floorSurface';
 import {
   axisTicks,
@@ -34,16 +36,8 @@ const NAME_STYLE = { fontFamily: FONT, fontSize: '13px', color: '#fdf8ee', strok
 const LABEL_OFFSET = 0.04;
 /** Residents who left the game stay on the map, faded. */
 const LEFT_ALPHA = 0.35;
-/**
- * A resident is the user's resident.png, a spirit that floats, trimmed to the visible pixels
- * (alpha above 8) and scaled to 128 px high. Its size and positions are in figure units, which
- * `RESIDENT_SCALE` turns into canvas pixels; the resident's own colour is the disc on the ground
- * under it, since the picture is the same for everyone.
- */
-const RESIDENT_TEXTURE = 'resident';
 const FIGURE_HEIGHT = 48;
-/** How far above the ground the picture's lowest pixel floats when it is not bobbing. */
-const FIGURE_HOVER = 6;
+const FIGURE_HOVER = 0;
 /** Canvas pixels per figure unit at the map centre. */
 const RESIDENT_SCALE = 1.25;
 
@@ -53,7 +47,8 @@ interface Resident {
   ring: Phaser.GameObjects.Graphics;
   /** The resident's coloured disc and shadow on the ground, which shrinks as it rises. */
   shadow: Phaser.GameObjects.Graphics;
-  figure: Phaser.GameObjects.Image;
+  figure: Phaser.GameObjects.Container;
+  block: BlockResident;
   float: FloatState;
   label: Phaser.GameObjects.Text;
   color: string;
@@ -92,12 +87,15 @@ export class MapScene extends Phaser.Scene {
   private readonly residents = new Map<ResidentId, Resident>();
   private ground: Phaser.GameObjects.Graphics | null = null;
   private floorEdge: Phaser.GameObjects.Graphics | null = null;
+  private parcels: Phaser.GameObjects.Graphics | null = null;
+  private facilities: Phaser.GameObjects.Graphics | null = null;
   private floorTexture: Phaser.Textures.CanvasTexture | null = null;
   private floorSources: ImageData[] = [];
   private axisLabels: Phaser.GameObjects.Text[] = [];
   private cursor: Phaser.GameObjects.Text | null = null;
   private projection: MapProjection | null = null;
   private drawnSize: number | null = null;
+  private nextContentExpiry: number | null = null;
   private lastUpdate = performance.now();
 
   constructor(private readonly store: GameStore) {
@@ -105,7 +103,6 @@ export class MapScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(RESIDENT_TEXTURE, residentSprite);
     [floorCorners, floorSparse, floorNodes, floorStrips].forEach((url, index) => {
       this.load.image(FLOOR_TEXTURES[index]!, url);
     });
@@ -119,6 +116,8 @@ export class MapScene extends Phaser.Scene {
     this.ground = this.add.graphics();
     this.add.image(0, 0, FLOOR_SURFACE).setOrigin(0, 0).setDepth(0.1);
     this.floorEdge = this.add.graphics().setDepth(0.2);
+    this.parcels = this.add.graphics().setDepth(0.25);
+    this.facilities = this.add.graphics().setDepth(0.5);
     this.cursor = this.add.text(16, 16, '', LABEL_STYLE).setDepth(CURSOR_DEPTH);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, (pointer: Phaser.Input.Pointer) => this.showCursor(pointer));
     this.input.on(Phaser.Input.Events.GAME_OUT, () => this.cursor?.setText(''));
@@ -138,6 +137,8 @@ export class MapScene extends Phaser.Scene {
     if (!world) return;
     const resized = world.map.size !== this.drawnSize;
     if (resized) this.drawMap(world.map.size);
+    this.drawParcels(world);
+    this.scheduleContentExpiry(world);
     this.syncResidents(world.residents, resized);
     for (const [id, resident] of this.residents) resident.ring.setVisible(id === selected);
   }
@@ -154,9 +155,64 @@ export class MapScene extends Phaser.Scene {
     }
     const { selected } = this.store.getState();
     const target = this.projection?.toMap(pointer.x, pointer.y);
-    if (selected && target && this.store.isFree(selected)) {
+    const world = this.store.getState().world;
+    if (target && world) {
+      const count = Math.max(1, Math.floor(world.map.size / world.map.parcelSize));
+      const col = Math.min(Math.floor(target.x / world.map.parcelSize), count - 1);
+      const row = Math.min(Math.floor(target.y / world.map.parcelSize), count - 1);
+      this.store.selectParcel(`L${col}-${row}`);
+    }
+    if (selected && target && this.store.isFree(selected) && pointer.event.shiftKey) {
       this.store.act({ type: 'move_to', residentId: selected, target });
     }
+  }
+
+  private drawParcels(world: WorldView): void {
+    const projection = this.projection!;
+    const grid = this.parcels!;
+    const models = this.facilities!;
+    grid.clear();
+    models.clear();
+    const side = world.map.parcelSize;
+    const count = Math.max(1, Math.floor(world.map.size / side));
+    const owned = new Map(world.parcels.map((parcel) => [parcel.id, parcel]));
+    const selected = this.store.getState().selectedParcel;
+    for (let row = 0; row < count; row++) {
+      for (let col = 0; col < count; col++) {
+        const id = `L${col}-${row}`;
+        const parcel = owned.get(id);
+        const right = col === count - 1 ? world.map.size : (col + 1) * side;
+        const bottom = row === count - 1 ? world.map.size : (row + 1) * side;
+        const points = [
+          projection.toScreen({ x: col * side, y: row * side }),
+          projection.toScreen({ x: right, y: row * side }),
+          projection.toScreen({ x: right, y: bottom }),
+          projection.toScreen({ x: col * side, y: bottom }),
+        ].map((p) => new Phaser.Math.Vector2(p.x, p.y));
+        if (parcel) {
+          grid.fillStyle(0x54cadc, 0.13);
+          grid.fillPoints(points, true);
+        }
+        grid.lineStyle(id === selected ? 5 : 1, id === selected ? 0xffdb84 : 0x6e91a4, id === selected ? 1 : 0.35);
+        grid.strokePoints(points, true);
+      }
+    }
+    for (const parcel of [...world.parcels].sort((a, b) => a.col + a.row - b.col - b.row)) {
+      if (parcel.facility) drawFacility(models, projection, parcel, side, activeContents(parcel.facility, (time) => this.store.countdown(time)));
+    }
+  }
+
+  private scheduleContentExpiry(world: WorldView): void {
+    if (world.game.ended) {
+      this.nextContentExpiry = null;
+      return;
+    }
+    const receivedAt = this.store.getState().receivedAt;
+    const now = performance.now();
+    const future = world.parcels.flatMap((parcel) => parcel.facility?.expiresIn ?? [])
+      .map((seconds) => (receivedAt ?? now) + seconds * 1000)
+      .filter((time) => time > now);
+    this.nextContentExpiry = future.length ? Math.min(...future) : null;
   }
 
   private drawMap(size: number): void {
@@ -243,6 +299,9 @@ export class MapScene extends Phaser.Scene {
       if (resident.color !== view.color) {
         resident.color = view.color;
         drawShadow(resident.shadow, view.color);
+        resident.figure.removeAll(true);
+        resident.block = createBlockResident(this, view.color);
+        resident.figure.add(resident.block.parts);
       }
       resident.label.setText(residentLabel(view));
       resident.root.setAlpha(view.left ? LEFT_ALPHA : 1);
@@ -286,12 +345,24 @@ export class MapScene extends Phaser.Scene {
     // A long pause, such as a hidden tab, must not make the bob jump.
     const elapsed = Math.min(now - this.lastUpdate, 100);
     this.lastUpdate = now;
+    if (this.nextContentExpiry !== null && now >= this.nextContentExpiry) {
+      const world = this.store.getState().world;
+      if (world) {
+        this.drawParcels(world);
+        this.scheduleContentExpiry(world);
+      }
+    }
     for (const resident of this.residents.values()) {
       this.stepWalk(resident, now);
       resident.float = stepFloat(resident.float, elapsed, isMoving(resident, now));
       const pose = floatPose(resident.float);
-      resident.figure.setY(-FIGURE_HOVER - pose.lift);
+      resident.figure.setY(-pose.lift * 0.25);
       resident.shadow.setScale(pose.shadow);
+      const swing = Math.sin(resident.float.angle * 3) * (isMoving(resident, now) ? 0.12 : 0.02);
+      resident.block.leftArm.setRotation(swing);
+      resident.block.rightArm.setRotation(-swing);
+      resident.block.leftLeg.setRotation(-swing * 0.8);
+      resident.block.rightLeg.setRotation(swing * 0.8);
     }
   }
 
@@ -319,8 +390,8 @@ export class MapScene extends Phaser.Scene {
     ring.strokeEllipse(0, 0, 38, 16);
     const shadow = this.add.graphics();
     drawShadow(shadow, view.color);
-    const figure = this.add.image(0, -FIGURE_HOVER, RESIDENT_TEXTURE).setOrigin(0.5, 1);
-    figure.setScale(FIGURE_HEIGHT / figure.height);
+    const block = createBlockResident(this, view.color);
+    const figure = this.add.container(0, 0, block.parts);
     const label = this.add.text(0, -FIGURE_HEIGHT - FIGURE_HOVER - 6, residentLabel(view), NAME_STYLE).setOrigin(0.5, 1);
     const root = this.add.container(0, 0, [ring, shadow, figure, label]);
     // The container has no size, so this rectangle is in figure units around the feet.
@@ -332,7 +403,7 @@ export class MapScene extends Phaser.Scene {
     const shown = { ...view.position };
     // Residents start at different points of the bob, so they do not rise and fall together.
     const float = { angle: Math.random() * 2 * Math.PI, effort: 0 };
-    return { root, ring, shadow, figure, float, label, color: view.color, position: view.position, shown, walk: null };
+    return { root, ring, shadow, figure, block, float, label, color: view.color, position: view.position, shown, walk: null };
   }
 
   /** Stands the resident's feet on its shown position, sized and layered by distance. */

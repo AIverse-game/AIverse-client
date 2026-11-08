@@ -19,4 +19,9 @@ export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
  */
 export type SayAction = { type: 'say'; residentId: ResidentId; text: string; to?: ResidentId };
 
-export type Action = MoveToAction | LeaveGameAction | SayAction;
+export type BuyParcelAction = { type: 'buy_parcel'; residentId: ResidentId };
+export type BuildFacilityAction = { type: 'build_facility'; residentId: ResidentId; parcelId: string; kind: 'ad' | 'portal' | 'game_hall' | 'workspace'; source: 'self' | 'on_demand' };
+export type MakeContentAction = { type: 'make_content'; residentId: ResidentId; content: 'ad' | 'game'; source: 'self' | 'on_demand' };
+export type PlaceContentAction = { type: 'place_content'; residentId: ResidentId; parcelId: string };
+
+export type Action = MoveToAction | LeaveGameAction | SayAction | BuyParcelAction | BuildFacilityAction | MakeContentAction | PlaceContentAction;

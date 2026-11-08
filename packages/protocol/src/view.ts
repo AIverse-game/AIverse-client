@@ -180,6 +180,37 @@ export const contractSchema = z.object({
 export const mapSchema = z.object({
   /** Side length of the square map, in map units. */
   size: z.number().positive(),
+  parcelSize: z.number().positive(),
+  parcelPrices: z.array(z.array(z.number().int().positive())),
+});
+
+export const facilitySchema = z.object({
+  kind: z.enum(['ad', 'portal', 'game_hall', 'workspace']),
+  contents: z.number().int().min(0).max(5),
+  expiresIn: z.array(z.number().positive()).max(5),
+}).refine((facility) => facility.contents === facility.expiresIn.length, 'content count differs from expiry list');
+
+export const parcelSchema = z.object({
+  id: z.string(),
+  col: z.number().int().nonnegative(),
+  row: z.number().int().nonnegative(),
+  ownerId: z.string(),
+  shares: z.record(z.string(), z.number().int().positive()),
+  facility: facilitySchema.optional(),
+});
+
+export const jobSchema = z.object({
+  id: z.number().int().positive(),
+  ownerId: z.string(),
+  kind: z.string(),
+  parcelId: z.string().optional(),
+  remainingSeconds: z.number().nonnegative(),
+});
+
+export const contentSchema = z.object({
+  viewerId: z.string(),
+  adContent: z.number().int().nonnegative(),
+  gameContent: z.number().int().nonnegative(),
 });
 
 export const gameSchema = z.object({
@@ -217,6 +248,9 @@ export type AgentTurnView = z.infer<typeof agentTurnSchema>;
 export const worldViewSchema = z
   .object({
     map: mapSchema,
+    parcels: z.array(parcelSchema),
+    jobs: z.array(jobSchema),
+    content: contentSchema.optional(),
     residents: z.array(residentSchema),
     game: gameSchema,
     exchange: exchangeSchema,
@@ -235,6 +269,10 @@ export const worldViewSchema = z
     }).optional(),
   })
   .superRefine((world, context) => {
+    const gridSize = Math.max(1, Math.floor(world.map.size / world.map.parcelSize));
+    if (world.map.parcelPrices.length !== gridSize || world.map.parcelPrices.some((row) => row.length !== gridSize)) {
+      context.addIssue({ code: 'custom', path: ['map', 'parcelPrices'], message: 'wrong parcel grid size' });
+    }
     const inside = ({ x, y }: Position) => x >= 0 && y >= 0 && x <= world.map.size && y <= world.map.size;
     const seen = new Set<ResidentId>();
     world.residents.forEach((resident, index) => {
@@ -249,8 +287,21 @@ export const worldViewSchema = z
         context.addIssue({ code: 'custom', path: ['residents', index, 'walking'], message: 'target outside the map' });
       }
     });
+    const parcelIds = new Set<string>();
+    world.parcels.forEach((parcel, index) => {
+      if (parcel.col >= gridSize || parcel.row >= gridSize || parcel.id !== `L${parcel.col}-${parcel.row}` || parcelIds.has(parcel.id)) {
+        context.addIssue({ code: 'custom', path: ['parcels', index], message: 'invalid parcel position or id' });
+      }
+      if (!seen.has(parcel.ownerId) || Object.values(parcel.shares).reduce((sum, share) => sum + share, 0) !== 100 || Object.keys(parcel.shares).some((id) => !seen.has(id))) {
+        context.addIssue({ code: 'custom', path: ['parcels', index, 'shares'], message: 'invalid owner or shares' });
+      }
+      parcelIds.add(parcel.id);
+    });
     if (world.agentTimeline && !seen.has(world.agentTimeline.residentId)) {
       context.addIssue({ code: 'custom', path: ['agentTimeline', 'residentId'], message: 'unknown resident' });
+    }
+    if (world.content && !seen.has(world.content.viewerId)) {
+      context.addIssue({ code: 'custom', path: ['content', 'viewerId'], message: 'unknown resident' });
     }
     world.speech.forEach((line, index) => {
       const people = [line.speakerId, ...line.listeners, ...(line.to === undefined ? [] : [line.to])];
@@ -289,6 +340,9 @@ export const worldViewSchema = z
 export type Position = z.infer<typeof positionSchema>;
 export type ResidentView = z.infer<typeof residentSchema>;
 export type MapView = z.infer<typeof mapSchema>;
+export type ParcelView = z.infer<typeof parcelSchema>;
+export type FacilityView = z.infer<typeof facilitySchema>;
+export type JobView = z.infer<typeof jobSchema>;
 export type BookView = z.infer<typeof bookSchema>;
 export type FillView = z.infer<typeof fillSchema>;
 export type OrderView = z.infer<typeof orderSchema>;

@@ -20,6 +20,7 @@ export interface ClientState {
    * that resident's whispers and no one else's.
    */
   selected: ResidentId | null;
+  selectedParcel: string | null;
   lastAction: ActionStatus | null;
   /** Outcome of the latest request to start or stop each resident's agent. */
   agentRequests: Readonly<Record<ResidentId, ActionStatus>>;
@@ -39,6 +40,7 @@ const INITIAL_STATE: ClientState = {
   world: null,
   error: null,
   selected: null,
+  selectedParcel: null,
   lastAction: null,
   agentRequests: {},
   llmOverrides: [],
@@ -143,6 +145,10 @@ export class GameStore {
     if (id === this.state.selected) return;
     this.connection.send({ type: 'view_as', residentId: id });
     this.update({ selected: id });
+  }
+
+  selectParcel(id: string | null): void {
+    if (id !== this.state.selectedParcel) this.update({ selectedParcel: id });
   }
 
   dispose(): void {

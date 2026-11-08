@@ -3,6 +3,7 @@ import { AgentPanel } from './AgentPanel';
 import { AgentTimelinePanel } from './AgentTimelinePanel';
 import { DealsPanel } from './DealsPanel';
 import { ExchangePanel } from './ExchangePanel';
+import { FacilityPanel } from './FacilityPanel';
 import { MapPanel } from './MapPanel';
 import { MapView } from './MapView';
 import { RankingPanel } from './RankingPanel';
@@ -23,6 +24,7 @@ export function App() {
         <aside className="sidebar">
           <RankingPanel />
           <MapPanel />
+          <FacilityPanel />
           <ActionPanel />
           <ExchangePanel />
           <DealsPanel />

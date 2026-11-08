@@ -188,6 +188,17 @@ h2 {
   gap: 8px;
 }
 
+.facility-source {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0;
+  font-size: 12px;
+}
+
+.facility-source select { width: 100%; }
+
+.facility-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+
 .move-form {
   display: flex;
   flex-wrap: wrap;

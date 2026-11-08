@@ -89,7 +89,7 @@ export function ActionPanel() {
         </button>
       </form>
       <p className="muted small">
-        选中居民后，点击地图上的地面也会让其走到该点。居民沿直线匀速走过去，到达前不能做别的；走路只花时间。
+        选中居民后，按住 Shift 点击地图地面也会让其走到该点。居民沿直线匀速走过去，到达前不能做别的；走路只花时间。
       </p>
       <button type="button" className="leave" disabled={!canAct} onClick={leave}>
         退出游戏

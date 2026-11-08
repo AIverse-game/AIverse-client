@@ -30,7 +30,9 @@ function fakeConnection() {
 const WELCOME: ServerMessage = { type: 'welcome', protocolVersion: PROTOCOL_VERSION, llmOverrides: [] };
 
 const world: WorldView = {
-  map: { size: 100 },
+  map: { size: 100, parcelSize: 10, parcelPrices: Array.from({ length: 10 }, () => Array(10).fill(1000)) },
+  parcels: [],
+  jobs: [],
   residents: [
     { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, left: false, rank: 1 },
   ],
