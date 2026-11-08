@@ -37,7 +37,7 @@
 | `src/aiverse_server/core/compute.py`、`economy/compute.py` | 算力与节点：订阅的节点 `Node`、进行中的工作 `Job`、`ComputeBook`；速率与价格常量、`buy_node`（生成式、渲染式）、开工 `start_build_ad`、`start_build_portal`、`start_make_content`、完工 `finish_jobs`、节点到期 `expire_nodes`、取消 `cancel_compute` |
 | `src/aiverse_server/economy/ads.py` | 广告位与内容（[虚拟设施](design/facilities.md)第 3 步）：内容物品 `ad_content`、`place_content`（保鲜期、每个广告位至多 5 份）、每 30 秒按流量与内容数付钱、按份额分给地块的持有人 `pay_visitors`、附近展示内容的广告位平分流量 |
 | `src/aiverse_server/economy/shares.py` | 地块份额（[虚拟设施](design/facilities.md)第 4 步）：分账 `split_income`（凑不整的金币按小数部分大的先得）、份额报价事件 `ShareOffer`（持有人转让份额，可收费可白送）、已许诺份额统计 `reserved_shares` |
-| `src/aiverse_server/economy/portals.py` | 传送门与线路（[虚拟设施](design/facilities.md)第 5 步）：线路提议事件 `LinkProposal`、`link_portals`、居民传送 `teleport`（过路费按份额分给两端的持有人，渠道 `toll`）、有效距离 `effective_distance`（线路让偏远地块离中央更近，流量按它算）、门数与线路数与间距上限 |
+| `src/aiverse_server/economy/portals.py` | 传送门与线路（[虚拟设施](design/facilities.md)第 5 步）：线路提议事件 `LinkProposal`、`link_portals`、居民传送 `teleport`（过路费按份额分给两端的持有人，渠道 `toll`）、有效距离 `effective_distance`（线路让偏远地块离中央更近，备用，占位的流量暂不用）、门数与线路数与间距上限 |
 | `src/aiverse_server/economy/joint_purchase.py` | 合买地块（[虚拟设施](design/facilities.md)第 4 步补充）：提议事件 `JointPurchase`（对方出多少钱、拿多少份，提议人那份预留），同意时两人各付镇上、地块归提议人，预留的钱统计 `reserved_purchase_coins` |
 | `src/aiverse_server/economy/trade.py` | 交易事件：`PurchaseOffer`、`SaleOffer`，条款校验、预留与互换，预留金币与物品统计 |
 | `src/aiverse_server/economy/contracts.py` | 合约：提议事件 `ContractProposal`、交付 `deliver`、取消 `cancel_contract`、到期 `expire_contracts`、终止 `end_contracts`（押金按责任赔付或退回，并记入 `ContractBook.ended`），托管的货款与押金统计 `contract_coins` |
