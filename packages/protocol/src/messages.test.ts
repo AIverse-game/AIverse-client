@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseServerMessage } from './messages';
+import { gridCount, inLobby, lobbyRect, parcelAt, parcelRect } from './mapGrid';
 
 const resident = (id: string, x: number, y: number) => ({
   id,
@@ -16,7 +17,7 @@ const game = { ended: false, remainingSeconds: 1200 };
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   type: 'state',
-  world: { map: { size, parcelSize: 10, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size, parcelSize: 10, blockCells: 1, road: 0, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
 const exchange = {
@@ -249,4 +250,33 @@ it('counts bounded timeline text in Unicode code points like the server', () => 
   const parsed = parseServerMessage({ ...message, world: { ...message.world, agentTimeline: { residentId: 'a', turns: [{ ...turn, summary: '🌱'.repeat(500) }] } } });
 
   expect(parsed.ok).toBe(true);
+});
+
+describe('mapGrid', () => {
+  const map = { size: 186, parcelSize: 10, blockCells: 3, road: 6 };
+
+  it('lays parcels out in blocks of three with a road around each', () => {
+    expect(gridCount(map)).toBe(15);
+    expect(parcelRect(map, 0, 0)).toEqual({ x0: 6, z0: 6, x1: 16, z1: 16 });
+    expect(parcelRect(map, 3, 0).x0).toBe(42);
+  });
+
+  it('finds the parcel at a position and tells roads from parcels', () => {
+    expect(parcelAt(map, 20, 20)).toEqual({ col: 1, row: 1, onRoad: false });
+    expect(parcelAt(map, 37, 20).onRoad).toBe(true);
+    expect(parcelAt(map, 2, 2)).toEqual({ col: 0, row: 0, onRoad: true });
+  });
+
+  it('puts the lobby in the middle block', () => {
+    expect(inLobby(map, 7, 7)).toBe(true);
+    expect(inLobby(map, 5, 7)).toBe(false);
+    expect(lobbyRect(map)).toEqual({ x0: 78, z0: 78, x1: 108, z1: 108 });
+  });
+
+  it('keeps one parcel per ten units when there are no blocks', () => {
+    const plain = { size: 105, parcelSize: 10, blockCells: 1, road: 0 };
+
+    expect(gridCount(plain)).toBe(10);
+    expect(parcelRect(plain, 9, 9)).toEqual({ x0: 90, z0: 90, x1: 105, z1: 105 });
+  });
 });

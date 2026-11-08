@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { gridCount } from './mapGrid';
 
 // Read-only data the authority sends out; mirrors aiverse_server/server/protocol.py in the
 // Python server. Clients render it as-is and never derive game results themselves.
@@ -181,6 +182,12 @@ export const mapSchema = z.object({
   /** Side length of the square map, in map units. */
   size: z.number().positive(),
   parcelSize: z.number().positive(),
+  /** Parcels along each side of a block, which is bought whole. */
+  blockCells: z.number().int().positive(),
+  /** Width of the roads between blocks and around the edge. */
+  road: z.number().nonnegative(),
+  /** Whether the middle block is the spawn lobby, which nobody owns. */
+  lobby: z.boolean(),
   parcelPrices: z.array(z.array(z.number().int().positive())),
 });
 
@@ -269,7 +276,7 @@ export const worldViewSchema = z
     }).optional(),
   })
   .superRefine((world, context) => {
-    const gridSize = Math.max(1, Math.floor(world.map.size / world.map.parcelSize));
+    const gridSize = gridCount(world.map);
     if (world.map.parcelPrices.length !== gridSize || world.map.parcelPrices.some((row) => row.length !== gridSize)) {
       context.addIssue({ code: 'custom', path: ['map', 'parcelPrices'], message: 'wrong parcel grid size' });
     }

@@ -1,4 +1,4 @@
-import type { FacilityView } from '@aiverse/protocol';
+import type { FacilityView, Rect } from '@aiverse/protocol';
 import { ARCADE_SLAB, ARCADE_SPAN, ARCADE_TOP } from './arcadeModel';
 import { BILLBOARD_SLAB, BILLBOARD_SPAN, BILLBOARD_TOP } from './billboardModel';
 import { PORTAL_SLAB, PORTAL_SPAN, PORTAL_TOP } from './portalModel';
@@ -28,12 +28,12 @@ export interface PlotShape {
 }
 
 /** Where a facility's model stands on its parcel and how big it is drawn. */
-export function plotShape(kind: Kind, col: number, row: number, parcelSize: number): PlotShape {
+export function plotShape(kind: Kind, parcel: Rect): PlotShape {
   const { margin, span, slab, top } = SPECS[kind];
-  const side = parcelSize * (1 - 2 * margin);
+  const side = (parcel.x1 - parcel.x0) * (1 - 2 * margin);
   const scale = side / span;
   return {
-    centre: { x: (col + 0.5) * parcelSize, y: (row + 0.5) * parcelSize },
+    centre: { x: (parcel.x0 + parcel.x1) / 2, y: (parcel.z0 + parcel.z1) / 2 },
     side,
     scale,
     floor: slab * scale,

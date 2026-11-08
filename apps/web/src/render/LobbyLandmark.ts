@@ -1,3 +1,4 @@
+import type { MapGridSpec } from '@aiverse/protocol';
 import * as THREE from 'three';
 import { createCharacter, type Character } from './characterModel';
 import { createLobby, LOBBY_LIFT, lobbyGroundHeight, lobbyPlacement, type LobbyHandle, type LobbyPlacement } from './lobbyModel';
@@ -30,9 +31,9 @@ export class LobbyLandmark {
     this.scene = scene;
   }
 
-  build(mapSize: number, parcelSize: number): void {
+  build(map: MapGridSpec): void {
     this.dispose();
-    const placement = (this.placement = lobbyPlacement(mapSize, parcelSize));
+    const placement = (this.placement = lobbyPlacement(map));
     this.handle = createLobby();
     this.handle.root.position.set(placement.centre.x, LOBBY_LIFT, placement.centre.y);
     this.handle.root.scale.setScalar(placement.scale);

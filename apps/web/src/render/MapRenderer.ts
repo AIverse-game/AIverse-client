@@ -1,4 +1,4 @@
-import type { WorldView } from '@aiverse/protocol';
+import { inLobby, parcelAt, type WorldView } from '@aiverse/protocol';
 import * as THREE from 'three';
 import type { GameStore } from '../state/store';
 import { activeContents } from '../state/facilityContents';
@@ -49,7 +49,7 @@ export class MapRenderer {
   private readonly resizer: ResizeObserver;
   private view: CameraView | null = null;
   private drawnSize: number | null = null;
-  private drawnParcelSize: number | null = null;
+  private drawnLayout = '';
   private nextContentExpiry: number | null = null;
   private press: Press | null = null;
   private frame = 0;
@@ -123,20 +123,23 @@ export class MapRenderer {
   private sync(): void {
     const { world, selected, selectedParcel } = this.store.getState();
     if (!world) return;
-    const { size, parcelSize } = world.map;
-    const resized = size !== this.drawnSize || parcelSize !== this.drawnParcelSize;
-    if (resized) this.rebuild(size, parcelSize);
+    const { size, parcelSize, blockCells, road } = world.map;
+    const layout = `${size}:${parcelSize}:${blockCells}:${road}:${world.map.lobby}`;
+    const resized = layout !== this.drawnLayout;
+    if (resized) this.rebuild(world.map);
     this.ground.setParcels(world.parcels, selectedParcel);
     this.syncFacilities(world);
     this.residents.sync(world.residents, resized);
     this.residents.setSelected(selected);
   }
 
-  private rebuild(size: number, parcelSize: number): void {
+  private rebuild(map: WorldView['map']): void {
+    const { size } = map;
     this.drawnSize = size;
-    this.drawnParcelSize = parcelSize;
-    this.ground.build(size, parcelSize);
-    this.lobby.build(size, parcelSize);
+    this.drawnLayout = `${size}:${map.parcelSize}:${map.blockCells}:${map.road}:${map.lobby}`;
+    this.ground.build(map);
+    if (map.lobby) this.lobby.build(map);
+    else this.lobby.dispose();
     this.view ??= initialView(size);
     this.view = clampView(this.view, size);
     for (const id of this.axisIds) this.labels.remove(id);
@@ -157,7 +160,7 @@ export class MapRenderer {
   }
 
   private syncFacilities(world: WorldView): void {
-    this.facilities.sync(world.parcels, world.map.parcelSize, (facility) => activeContents(facility, (time) => this.store.countdown(time)));
+    this.facilities.sync(world.parcels, world.map, (facility) => activeContents(facility, (time) => this.store.countdown(time)));
     if (world.game.ended) {
       this.nextContentExpiry = null;
       return;
@@ -286,11 +289,9 @@ export class MapRenderer {
     if (hit?.object.userData.parcelId) {
       this.store.selectParcel(hit.object.userData.parcelId as string);
     } else if (point) {
-      const { size, parcelSize } = world.map;
-      const count = Math.max(1, Math.floor(size / parcelSize));
-      const col = Math.min(Math.floor(point.x / parcelSize), count - 1);
-      const row = Math.min(Math.floor(point.y / parcelSize), count - 1);
-      this.store.selectParcel(`L${col}-${row}`);
+      // Roads and the lobby belong to no one and have nothing to select.
+      const { col, row, onRoad } = parcelAt(world.map, point.x, point.y);
+      if (!onRoad && !(world.map.lobby && inLobby(world.map, col, row))) this.store.selectParcel(`L${col}-${row}`);
     }
     if (selected && point && this.store.isFree(selected) && shift) {
       this.store.act({ type: 'move_to', residentId: selected, target: point });

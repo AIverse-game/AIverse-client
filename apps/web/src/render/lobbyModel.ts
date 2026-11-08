@@ -1,10 +1,10 @@
+import { lobbyRect, type MapGridSpec } from '@aiverse/protocol';
 import * as THREE from 'three';
 import { bench, lamp, tree } from './modelProps';
 import { canvasTex, floorPlate, glow, lam, ModelBuilder, PALETTE as P, seeded, type ModelHandle } from './sceneKit';
 
-/** Width of the lobby plaza in model units (the demo's), and the parcels it spans on the map. */
+/** Width of the lobby plaza in model units (the demo's); it fills one 30-unit block on the map. */
 export const LOBBY_SPAN = 60;
-export const LOBBY_PARCELS = 3;
 /** The lobby floor lies this far above the map so the two do not flicker against each other. */
 export const LOBBY_LIFT = 0.03;
 
@@ -15,9 +15,10 @@ export interface LobbyPlacement {
   scale: number;
 }
 
-/** The lobby fills the middle parcels, where residents are born. */
-export function lobbyPlacement(mapSize: number, parcelSize: number): LobbyPlacement {
-  return { centre: { x: mapSize / 2, y: mapSize / 2 }, scale: (LOBBY_PARCELS * parcelSize) / LOBBY_SPAN };
+/** The lobby fills the middle block, where residents are born. */
+export function lobbyPlacement(map: MapGridSpec): LobbyPlacement {
+  const block = lobbyRect(map);
+  return { centre: { x: (block.x0 + block.x1) / 2, y: (block.z0 + block.z1) / 2 }, scale: (block.x1 - block.x0) / LOBBY_SPAN };
 }
 
 /** Height of the floor, in model units, at a point of the plaza: the spawn pad is two steps up. */

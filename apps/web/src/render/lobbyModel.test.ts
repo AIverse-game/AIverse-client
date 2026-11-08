@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { lobbyGroundHeight, lobbyPlacement } from './lobbyModel';
 
 describe('lobbyPlacement', () => {
-  it('spreads the 60-unit plaza over three parcels in the middle of the map', () => {
-    const placement = lobbyPlacement(150, 10);
+  it('spreads the 60-unit plaza over the middle block of the map', () => {
+    const placement = lobbyPlacement({ size: 186, parcelSize: 10, blockCells: 3, road: 6 });
 
-    expect(placement.centre).toEqual({ x: 75, y: 75 });
+    expect(placement.centre).toEqual({ x: 93, y: 93 });
     expect(placement.scale).toBeCloseTo(0.5);
   });
 });

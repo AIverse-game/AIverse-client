@@ -4,6 +4,8 @@
 更新：2026-11-08。
 相关：[虚拟设施](facilities.md)（页面美术）、[地块](land.md)、[脚本访客](visitors.md)；[变更 0077](../../changes/0077-demo-models.md)、[决策 0007](../decisions/0007-three-js-map-renderer.md)；代码 `apps/web/src/render/LobbyLandmark.ts`、`lobbyModel.ts`、`lobbyPatrol.ts`、`characterModel.ts`、`npcPose.ts`。
 
+> 2026-11-08 调整（[变更 0078](../../changes/0078-land-blocks.md)）：大厅占的是地图中间的一个 30 × 30 街区，服务端把它标为大厅，不归任何人所有，也买不了。下文说“中间 3 × 3 块地”处即指这个街区。
+
 ## 问题背景
 
 居民都出生在地图中央（[地块](land.md)），页面上那里却只是普通地面，看不出这是出生的地方。用户（2026-11-08）把四个 Three.js 参考 demo 放进仓库的 `demos/`（出生大厅、广告牌、共享办公空间、方块角色），要求把四个设施的模型移植到客户端、尽可能还原 demo 的效果，必要时迁移到 Three.js，不改 demo 文件；并指出传送门已经另外拆出来作为设施，大厅里不再放传送门。

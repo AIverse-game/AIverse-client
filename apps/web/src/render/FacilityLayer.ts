@@ -1,4 +1,4 @@
-import type { FacilityView, ParcelView } from '@aiverse/protocol';
+import { parcelRect, type FacilityView, type MapGridSpec, type ParcelView } from '@aiverse/protocol';
 import * as THREE from 'three';
 import { createArcade } from './arcadeModel';
 import { createBillboard } from './billboardModel';
@@ -28,16 +28,19 @@ function create(kind: FacilityView['kind'], contents: number): ModelHandle {
 export class FacilityLayer {
   private readonly root = new THREE.Group();
   private readonly built = new Map<string, Built>();
-  private parcelSize = 0;
+  private layoutKey = '';
+  private map: MapGridSpec = { size: 1, parcelSize: 1, blockCells: 1, road: 0 };
 
   constructor(scene: THREE.Scene) {
     scene.add(this.root);
   }
 
   /** Brings the models in line with the parcels; `contents` says how many items a facility shows now. */
-  sync(parcels: readonly ParcelView[], parcelSize: number, contents: (facility: FacilityView) => number): void {
-    if (parcelSize !== this.parcelSize) this.clear();
-    this.parcelSize = parcelSize;
+  sync(parcels: readonly ParcelView[], map: MapGridSpec, contents: (facility: FacilityView) => number): void {
+    const layoutKey = `${map.size}:${map.parcelSize}:${map.blockCells}:${map.road}`;
+    if (layoutKey !== this.layoutKey) this.clear();
+    this.layoutKey = layoutKey;
+    this.map = map;
     const present = new Set<string>();
     for (const parcel of parcels) {
       const facility = parcel.facility;
@@ -66,7 +69,7 @@ export class FacilityLayer {
   }
 
   private place(parcel: ParcelView, kind: FacilityView['kind'], contents: number, signature: string): Built {
-    const shape = plotShape(kind, parcel.col, parcel.row, this.parcelSize);
+    const shape = plotShape(kind, parcelRect(this.map, parcel.col, parcel.row));
     const handle = create(kind, contents);
     const wrapper = new THREE.Group();
     wrapper.position.set(shape.centre.x, shape.floor, shape.centre.y);

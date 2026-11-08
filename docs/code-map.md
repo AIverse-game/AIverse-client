@@ -10,7 +10,7 @@
 | `tsconfig.base.json` | 各包共享的 TypeScript 严格配置；共享包不含 DOM 类型 |
 | `eslint.config.js` | 代码检查与分层规则 |
 | `vitest.config.ts` | 测试入口，收集各包 `src/**/*.test.ts` |
-| `packages/protocol/src/` | `view.ts` 地块价格、产权份额、设施、工作、所选居民内容数量及交易所（挂单簿、匿名成交、所选居民的挂单）、居民（含金币、出局、名次、行走、驱动它的 Agent 及模型）、对局、发言、报价、合约提议、合约与坐标视图及校验；`actions.ts` 操作原语类型（含买地、建设施、制作与放入内容）；`messages.ts` 客户端与服务端消息（含交给 AI 的 `start_agent`、`stop_agent`、`agent_result` 与 `welcome` 中服务端覆盖的模型设置）、协议版本 |
+| `packages/protocol/src/` | `mapGrid.ts` 地块、街区、路和大厅在地图上的位置（与服务端同一套算法）；`view.ts` 地块价格、产权份额、设施、工作、所选居民内容数量及交易所（挂单簿、匿名成交、所选居民的挂单）、居民（含金币、出局、名次、行走、驱动它的 Agent 及模型）、对局、发言、报价、合约提议、合约与坐标视图及校验；`actions.ts` 操作原语类型（含买地、建设施、制作与放入内容）；`messages.ts` 客户端与服务端消息（含交给 AI 的 `start_agent`、`stop_agent`、`agent_result` 与 `welcome` 中服务端覆盖的模型设置）、协议版本 |
 | `apps/web/index.html`、`apps/web/vite.config.ts` | 网页入口与构建配置（相对资源路径、`/ws` 代理到服务端） |
 | `apps/web/src/main.tsx` | 组装连接、状态与界面；唯一选择传输方式和服务端地址的地方 |
 | `apps/web/src/vite-env.d.ts` | `VITE_SERVER_URL` 环境变量类型 |

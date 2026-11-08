@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import type { BuildFacilityAction } from '@aiverse/protocol';
+import { parcelAt, type BuildFacilityAction, type MapGridSpec } from '@aiverse/protocol';
 import { activeContents } from '../state/facilityContents';
 import { useGameState, useStore } from '../state/storeContext';
 import { useSecondTick } from './useSecondTick';
 
 const names = { ad: '广告位', portal: '传送门', game_hall: '游戏厅', workspace: '工作空间' } as const;
 const jobNames: Record<string, string> = { build_ad: '建广告位', build_portal: '建传送门', build_game_hall: '建游戏厅', build_workspace: '建工作空间', make_content: '渲染广告', make_game: '渲染游戏' };
+
+/** Whether a position stands in the same block as a parcel id; a block is bought whole, so any of its parcels will do. A road is in none. */
+function standsInBlockOf(map: MapGridSpec, position: { x: number; y: number }, parcelId: string | null): boolean {
+  const match = /^L(\d+)-(\d+)$/.exec(parcelId ?? '');
+  const here = parcelAt(map, position.x, position.y);
+  if (!match || here.onRoad) return false;
+  const cells = Math.max(1, map.blockCells);
+  return Math.floor(here.col / cells) === Math.floor(Number(match[1]) / cells) && Math.floor(here.row / cells) === Math.floor(Number(match[2]) / cells);
+}
 
 /** First manual facility loop: buy a plot, build, render content and fill its interior. */
 export function FacilityPanel() {
@@ -20,7 +29,7 @@ export function FacilityPanel() {
   const coordinates = /^L(\d+)-(\d+)$/.exec(selectedParcel ?? '');
   const price = coordinates ? world.map.parcelPrices[Number(coordinates[2])]?.[Number(coordinates[1])] : undefined;
   const parcelJob = world.jobs.find((job) => job.parcelId === selectedParcel);
-  const atParcel = resident && selectedParcel === `L${Math.min(Math.floor(resident.position.x / world.map.parcelSize), Math.max(1, Math.floor(world.map.size / world.map.parcelSize)) - 1)}-${Math.min(Math.floor(resident.position.y / world.map.parcelSize), Math.max(1, Math.floor(world.map.size / world.map.parcelSize)) - 1)}`;
+  const atParcel = resident && standsInBlockOf(world.map, resident.position, selectedParcel);
   const canOperate = resident && store.canAct(resident.id);
   const own = parcel?.ownerId === selected;
   const canBuild = canOperate && own && !parcel.facility && !parcelJob;
@@ -39,7 +48,7 @@ export function FacilityPanel() {
           <p className="small">设施：{parcel.facility ? names[parcel.facility.kind] : '空地'}{contentFacility ? ` · 展示 ${shown}/5` : ''}</p>
         </>}
         {parcelJob && <p className="small" role="status">{jobNames[parcelJob.kind] ?? parcelJob.kind}中，约 {Math.ceil(store.countdown(parcelJob.remainingSeconds))} 秒</p>}
-        {!parcel && <button type="button" disabled={!canOperate || !atParcel || !!resident?.walking} onClick={() => resident && store.act({ type: 'buy_parcel', residentId: resident.id })}>购买所站地块（{price ?? '…'} 金币）</button>}
+        {!parcel && <button type="button" disabled={!canOperate || !atParcel || !!resident?.walking} onClick={() => resident && store.act({ type: 'buy_parcel', residentId: resident.id })}>购买所站街区（{price ?? '…'} 金币）</button>}
         {own && <>
           {!parcel.facility && <div className="facility-actions">{(Object.keys(names) as BuildFacilityAction['kind'][]).map((kind) =>
             <button key={kind} type="button" disabled={!canBuild} onClick={() => resident && store.act({ type: 'build_facility', residentId: resident.id, parcelId: parcel.id, kind, source })}>建{names[kind]}</button>
