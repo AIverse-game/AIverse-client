@@ -29,7 +29,7 @@ export class FacilityLayer {
   private readonly root = new THREE.Group();
   private readonly built = new Map<string, Built>();
   private layoutKey = '';
-  private map: MapGridSpec = { size: 1, parcelSize: 1, blockCells: 1, road: 0 };
+  private map: MapGridSpec = { size: 1, parcelSize: 1, blockCells: 1 };
 
   constructor(scene: THREE.Scene) {
     scene.add(this.root);
@@ -37,7 +37,7 @@ export class FacilityLayer {
 
   /** Brings the models in line with the parcels; `contents` says how many items a facility shows now. */
   sync(parcels: readonly ParcelView[], map: MapGridSpec, contents: (facility: FacilityView) => number): void {
-    const layoutKey = `${map.size}:${map.parcelSize}:${map.blockCells}:${map.road}`;
+    const layoutKey = `${map.size}:${map.parcelSize}:${map.blockCells}`;
     if (layoutKey !== this.layoutKey) this.clear();
     this.layoutKey = layoutKey;
     this.map = map;

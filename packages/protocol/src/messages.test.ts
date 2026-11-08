@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseServerMessage } from './messages';
-import { gridCount, inLobby, lobbyRect, parcelAt, parcelRect } from './mapGrid';
+import { blockRectOf, blockRects, gridCount, inLobby, islandRect, lobbyRect, parcelAt, parcelRect, sameBlock } from './mapGrid';
 
 const resident = (id: string, x: number, y: number) => ({
   id,
@@ -17,7 +17,7 @@ const game = { ended: false, remainingSeconds: 1200 };
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   type: 'state',
-  world: { map: { size, parcelSize: 10, blockCells: 1, road: 0, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size, parcelSize: 10, blockCells: 1, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
 const exchange = {
@@ -253,28 +253,34 @@ it('counts bounded timeline text in Unicode code points like the server', () => 
 });
 
 describe('mapGrid', () => {
-  const map = { size: 186, parcelSize: 10, blockCells: 3, road: 6 };
+  const map = { size: 150, parcelSize: 10, blockCells: 3 };
 
-  it('lays parcels out in blocks of three with a road around each', () => {
+  it('lays blocks of three by three parcels side by side with no gap', () => {
     expect(gridCount(map)).toBe(15);
-    expect(parcelRect(map, 0, 0)).toEqual({ x0: 6, z0: 6, x1: 16, z1: 16 });
-    expect(parcelRect(map, 3, 0).x0).toBe(42);
+    expect(parcelRect(map, 0, 0)).toEqual({ x0: 0, z0: 0, x1: 10, z1: 10 });
+    expect(blockRects(map)).toHaveLength(25);
+    expect(blockRectOf(map, 4, 1)).toEqual({ x0: 30, z0: 0, x1: 60, z1: 30 });
   });
 
-  it('finds the parcel at a position and tells roads from parcels', () => {
-    expect(parcelAt(map, 20, 20)).toEqual({ col: 1, row: 1, onRoad: false });
-    expect(parcelAt(map, 37, 20).onRoad).toBe(true);
-    expect(parcelAt(map, 2, 2)).toEqual({ col: 0, row: 0, onRoad: true });
+  it('finds the parcel at a position, clamped to the map', () => {
+    expect(parcelAt(map, 25, 31)).toEqual({ col: 2, row: 3 });
+    expect(parcelAt(map, 150, 150)).toEqual({ col: 14, row: 14 });
   });
 
-  it('puts the lobby in the middle block', () => {
+  it('puts the lobby in the middle block and draws islands slightly inside their blocks', () => {
     expect(inLobby(map, 7, 7)).toBe(true);
     expect(inLobby(map, 5, 7)).toBe(false);
-    expect(lobbyRect(map)).toEqual({ x0: 78, z0: 78, x1: 108, z1: 108 });
+    expect(lobbyRect(map)).toEqual({ x0: 60, z0: 60, x1: 90, z1: 90 });
+    expect(islandRect(lobbyRect(map))).toEqual({ x0: 61, z0: 61, x1: 89, z1: 89 });
+  });
+
+  it('tells whether two parcels are in the same block', () => {
+    expect(sameBlock(map, { col: 0, row: 0 }, { col: 2, row: 2 })).toBe(true);
+    expect(sameBlock(map, { col: 2, row: 2 }, { col: 3, row: 2 })).toBe(false);
   });
 
   it('keeps one parcel per ten units when there are no blocks', () => {
-    const plain = { size: 105, parcelSize: 10, blockCells: 1, road: 0 };
+    const plain = { size: 105, parcelSize: 10, blockCells: 1 };
 
     expect(gridCount(plain)).toBe(10);
     expect(parcelRect(plain, 9, 9)).toEqual({ x0: 90, z0: 90, x1: 105, z1: 105 });

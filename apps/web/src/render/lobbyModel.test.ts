@@ -3,10 +3,10 @@ import { lobbyGroundHeight, lobbyPlacement } from './lobbyModel';
 
 describe('lobbyPlacement', () => {
   it('spreads the 60-unit plaza over the middle block of the map', () => {
-    const placement = lobbyPlacement({ size: 186, parcelSize: 10, blockCells: 3, road: 6 });
+    const placement = lobbyPlacement({ size: 150, parcelSize: 10, blockCells: 3 });
 
-    expect(placement.centre).toEqual({ x: 93, y: 93 });
-    expect(placement.scale).toBeCloseTo(0.5);
+    expect(placement.centre).toEqual({ x: 75, y: 75 });
+    expect(placement.scale).toBeCloseTo(28 / 60);
   });
 });
 

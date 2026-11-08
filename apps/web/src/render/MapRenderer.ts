@@ -123,8 +123,8 @@ export class MapRenderer {
   private sync(): void {
     const { world, selected, selectedParcel } = this.store.getState();
     if (!world) return;
-    const { size, parcelSize, blockCells, road } = world.map;
-    const layout = `${size}:${parcelSize}:${blockCells}:${road}:${world.map.lobby}`;
+    const { size, parcelSize, blockCells, lobby } = world.map;
+    const layout = `${size}:${parcelSize}:${blockCells}:${lobby}`;
     const resized = layout !== this.drawnLayout;
     if (resized) this.rebuild(world.map);
     this.ground.setParcels(world.parcels, selectedParcel);
@@ -136,7 +136,7 @@ export class MapRenderer {
   private rebuild(map: WorldView['map']): void {
     const { size } = map;
     this.drawnSize = size;
-    this.drawnLayout = `${size}:${map.parcelSize}:${map.blockCells}:${map.road}:${map.lobby}`;
+    this.drawnLayout = `${size}:${map.parcelSize}:${map.blockCells}:${map.lobby}`;
     this.ground.build(map);
     if (map.lobby) this.lobby.build(map);
     else this.lobby.dispose();
@@ -289,9 +289,9 @@ export class MapRenderer {
     if (hit?.object.userData.parcelId) {
       this.store.selectParcel(hit.object.userData.parcelId as string);
     } else if (point) {
-      // Roads and the lobby belong to no one and have nothing to select.
-      const { col, row, onRoad } = parcelAt(world.map, point.x, point.y);
-      if (!onRoad && !(world.map.lobby && inLobby(world.map, col, row))) this.store.selectParcel(`L${col}-${row}`);
+      // The lobby belongs to no one and has nothing to select.
+      const { col, row } = parcelAt(world.map, point.x, point.y);
+      if (!(world.map.lobby && inLobby(world.map, col, row))) this.store.selectParcel(`L${col}-${row}`);
     }
     if (selected && point && this.store.isFree(selected) && shift) {
       this.store.act({ type: 'move_to', residentId: selected, target: point });

@@ -184,8 +184,6 @@ export const mapSchema = z.object({
   parcelSize: z.number().positive(),
   /** Parcels along each side of a block, which is bought whole. */
   blockCells: z.number().int().positive(),
-  /** Width of the roads between blocks and around the edge. */
-  road: z.number().nonnegative(),
   /** Whether the middle block is the spawn lobby, which nobody owns. */
   lobby: z.boolean(),
   parcelPrices: z.array(z.array(z.number().int().positive())),

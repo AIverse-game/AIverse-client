@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parcelAt, type BuildFacilityAction, type MapGridSpec } from '@aiverse/protocol';
+import { parcelAt, sameBlock, type BuildFacilityAction, type MapGridSpec } from '@aiverse/protocol';
 import { activeContents } from '../state/facilityContents';
 import { useGameState, useStore } from '../state/storeContext';
 import { useSecondTick } from './useSecondTick';
@@ -7,13 +7,10 @@ import { useSecondTick } from './useSecondTick';
 const names = { ad: '广告位', portal: '传送门', game_hall: '游戏厅', workspace: '工作空间' } as const;
 const jobNames: Record<string, string> = { build_ad: '建广告位', build_portal: '建传送门', build_game_hall: '建游戏厅', build_workspace: '建工作空间', make_content: '渲染广告', make_game: '渲染游戏' };
 
-/** Whether a position stands in the same block as a parcel id; a block is bought whole, so any of its parcels will do. A road is in none. */
+/** Whether a position stands in the same block as a parcel id; a block is bought whole, so any of its parcels will do. */
 function standsInBlockOf(map: MapGridSpec, position: { x: number; y: number }, parcelId: string | null): boolean {
   const match = /^L(\d+)-(\d+)$/.exec(parcelId ?? '');
-  const here = parcelAt(map, position.x, position.y);
-  if (!match || here.onRoad) return false;
-  const cells = Math.max(1, map.blockCells);
-  return Math.floor(here.col / cells) === Math.floor(Number(match[1]) / cells) && Math.floor(here.row / cells) === Math.floor(Number(match[2]) / cells);
+  return match !== null && sameBlock(map, parcelAt(map, position.x, position.y), { col: Number(match[1]), row: Number(match[2]) });
 }
 
 /** First manual facility loop: buy a plot, build, render content and fill its interior. */
