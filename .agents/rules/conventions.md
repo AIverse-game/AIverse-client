@@ -9,7 +9,7 @@
   - **只有形容词或限定词**：`saved.ts` 缺少被修饰的名词；应写成 `savedLLMSettings.ts`。
   - **和领域概念撞名**：名字已经是游戏里的一个概念（如居民、合约、收购点）时，不用它命名别的东西。
   - **泛名**：`utils`、`helpers`、`common`、`misc`、`manager`、`stuff`；确实是共用的小函数，按它们服务的主题命名，例如 `format.ts`。
-- **与主要导出对应**：文件以一个类、组件或函数为主时，文件名与它同名，例如 `MapScene` 在 `render/MapScene.ts`、`RankingPanel` 在 `ui/RankingPanel.tsx`。自检方法：不打开文件，能否从路径说出里面主要的类或函数。
+- **与主要导出对应**：文件以一个类、组件或函数为主时，文件名与它同名，例如 `MapRenderer` 在 `render/MapRenderer.ts`、`RankingPanel` 在 `ui/RankingPanel.tsx`。自检方法：不打开文件，能否从路径说出里面主要的类或函数。
 - **不带版本和状态**：不用 `new`、`old`、`v2`、`temp`、`final`、`backup` 等后缀，历史交给 Git。
 - **字符**：只用 ASCII 字母、数字、`-`、`_` 和 `.`，不用空格、中文和其他符号。大写只用于下文列出的情况（组件与类、camelCase 中的词首、约定文件名）。
 - **跟随邻居**：本文没覆盖的情况，按同一目录现有文件的写法；同一目录里不混用两种风格。
@@ -22,7 +22,7 @@
 | 内容 | 规则 | 示例 |
 | --- | --- | --- |
 | React 组件 | PascalCase，与导出的组件同名，扩展名 `.tsx` | `ui/RankingPanel.tsx` 导出 `RankingPanel` |
-| 主要导出是类的模块 | PascalCase，与类同名 | `render/MapScene.ts` 导出 `MapScene` |
+| 主要导出是类的模块 | PascalCase，与类同名 | `render/MapRenderer.ts` 导出 `MapRenderer` |
 | React hook | `use` 开头的 camelCase，与 hook 同名 | `ui/useSecondTick.ts` |
 | 其他模块 | camelCase 名词或名词短语；含 JSX 时用 `.tsx`，否则用 `.ts` | `render/layout.ts`、`ui/savedLLMSettings.ts`、`state/storeContext.tsx` |
 | 测试 | 与被测模块同目录，`<模块名>.test.ts` | `state/store.test.ts` |
@@ -92,7 +92,7 @@
 | 场景 | 规则 | 示例 |
 | --- | --- | --- |
 | 变量、函数 | camelCase | `loadLLMSettings` |
-| 类型、类、组件 | PascalCase | `GameConnection`、`MapScene` |
+| 类型、类、组件 | PascalCase | `GameConnection`、`MapRenderer` |
 | 模块级常量 | UPPER_SNAKE_CASE | `CANVAS_WIDTH` |
 | 协议 JSON 键 | camelCase，与服务端约定一致 | `protocolVersion` |
 | 协议中的消息与原语类型值 | snake_case，与服务端约定一致 | `move_to`、`start_agent` |

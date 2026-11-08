@@ -10,7 +10,7 @@
 
 共同规则放在 `AGENTS.md`，开发与代码审查分别使用项目内 Skill。代码改动由开发 Agent 实现并验证，再调用独立审查 Agent 给出问题报告，由开发 Agent 修复并交回复核。
 
-应用按“权威服务端 + 只渲染的客户端”分层。服务端是与本仓库同级的 Python 项目 `aiverse-server`（FastAPI、WebSocket）；本仓库是使用 TypeScript、React、Phaser 与 Vite 的网页客户端。详见 [应用架构](docs/architecture.md)、[决策 0001](docs/decisions/0001-web-stack-and-layering.md) 与 [决策 0002](docs/decisions/0002-python-server-and-coordinate-map.md)。
+应用按“权威服务端 + 只渲染的客户端”分层。服务端是与本仓库同级的 Python 项目 `aiverse-server`（FastAPI、WebSocket）；本仓库是使用 TypeScript、React、Three.js 与 Vite 的网页客户端。详见 [应用架构](docs/architecture.md)、[决策 0001](docs/decisions/0001-web-stack-and-layering.md) 与 [决策 0002](docs/decisions/0002-python-server-and-coordinate-map.md)。
 
 ## 运行游戏
 

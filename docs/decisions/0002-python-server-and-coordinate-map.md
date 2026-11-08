@@ -36,7 +36,7 @@
 - 只有静态文件已无法单独演示，GitHub Pages 部署工作流改为只做检查的 CI。
 - 协议改动需要同时修改两个项目，并更新两边的测试。尚无自动的跨语言契约测试，目前依靠客户端运行时校验和端到端实测发现不一致。
 - 服务端尚无身份认证、Origin 检查和消息大小限制，默认只监听 `127.0.0.1`。对外部署前必须补上。
-- 0001 中 React、Phaser、Vite、npm workspaces、zod 及“客户端只渲染”的原则继续有效；共享 TypeScript 规则引擎、Web Worker 本地服务端和 GitHub Pages 部署的部分被本记录替代。
+- 0001 中 React、Vite、npm workspaces、zod 及“客户端只渲染”的原则继续有效；共享 TypeScript 规则引擎、Web Worker 本地服务端和 GitHub Pages 部署的部分被本记录替代。
 
 重新评估条件：需要和客户端共享大量规则代码；Python 服务端的性能或并发不够用；协议漂移频繁出问题，需要从单一来源生成两边的类型。
 

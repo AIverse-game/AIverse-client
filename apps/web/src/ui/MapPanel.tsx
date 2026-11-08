@@ -12,9 +12,9 @@ export function MapPanel() {
     <section className="panel">
       <h2>地图</h2>
       <p className="small">
-        {size} × {size}，原点 (0, 0) 是西北角，画在地图最上方的顶角；x 向右下、y 向左下增大。
+        {size} × {size}，原点 (0, 0) 是西北角；默认视角下它在地图最上方的顶角，x 向右下、y 向左下增大，旋转后随之变化。
       </p>
-      <p className="muted small">地图已放大 3 倍，可在地图区域内滚动查看。</p>
+      <p className="muted small">滚轮移动视野，Ctrl（或触控板捏合）缩放，按住右键拖动旋转，左键拖动平移。</p>
       <p className="muted small">点击地块查看和建设；选中居民后按住 Shift 点击地图可让其行走。</p>
       <p className="small">当前地块：{selectedParcel ?? '未选择'}</p>
       <h2 className="subheading">居民</h2>

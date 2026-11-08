@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     server: { proxy },
     preview: { proxy },
     build: {
-      // Phaser alone is over 1 MB minified; one game chunk is expected.
+      // Three.js alone is over 0.5 MB minified; one map chunk is expected.
       chunkSizeWarningLimit: 2000,
     },
   };
