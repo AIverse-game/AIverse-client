@@ -67,7 +67,7 @@ export function lobbyRect(map: MapGridSpec): Rect {
 }
 
 /** How far each island's edge is drawn inside its block, so the gap between two islands is twice this. */
-export const ISLAND_INSET = 1.5;
+export const ISLAND_INSET = 2;
 
 /** The part of a block its island covers on the page. */
 export function islandRect(block: Rect): Rect {

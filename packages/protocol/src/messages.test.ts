@@ -271,7 +271,7 @@ describe('mapGrid', () => {
     expect(inLobby(map, 7, 7)).toBe(true);
     expect(inLobby(map, 5, 7)).toBe(false);
     expect(lobbyRect(map)).toEqual({ x0: 60, z0: 60, x1: 90, z1: 90 });
-    expect(islandRect(lobbyRect(map))).toEqual({ x0: 61.5, z0: 61.5, x1: 88.5, z1: 88.5 });
+    expect(islandRect(lobbyRect(map))).toEqual({ x0: 62, z0: 62, x1: 88, z1: 88 });
   });
 
   it('tells whether two parcels are in the same block', () => {

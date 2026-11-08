@@ -10,8 +10,18 @@ describe('islandLinks', () => {
     const links = islandLinks(islands);
 
     expect(links).toHaveLength(40);
-    expect(links[0]).toEqual({ a: { x: 28.5, z: 15 }, b: { x: 31.5, z: 15 }, dx: 1, dz: 0 });
-    expect(links[1]).toEqual({ a: { x: 15, z: 28.5 }, b: { x: 15, z: 31.5 }, dx: 0, dz: 1 });
+    expect(links[0]).toEqual({ a: { x: 28, z: 15 }, b: { x: 32, z: 15 }, dx: 1, dz: 0 });
+    expect(links[1]).toEqual({ a: { x: 15, z: 28 }, b: { x: 15, z: 32 }, dx: 0, dz: 1 });
+  });
+
+  it('joins a narrow last column of islands at the middle of its sides, as the server does', () => {
+    const narrow = blockRects({ size: 160, parcelSize: 10, blockCells: 3 }).map(islandRect);
+
+    const links = islandLinks(narrow);
+
+    expect(links).toHaveLength(60);
+    expect(links[8]).toEqual({ a: { x: 148, z: 15 }, b: { x: 152, z: 15 }, dx: 1, dz: 0 });
+    expect(links).toContainEqual({ a: { x: 155, z: 28 }, b: { x: 155, z: 32 }, dx: 0, dz: 1 });
   });
 
   it('links nothing for a single island', () => {
