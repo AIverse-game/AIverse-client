@@ -81,3 +81,4 @@
 | [0075-facilities-page-foundation](0075-facilities-page-foundation.md) | 已完成 | 第 8 步首批：协议 24 与页面接入地块、设施、工作及内容，手动买地、建设、制作与放入；程序化方块居民及玻璃罩设施 |
 | [0076-arcade-model-detail](0076-arcade-model-detail.md) | 已完成 | 放大游戏厅占地与玻璃罩，细化底座、地砖、灯带、角柱和入口；协议不变 |
 | [0077-demo-models](0077-demo-models.md) | 已完成 | 把 `demos/` 的广告牌、共享办公空间、出生大厅、传送门和方块角色移植到页面，并把地图渲染从 Phaser 迁到 Three.js（决策 0007）；已在无头浏览器截图核对
+| [0081-venue-visitors](0081-venue-visitors.md) | 已完成 | 访客去场馆，广告牌不吸引人：广告位只靠路过获得展示，普通游客也去工作空间和游戏厅并交门票；服务端、提示词与设计文档，页面和协议不变 |
