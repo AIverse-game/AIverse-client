@@ -32,3 +32,25 @@ export function visitorPlace(visitor: VisitorView, speed: number, seconds: numbe
   if (!last) return { ...visitor.position, heading: null, moving: false };
   return { ...last.end, heading: Math.atan2(last.end.x - last.start.x, last.end.y - last.start.y), moving: false };
 }
+
+/** A visitor catches up with where the server says it is this many times as fast as it walks. */
+export const CATCH_UP_FACTOR = 3;
+/** Further off than this, the visitor is not walking to the spot but was sent there (a portal, a new entry): it jumps. */
+export const SNAP_DISTANCE = 8;
+
+/**
+ * Where a visitor shown at `shown` appears after `step` map units of catching up with `target`.
+ * A visitor stood still between two messages while the server had already sent it off, so the next
+ * message puts it up to a few units ahead; walking the gap keeps it from jumping there.
+ */
+export function catchUp(
+  shown: { x: number; y: number },
+  target: { x: number; y: number },
+  step: number,
+): { x: number; y: number } {
+  const dx = target.x - shown.x;
+  const dy = target.y - shown.y;
+  const gap = Math.hypot(dx, dy);
+  if (gap <= step || gap > SNAP_DISTANCE) return { x: target.x, y: target.y };
+  return { x: shown.x + (dx / gap) * step, y: shown.y + (dy / gap) * step };
+}

@@ -1,6 +1,6 @@
 import type { VisitorView } from '@aiverse/protocol';
 import { describe, expect, it } from 'vitest';
-import { visitorPlace } from './visitorWalk';
+import { catchUp, SNAP_DISTANCE, visitorPlace } from './visitorWalk';
 
 const through = (...legs: [number, number, number, number][]): VisitorView => ({
   id: 1,
@@ -47,5 +47,34 @@ describe('visitorPlace', () => {
     const place = visitorPlace(visitor, 2.5, -3);
 
     expect(place.x).toBe(0);
+  });
+});
+
+describe('catchUp', () => {
+  it('moves a step towards a target that is further off', () => {
+    const shown = { x: 0, y: 0 };
+
+    const next = catchUp(shown, { x: 3, y: 4 }, 2);
+
+    expect(next.x).toBeCloseTo(1.2);
+    expect(next.y).toBeCloseTo(1.6);
+  });
+
+  it('lands on the target when it is within a step', () => {
+    const next = catchUp({ x: 1, y: 1 }, { x: 2, y: 1 }, 2);
+
+    expect(next).toEqual({ x: 2, y: 1 });
+  });
+
+  it('jumps when the target is too far to have been walked to, as after a portal', () => {
+    const next = catchUp({ x: 0, y: 0 }, { x: SNAP_DISTANCE + 1, y: 0 }, 0.1);
+
+    expect(next).toEqual({ x: SNAP_DISTANCE + 1, y: 0 });
+  });
+
+  it('still walks when the target is exactly the snap distance away', () => {
+    const next = catchUp({ x: 0, y: 0 }, { x: SNAP_DISTANCE, y: 0 }, 1);
+
+    expect(next).toEqual({ x: 1, y: 0 });
   });
 });
