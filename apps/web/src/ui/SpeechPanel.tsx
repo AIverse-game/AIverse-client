@@ -4,7 +4,7 @@ import { useGameState, useStore } from '../state/storeContext';
 import { formatDuration } from './format';
 
 /** Mirrors SPEECH_LENGTH_LIMIT in the server, which counts code points; it trims and checks again. */
-const SPEECH_MAX_LENGTH = 100;
+const SPEECH_MAX_LENGTH = 300;
 
 /** Value of the listener choice that means speaking aloud rather than to one resident. */
 const ALOUD = '';

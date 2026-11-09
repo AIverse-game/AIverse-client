@@ -14,7 +14,7 @@ export type MoveToAction = { type: 'move_to'; residentId: ResidentId; target: Po
 export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
 
 /**
- * Say `text`, at most 100 characters after trimming, aloud to every resident within earshot, or,
+ * Say `text`, at most 300 characters after trimming, aloud to every resident within earshot, or,
  * given `to`, to that one resident wherever they are. Free, and works while walking.
  */
 export type SayAction = { type: 'say'; residentId: ResidentId; text: string; to?: ResidentId };
