@@ -194,7 +194,7 @@ export const mapSchema = z.object({
   parcelSize: z.number().positive(),
   /** Parcels along each side of a block, which is bought whole. */
   blockCells: z.number().int().positive(),
-  /** Parcels along each side of the square a game hall or workspace takes up, with its north-west corner on the parcel it is built on. */
+  /** Parcels along each side of the square a game hall or workspace takes up, with its north-west corner on the parcel it is built on. A mall takes up 1 × 2, west to east and north to south. */
   venueCells: z.number().int().positive(),
   /** Whether the middle block is the spawn lobby, which nobody owns. */
   lobby: z.boolean(),
@@ -209,7 +209,7 @@ export const incomeSchema = z.object({
 });
 
 export const facilitySchema = z.object({
-  kind: z.enum(['ad', 'portal', 'game_hall', 'workspace']),
+  kind: z.enum(['ad', 'portal', 'game_hall', 'workspace', 'mall']),
   contents: z.number().int().min(0).max(5),
   expiresIn: z.array(z.number().positive()).max(5),
   /** What it was paid at the payday that last paid it; absent when none has. */

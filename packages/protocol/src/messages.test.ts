@@ -354,6 +354,21 @@ describe('mapGrid', () => {
     expect(venueTaking(map, venues, 3, 2)).toBeUndefined();
   });
 
+  it('lets a mall take up one parcel across and two down, 10 by 20 units, inside its block', () => {
+    expect(venueRect(map, 4, 1, 'mall')).toEqual({ x0: 40, z0: 10, x1: 50, z1: 30 });
+    expect(venueFits(map, 5, 0, 'mall')).toBe(true);
+    expect(venueFits(map, 5, 1, 'mall')).toBe(true);
+    expect(venueFits(map, 5, 2, 'mall')).toBe(false);
+  });
+
+  it('finds the parcel a mall takes up, the one south of it and no other', () => {
+    const venues = [{ col: 4, row: 0, kind: 'mall' }];
+
+    expect(venueTaking(map, venues, 4, 1)).toEqual(venues[0]);
+    expect(venueTaking(map, venues, 5, 0)).toBeUndefined();
+    expect(venueTaking(map, venues, 4, 2)).toBeUndefined();
+  });
+
   it('keeps one parcel per ten units when there are no blocks', () => {
     const plain = { size: 105, parcelSize: 10, blockCells: 1, venueCells: 1 };
 

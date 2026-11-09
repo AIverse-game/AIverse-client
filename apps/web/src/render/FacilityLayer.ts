@@ -2,6 +2,7 @@ import { blockRectOf, islandRect, parcelRect, venueRect, type FacilityView, type
 import * as THREE from 'three';
 import { createArcade } from './arcadeModel';
 import { createBillboard } from './billboardModel';
+import { createMall } from './mallModel';
 import { plotShape } from './plotShape';
 import { createPortal } from './portalModel';
 import type { ModelHandle } from './sceneKit';
@@ -29,6 +30,7 @@ function create(kind: FacilityView['kind'], contents: number): ModelHandle {
     case 'ad': return createBillboard(contents);
     case 'game_hall': return createArcade(contents);
     case 'workspace': return createWorkspace();
+    case 'mall': return createMall();
     case 'portal': return createPortal();
   }
 }
@@ -83,10 +85,10 @@ export class FacilityLayer {
   }
 
   private place(parcel: ParcelView, kind: FacilityView['kind'], contents: number, signature: string): Built {
-    // A game hall or workspace takes up a square of parcels from its own one, and is kept on the island.
-    const venue = kind === 'game_hall' || kind === 'workspace';
+    // A game hall, workspace or mall takes up several parcels from its own one, and is kept on the island.
+    const venue = kind === 'game_hall' || kind === 'workspace' || kind === 'mall';
     const shape = venue
-      ? plotShape(kind, venueRect(this.map, parcel.col, parcel.row), islandRect(blockRectOf(this.map, parcel.col, parcel.row)))
+      ? plotShape(kind, venueRect(this.map, parcel.col, parcel.row, kind), islandRect(blockRectOf(this.map, parcel.col, parcel.row)))
       : plotShape(kind, parcelRect(this.map, parcel.col, parcel.row));
     const handle = create(kind, contents);
     const wrapper = new THREE.Group();
@@ -96,7 +98,7 @@ export class FacilityLayer {
     this.root.add(wrapper);
     let target: THREE.Mesh | null = null;
     if (kind !== 'portal') {
-      target = new THREE.Mesh(new THREE.BoxGeometry(shape.side, shape.height, shape.side), new THREE.MeshBasicMaterial({ visible: false }));
+      target = new THREE.Mesh(new THREE.BoxGeometry(shape.side, shape.height, shape.depth), new THREE.MeshBasicMaterial({ visible: false }));
       target.position.set(shape.centre.x, shape.height / 2, shape.centre.y);
       target.userData = { parcelId: parcel.id };
       this.root.add(target);

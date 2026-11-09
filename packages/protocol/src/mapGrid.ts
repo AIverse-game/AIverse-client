@@ -36,26 +36,38 @@ export function parcelRect(map: MapGridSpec, col: number, row: number): Rect {
   return { x0, z0, x1, z1 };
 }
 
-/** The square a venue built on a parcel takes up: `venueCells` parcels each way, the parcel at its north-west corner. */
-export function venueRect(map: MapGridSpec, col: number, row: number): Rect {
+/** A mall takes up one parcel from west to east and two from north to south (10 × 20 map units). */
+export const MALL_CELLS = { cols: 1, rows: 2 } as const;
+
+/** Parcels a venue of `kind` takes up from west to east and from north to south: a mall `MALL_CELLS`, a game hall or workspace `venueCells` each way. */
+export function venueSize(map: MapGridSpec, kind?: string): { cols: number; rows: number } {
+  if (kind === 'mall') return MALL_CELLS;
+  const side = Math.max(1, map.venueCells);
+  return { cols: side, rows: side };
+}
+
+/** The land a venue of `kind` built on a parcel takes up, the parcel at its north-west corner. */
+export function venueRect(map: MapGridSpec, col: number, row: number, kind?: string): Rect {
   const count = gridCount(map);
-  const last = Math.max(1, map.venueCells) - 1;
-  const [x0, x1] = span(map, count, col, Math.min(col + last, count - 1));
-  const [z0, z1] = span(map, count, row, Math.min(row + last, count - 1));
+  const { cols, rows } = venueSize(map, kind);
+  const [x0, x1] = span(map, count, col, Math.min(col + cols - 1, count - 1));
+  const [z0, z1] = span(map, count, row, Math.min(row + rows - 1, count - 1));
   return { x0, z0, x1, z1 };
 }
 
-/** Whether a venue built on a parcel stays inside that parcel's block. */
-export function venueFits(map: MapGridSpec, col: number, row: number): boolean {
+/** Whether a venue of `kind` built on a parcel stays inside that parcel's block. */
+export function venueFits(map: MapGridSpec, col: number, row: number, kind?: string): boolean {
   const cells = Math.max(1, map.blockCells);
-  const venue = Math.max(1, map.venueCells);
-  return (col % cells) + venue <= cells && (row % cells) + venue <= cells;
+  const { cols, rows } = venueSize(map, kind);
+  return (col % cells) + cols <= cells && (row % cells) + rows <= cells;
 }
 
-/** The parcel of a venue, among `venues`, whose square takes up the parcel at `col`, `row` without being that parcel. */
-export function venueTaking<T extends { col: number; row: number }>(map: MapGridSpec, venues: readonly T[], col: number, row: number): T | undefined {
-  const venue = Math.max(1, map.venueCells);
-  return venues.find((anchor) => (anchor.col !== col || anchor.row !== row) && col >= anchor.col && col < anchor.col + venue && row >= anchor.row && row < anchor.row + venue);
+/** The parcel of a venue, among `venues`, whose land takes up the parcel at `col`, `row` without being that parcel. A venue without a `kind` is a game hall or workspace. */
+export function venueTaking<T extends { col: number; row: number; kind?: string }>(map: MapGridSpec, venues: readonly T[], col: number, row: number): T | undefined {
+  return venues.find((anchor) => {
+    const { cols, rows } = venueSize(map, anchor.kind);
+    return (anchor.col !== col || anchor.row !== row) && col >= anchor.col && col < anchor.col + cols && row >= anchor.row && row < anchor.row + rows;
+  });
 }
 
 /** The squares of every block, row by row. */

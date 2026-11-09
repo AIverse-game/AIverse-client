@@ -25,6 +25,20 @@ describe('plotShape', () => {
     expect(plotShape('portal', at(0, 0)).side).toBeCloseTo(7.6);
   });
 
+  it('draws the mall 7.5 wide and twice as long, the same wherever it stands in its block', () => {
+    const island = { x0: 2, z0: 2, x1: 28, z1: 28 };
+    const lands = [{ x0: 0, z0: 0, x1: 10, z1: 20 }, { x0: 10, z0: 10, x1: 20, z1: 30 }, { x0: 20, z0: 0, x1: 30, z1: 20 }];
+
+    const shapes = lands.map((land) => plotShape('mall', land, island));
+
+    for (const shape of shapes) {
+      expect(shape.side).toBeCloseTo(7.5);
+      expect(shape.depth).toBeCloseTo(15);
+    }
+    expect(shapes[1]!.centre).toEqual({ x: 15, y: 19 });
+    expect(shapes[0]!.centre.x - shapes[0]!.side / 2).toBeGreaterThanOrEqual(island.x0);
+  });
+
   it('keeps a venue on its island, centred on the part of its square the island covers', () => {
     const square = { x0: 0, z0: 0, x1: 20, z1: 20 };
     const island = { x0: 2, z0: 2, x1: 28, z1: 28 };

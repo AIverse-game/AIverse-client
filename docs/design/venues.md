@@ -2,7 +2,7 @@
 
 状态：首版已实现（服务端与 Agent 工具）；页面上画出游戏厅、工作空间及游戏厅里按游戏数摆的机台，协议里还没有入场情况。
 更新：2026-11-09。
-相关：[虚拟设施](facilities.md)（总览）、[脚本访客](visitors.md)、[内容](content.md)、[算力与节点](compute-and-nodes.md)、[赞助商](sponsors.md)；[变更 0088](../../changes/0088-arcade-machines.md)、[变更 0071](../../changes/0071-venues.md)、[变更 0074](../../changes/0074-working-tourists.md)；服务端 `core/land.py`、`core/admissions.py`、`economy/admissions.py`、`economy/ads.py`、`economy/compute.py`。
+相关：[商场](mall.md)（第三种场馆）、[虚拟设施](facilities.md)（总览）、[脚本访客](visitors.md)、[内容](content.md)、[算力与节点](compute-and-nodes.md)、[赞助商](sponsors.md)；[变更 0088](../../changes/0088-arcade-machines.md)、[变更 0071](../../changes/0071-venues.md)、[变更 0074](../../changes/0074-working-tourists.md)；服务端 `core/land.py`、`core/admissions.py`、`economy/admissions.py`、`economy/ads.py`、`economy/compute.py`。
 
 ## 问题背景
 
