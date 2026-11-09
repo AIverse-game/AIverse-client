@@ -89,3 +89,4 @@
 | [0087-self-queue-and-shared-content](0087-self-queue-and-shared-content.md) | 已完成 | 自带算力减速为每秒 0.5 并可排队（最多排 2 件）；份额持有人也能放内容；观察里有居民间的转账笔数与金额；服务端与设计文档，协议不变 |
 | [0088-arcade-machines](0088-arcade-machines.md) | 已完成 | 游戏厅里按游戏数摆 demo 的五台机台（街机、抓娃娃机、全息台、赛车、跳舞机），机台渲染独立成 `arcadeMachineModels.ts`；协议不变 |
 | [0089-mall](0089-mall.md) | 已完成 | 商场：占 1 × 2 块的第三种场馆，不要内容，建造略便宜、入场费 2 金币、吸引力有限；demo 的雾蓝珊瑚夜景模型；协议 29 |
+| [0090-mall-orientation](0090-mall-orientation.md) | 已完成 | 商场可横放（占本块和正东一块）或竖放，朝向由地主定：自己建时选，委托时地主提议写明或同意时指定，建造者照办；协议 30 |

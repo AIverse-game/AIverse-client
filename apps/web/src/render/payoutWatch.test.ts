@@ -8,7 +8,7 @@ const parcel = (id: string, income?: { at: number; coins: number }): ParcelView 
   row: 0,
   ownerId: 'a',
   shares: { a: 100 },
-  facility: { kind: 'ad', contents: 0, expiresIn: [], ...(income ? { income } : {}) },
+  facility: { kind: 'ad', contents: 0, expiresIn: [], orientation: 'north_south' as const, ...(income ? { income } : {}) },
 });
 
 describe('PayoutWatch', () => {

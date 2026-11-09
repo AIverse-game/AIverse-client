@@ -39,6 +39,21 @@ describe('plotShape', () => {
     expect(shapes[0]!.centre.x - shapes[0]!.side / 2).toBeGreaterThanOrEqual(island.x0);
   });
 
+  it('turns the mall a quarter when it runs east to west, so it covers 15 across and 7.5 down', () => {
+    const island = { x0: 2, z0: 2, x1: 28, z1: 28 };
+    const lands = [{ x0: 0, z0: 0, x1: 20, z1: 10 }, { x0: 10, z0: 10, x1: 30, z1: 20 }, { x0: 0, z0: 20, x1: 20, z1: 30 }];
+
+    const shapes = lands.map((land) => plotShape('mall', land, island, 'east_west'));
+
+    for (const shape of shapes) {
+      expect(shape.extent.x).toBeCloseTo(15);
+      expect(shape.extent.z).toBeCloseTo(7.5);
+      expect(shape.turn).toBeCloseTo(Math.PI / 2);
+    }
+    expect(plotShape('mall', lands[0]!, island).turn).toBe(0);
+    expect(plotShape('mall', { x0: 0, z0: 0, x1: 10, z1: 20 }, island).extent).toEqual({ x: shapes[0]!.extent.z, z: shapes[0]!.extent.x });
+  });
+
   it('keeps a venue on its island, centred on the part of its square the island covers', () => {
     const square = { x0: 0, z0: 0, x1: 20, z1: 20 };
     const island = { x0: 2, z0: 2, x1: 28, z1: 28 };

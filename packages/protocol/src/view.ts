@@ -208,10 +208,16 @@ export const incomeSchema = z.object({
   coins: z.number().int().positive(),
 });
 
+/** Which way a mall's long side runs: north_south takes the parcel and the one south of it, east_west the parcel and the one east of it. */
+export const orientationSchema = z.enum(['north_south', 'east_west']);
+export type Orientation = z.infer<typeof orientationSchema>;
+
 export const facilitySchema = z.object({
   kind: z.enum(['ad', 'portal', 'game_hall', 'workspace', 'mall']),
   contents: z.number().int().min(0).max(5),
   expiresIn: z.array(z.number().positive()).max(5),
+  /** Which way a mall runs; north_south for everything else. */
+  orientation: orientationSchema.default('north_south'),
   /** What it was paid at the payday that last paid it; absent when none has. */
   income: incomeSchema.optional(),
 }).refine((facility) => facility.contents === facility.expiresIn.length, 'content count differs from expiry list');
@@ -231,6 +237,8 @@ export const jobSchema = z.object({
   kind: z.string(),
   parcelId: z.string().optional(),
   remainingSeconds: z.number().nonnegative(),
+  /** Which way the mall being built runs. */
+  orientation: orientationSchema.default('north_south'),
 });
 
 export const contentSchema = z.object({

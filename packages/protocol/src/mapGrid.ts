@@ -36,36 +36,39 @@ export function parcelRect(map: MapGridSpec, col: number, row: number): Rect {
   return { x0, z0, x1, z1 };
 }
 
-/** A mall takes up one parcel from west to east and two from north to south (10 × 20 map units). */
+/** Which way a mall's long side runs; the parcel it is built on is at its north-west corner either way. */
+export type MallOrientation = 'north_south' | 'east_west';
+
+/** A mall takes up one parcel from west to east and two from north to south (10 × 20 map units), or the other way round when it runs east to west. */
 export const MALL_CELLS = { cols: 1, rows: 2 } as const;
 
-/** Parcels a venue of `kind` takes up from west to east and from north to south: a mall `MALL_CELLS`, a game hall or workspace `venueCells` each way. */
-export function venueSize(map: MapGridSpec, kind?: string): { cols: number; rows: number } {
-  if (kind === 'mall') return MALL_CELLS;
+/** Parcels a venue of `kind` takes up from west to east and from north to south: a mall `MALL_CELLS`, turned when it runs east to west, a game hall or workspace `venueCells` each way. */
+export function venueSize(map: MapGridSpec, kind?: string, orientation: MallOrientation = 'north_south'): { cols: number; rows: number } {
+  if (kind === 'mall') return orientation === 'east_west' ? { cols: MALL_CELLS.rows, rows: MALL_CELLS.cols } : MALL_CELLS;
   const side = Math.max(1, map.venueCells);
   return { cols: side, rows: side };
 }
 
 /** The land a venue of `kind` built on a parcel takes up, the parcel at its north-west corner. */
-export function venueRect(map: MapGridSpec, col: number, row: number, kind?: string): Rect {
+export function venueRect(map: MapGridSpec, col: number, row: number, kind?: string, orientation: MallOrientation = 'north_south'): Rect {
   const count = gridCount(map);
-  const { cols, rows } = venueSize(map, kind);
+  const { cols, rows } = venueSize(map, kind, orientation);
   const [x0, x1] = span(map, count, col, Math.min(col + cols - 1, count - 1));
   const [z0, z1] = span(map, count, row, Math.min(row + rows - 1, count - 1));
   return { x0, z0, x1, z1 };
 }
 
 /** Whether a venue of `kind` built on a parcel stays inside that parcel's block. */
-export function venueFits(map: MapGridSpec, col: number, row: number, kind?: string): boolean {
+export function venueFits(map: MapGridSpec, col: number, row: number, kind?: string, orientation: MallOrientation = 'north_south'): boolean {
   const cells = Math.max(1, map.blockCells);
-  const { cols, rows } = venueSize(map, kind);
+  const { cols, rows } = venueSize(map, kind, orientation);
   return (col % cells) + cols <= cells && (row % cells) + rows <= cells;
 }
 
 /** The parcel of a venue, among `venues`, whose land takes up the parcel at `col`, `row` without being that parcel. A venue without a `kind` is a game hall or workspace. */
-export function venueTaking<T extends { col: number; row: number; kind?: string }>(map: MapGridSpec, venues: readonly T[], col: number, row: number): T | undefined {
+export function venueTaking<T extends { col: number; row: number; kind?: string; orientation?: MallOrientation }>(map: MapGridSpec, venues: readonly T[], col: number, row: number): T | undefined {
   return venues.find((anchor) => {
-    const { cols, rows } = venueSize(map, anchor.kind);
+    const { cols, rows } = venueSize(map, anchor.kind, anchor.orientation);
     return (anchor.col !== col || anchor.row !== row) && col >= anchor.col && col < anchor.col + cols && row >= anchor.row && row < anchor.row + rows;
   });
 }

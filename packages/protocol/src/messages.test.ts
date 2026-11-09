@@ -358,7 +358,7 @@ describe('mapGrid', () => {
     expect(venueRect(map, 4, 1, 'mall')).toEqual({ x0: 40, z0: 10, x1: 50, z1: 30 });
     expect(venueFits(map, 5, 0, 'mall')).toBe(true);
     expect(venueFits(map, 5, 1, 'mall')).toBe(true);
-    expect(venueFits(map, 5, 2, 'mall')).toBe(false);
+    expect(venueFits(map, 3, 2, 'mall')).toBe(false);
   });
 
   it('finds the parcel a mall takes up, the one south of it and no other', () => {
@@ -367,6 +367,21 @@ describe('mapGrid', () => {
     expect(venueTaking(map, venues, 4, 1)).toEqual(venues[0]);
     expect(venueTaking(map, venues, 5, 0)).toBeUndefined();
     expect(venueTaking(map, venues, 4, 2)).toBeUndefined();
+  });
+
+  it('turns a mall that runs east to west: two parcels across and one down, inside its block', () => {
+    expect(venueRect(map, 4, 1, 'mall', 'east_west')).toEqual({ x0: 40, z0: 10, x1: 60, z1: 20 });
+    expect(venueFits(map, 4, 1, 'mall', 'east_west')).toBe(true);
+    expect(venueFits(map, 5, 1, 'mall', 'east_west')).toBe(false);
+    expect(venueFits(map, 3, 2, 'mall', 'east_west')).toBe(true);
+    expect(venueFits(map, 3, 2, 'mall')).toBe(false);
+  });
+
+  it('finds the parcel east of an east-west mall and not the one south of it', () => {
+    const venues = [{ col: 4, row: 0, kind: 'mall', orientation: 'east_west' as const }];
+
+    expect(venueTaking(map, venues, 5, 0)).toEqual(venues[0]);
+    expect(venueTaking(map, venues, 4, 1)).toBeUndefined();
   });
 
   it('keeps one parcel per ten units when there are no blocks', () => {

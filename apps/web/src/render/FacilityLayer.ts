@@ -1,4 +1,4 @@
-import { blockRectOf, islandRect, parcelRect, venueRect, type FacilityView, type MapGridSpec, type ParcelView } from '@aiverse/protocol';
+import { blockRectOf, islandRect, parcelRect, venueRect, type FacilityView, type MallOrientation, type MapGridSpec, type ParcelView } from '@aiverse/protocol';
 import * as THREE from 'three';
 import { createArcade } from './arcadeModel';
 import { createBillboard } from './billboardModel';
@@ -58,10 +58,10 @@ export class FacilityLayer {
       if (!facility) continue;
       present.add(parcel.id);
       const shown = facility.kind === 'ad' || facility.kind === 'game_hall' ? contents(facility) : 0;
-      const signature = `${facility.kind}:${shown}`;
+      const signature = `${facility.kind}:${shown}:${facility.orientation}`;
       if (this.built.get(parcel.id)?.signature === signature) continue;
       this.remove(parcel.id);
-      this.built.set(parcel.id, this.place(parcel, facility.kind, shown, signature));
+      this.built.set(parcel.id, this.place(parcel, facility.kind, shown, signature, facility.orientation));
     }
     for (const id of [...this.built.keys()]) if (!present.has(id)) this.remove(id);
   }
@@ -84,21 +84,22 @@ export class FacilityLayer {
     this.clear();
   }
 
-  private place(parcel: ParcelView, kind: FacilityView['kind'], contents: number, signature: string): Built {
+  private place(parcel: ParcelView, kind: FacilityView['kind'], contents: number, signature: string, orientation: MallOrientation): Built {
     // A game hall, workspace or mall takes up several parcels from its own one, and is kept on the island.
     const venue = kind === 'game_hall' || kind === 'workspace' || kind === 'mall';
     const shape = venue
-      ? plotShape(kind, venueRect(this.map, parcel.col, parcel.row, kind), islandRect(blockRectOf(this.map, parcel.col, parcel.row)))
+      ? plotShape(kind, venueRect(this.map, parcel.col, parcel.row, kind, orientation), islandRect(blockRectOf(this.map, parcel.col, parcel.row)), orientation)
       : plotShape(kind, parcelRect(this.map, parcel.col, parcel.row));
     const handle = create(kind, contents);
     const wrapper = new THREE.Group();
     wrapper.position.set(shape.centre.x, shape.floor, shape.centre.y);
     wrapper.scale.setScalar(shape.scale);
+    wrapper.rotation.y = shape.turn;
     wrapper.add(handle.root);
     this.root.add(wrapper);
     let target: THREE.Mesh | null = null;
     if (kind !== 'portal') {
-      target = new THREE.Mesh(new THREE.BoxGeometry(shape.side, shape.height, shape.depth), new THREE.MeshBasicMaterial({ visible: false }));
+      target = new THREE.Mesh(new THREE.BoxGeometry(shape.extent.x, shape.height, shape.extent.z), new THREE.MeshBasicMaterial({ visible: false }));
       target.position.set(shape.centre.x, shape.height / 2, shape.centre.y);
       target.userData = { parcelId: parcel.id };
       this.root.add(target);

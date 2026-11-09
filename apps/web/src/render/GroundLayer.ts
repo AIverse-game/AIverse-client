@@ -95,9 +95,11 @@ export class GroundLayer {
       this.tint = new THREE.Mesh(quads([...owned.values()], TINT_HEIGHT), new THREE.MeshBasicMaterial({ color: OWNED_COLOR, transparent: true, opacity: 0.16, depthWrite: false }));
       this.root.add(this.tint);
     }
-    const selectedKind = parcels.find((parcel) => parcel.id === selectedId)?.facility?.kind;
+    const selectedFacility = parcels.find((parcel) => parcel.id === selectedId)?.facility;
+    const selectedKind = selectedFacility?.kind;
+    const orientation = selectedFacility?.orientation ?? 'north_south';
     const venue = selectedKind === 'game_hall' || selectedKind === 'workspace' || selectedKind === 'mall';
-    const frameSignature = `${selectedId ?? ''}:${selectedKind ?? ''}`;
+    const frameSignature = `${selectedId ?? ''}:${selectedKind ?? ''}:${orientation}`;
     if (frameSignature !== this.frameSignature) {
       this.frameSignature = frameSignature;
       if (this.frame) this.disposeMesh(this.frame);
@@ -105,7 +107,7 @@ export class GroundLayer {
       const match = selectedId?.match(/^L(\d+)-(\d+)$/);
       if (!match) return;
       const col = Number(match[1]), row = Number(match[2]);
-      const land = venue ? venueRect(this.map, col, row, selectedKind) : parcelRect(this.map, col, row);
+      const land = venue ? venueRect(this.map, col, row, selectedKind, orientation) : parcelRect(this.map, col, row);
       // A venue's frame stops at the edge of its island, as its model does.
       const island = venue ? islandRect(blockRectOf(this.map, col, row)) : land;
       const x0 = Math.max(land.x0, island.x0), z0 = Math.max(land.z0, island.z0), x1 = Math.min(land.x1, island.x1), z1 = Math.min(land.z1, island.z1);

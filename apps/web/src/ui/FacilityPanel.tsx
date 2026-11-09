@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { parcelAt, sameBlock, venueFits, venueSize, venueTaking, type BuildFacilityAction, type MapGridSpec } from '@aiverse/protocol';
+import { parcelAt, sameBlock, venueFits, venueSize, venueTaking, type BuildFacilityAction, type MallOrientation, type MapGridSpec } from '@aiverse/protocol';
 import { activeContents } from '../state/facilityContents';
 import { useGameState, useStore } from '../state/storeContext';
 import { useSecondTick } from './useSecondTick';
@@ -21,6 +21,7 @@ export function FacilityPanel() {
   const store = useStore();
   const { world, selected, selectedParcel } = useGameState();
   const [source, setSource] = useState<'self' | 'on_demand'>('self');
+  const [orientation, setOrientation] = useState<MallOrientation>('north_south');
   useSecondTick(Boolean(world && !world.game.ended && (world.jobs.length || world.parcels.some((parcel) => parcel.facility?.expiresIn.length))));
   if (!world) return null;
   const resident = world.residents.find((item) => item.id === selected);
@@ -32,24 +33,24 @@ export function FacilityPanel() {
   const atParcel = resident && standsInBlockOf(world.map, resident.position, selectedParcel);
   const canOperate = resident && store.canAct(resident.id);
   const own = parcel?.ownerId === selected;
-  // A venue, built or being built, takes up several parcels from the one it stands on: a square for a game hall or workspace, one across and two down for a mall.
+  // A venue, built or being built, takes up several parcels from the one it stands on: a square for a game hall or workspace, two in a row for a mall, down or across as its owner chose.
   const venues = [
-    ...world.parcels.flatMap((item) => (item.facility && venueKinds.includes(item.facility.kind as (typeof venueKinds)[number]) ? [{ id: item.id, col: item.col, row: item.row, kind: item.facility.kind }] : [])),
-    ...world.jobs.flatMap((job) => world.parcels.filter((item) => item.id === job.parcelId && venueJobs[job.kind]).map((item) => ({ id: item.id, col: item.col, row: item.row, kind: venueJobs[job.kind]! }))),
+    ...world.parcels.flatMap((item) => (item.facility && venueKinds.includes(item.facility.kind as (typeof venueKinds)[number]) ? [{ id: item.id, col: item.col, row: item.row, kind: item.facility.kind, orientation: item.facility.orientation }] : [])),
+    ...world.jobs.flatMap((job) => world.parcels.filter((item) => item.id === job.parcelId && venueJobs[job.kind]).map((item) => ({ id: item.id, col: item.col, row: item.row, kind: venueJobs[job.kind]!, orientation: job.orientation }))),
   ];
   const takenBy = coordinates ? venueTaking(world.map, venues, Number(coordinates[1]), Number(coordinates[2])) : undefined;
   // Whether a venue of `kind` could start here: its land lies in the block and every parcel of it is the owner's, bare and not taken up.
   const venueFitsHere = (kind: (typeof venueKinds)[number]) => {
     if (coordinates === null) return false;
-    const { cols, rows } = venueSize(world.map, kind);
-    return venueFits(world.map, Number(coordinates[1]), Number(coordinates[2]), kind) && Array.from({ length: cols * rows }, (_, index) => {
+    const { cols, rows } = venueSize(world.map, kind, orientation);
+    return venueFits(world.map, Number(coordinates[1]), Number(coordinates[2]), kind, orientation) && Array.from({ length: cols * rows }, (_, index) => {
       const col = Number(coordinates[1]) + (index % cols), row = Number(coordinates[2]) + Math.floor(index / cols);
       const item = world.parcels.find((other) => other.col === col && other.row === row);
       return item?.ownerId === selected && !item.facility && !world.jobs.some((job) => job.parcelId === item.id) && !venueTaking(world.map, venues, col, row);
     }).every(Boolean);
   };
   const venueHint = (kind: (typeof venueKinds)[number]) => {
-    const { cols, rows } = venueSize(world.map, kind);
+    const { cols, rows } = venueSize(world.map, kind, orientation);
     return `占 ${cols} × ${rows} 块地，本块在西北角${venueFitsHere(kind) ? '' : '（这里放不下：必须在街区内，占的地块都得是自己的空地）'}`;
   };
   const canBuild = canOperate && own && !parcel.facility && !parcelJob && !takenBy;
@@ -70,8 +71,14 @@ export function FacilityPanel() {
         {parcelJob && <p className="small" role="status">{jobNames[parcelJob.kind] ?? parcelJob.kind}中，约 {Math.ceil(store.countdown(parcelJob.remainingSeconds))} 秒</p>}
         {!parcel && <button type="button" disabled={!canOperate || !atParcel || !!resident?.walking} onClick={() => resident && store.act({ type: 'buy_parcel', residentId: resident.id })}>购买所站街区（{price ?? '…'} 金币）</button>}
         {own && <>
+          {!parcel.facility && !takenBy && <label className="facility-source">商场朝向
+            <select value={orientation} onChange={(event) => setOrientation(event.target.value as MallOrientation)}>
+              <option value="north_south">竖放（占本块和正南一块，入口朝南）</option>
+              <option value="east_west">横放（占本块和正东一块，入口朝东）</option>
+            </select>
+          </label>}
           {!parcel.facility && !takenBy && <div className="facility-actions">{(Object.keys(names) as BuildFacilityAction['kind'][]).map((kind) =>
-            <button key={kind} type="button" disabled={!canBuild || (isVenue(kind) && !venueFitsHere(kind))} title={isVenue(kind) ? venueHint(kind) : undefined} onClick={() => resident && store.act({ type: 'build_facility', residentId: resident.id, parcelId: parcel.id, kind, source })}>建{names[kind]}</button>
+            <button key={kind} type="button" disabled={!canBuild || (isVenue(kind) && !venueFitsHere(kind))} title={isVenue(kind) ? venueHint(kind) : undefined} onClick={() => resident && store.act({ type: 'build_facility', residentId: resident.id, parcelId: parcel.id, kind, source, ...(kind === 'mall' ? { orientation } : {}) })}>建{names[kind]}</button>
           )}</div>}
           {contentFacility && <button type="button" disabled={!canOperate || !availableContent || shown >= 5} onClick={() => resident && store.act({ type: 'place_content', residentId: resident.id, parcelId: parcel.id })}>放入内容</button>}
         </>}
