@@ -84,3 +84,4 @@
 | [0081-venue-visitors](0081-venue-visitors.md) | 已完成 | 访客去场馆，广告牌不吸引人：广告位只靠路过获得展示，普通游客也去工作空间和游戏厅并交门票；服务端、提示词与设计文档，页面和协议不变 |
 | [0082-venue-footprint](0082-venue-footprint.md) | 已完成 | 游戏厅和工作空间占 20 × 20（2 × 2 块地）：服务端占地并拒绝重叠，页面收进岛内；协议 26 |
 | [0084-income-coin-effect](0084-income-coin-effect.md) | 已完成 | 设施在付款日收到金币时，设施上方弹出像素金币特效和 `+金额`；协议 28 的设施 `income` |
+| [0085-agent-robot](0085-agent-robot.md) | 已完成 | Agent 居民画成悬浮机器人，有待机、思考、说话、开心四个状态；服务端给 `agent.thinking` 和 `agent.cue`，协议版本不变 |

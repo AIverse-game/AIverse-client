@@ -41,6 +41,16 @@ export const residentSchema = z.object({
     .object({
       /** The language model asking; left out for a scripted brain. */
       model: z.string().optional(),
+      /** Present while the agent waits for its brain's answer. */
+      thinking: z.literal(true).optional(),
+      /** The latest time the resident talked or something worked out for it; absent before the first. */
+      cue: z
+        .object({
+          kind: z.enum(['talk', 'happy']),
+          /** Counts up over the whole game; a cue is new when its `seq` has not been seen. */
+          seq: z.number().int().positive(),
+        })
+        .optional(),
     })
     .optional(),
 });
@@ -355,6 +365,7 @@ export const worldViewSchema = z
 
 export type Position = z.infer<typeof positionSchema>;
 export type ResidentView = z.infer<typeof residentSchema>;
+export type AgentResidentView = NonNullable<ResidentView['agent']>;
 export type MapView = z.infer<typeof mapSchema>;
 export type ParcelView = z.infer<typeof parcelSchema>;
 export type FacilityView = z.infer<typeof facilitySchema>;

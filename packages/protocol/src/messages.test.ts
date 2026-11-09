@@ -165,6 +165,19 @@ describe('parseServerMessage', () => {
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
 
+  it('accepts an agent that is thinking or has a talk or success cue', () => {
+    const message = state(100, [
+      { ...resident('a', 1, 1), agent: { thinking: true } },
+      { ...resident('b', 2, 2), agent: { cue: { kind: 'happy', seq: 3 } } },
+    ]);
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
+  it('rejects an agent cue of an unknown kind', () => {
+    const message = state(100, [{ ...resident('a', 1, 1), agent: { cue: { kind: 'dance', seq: 1 } } }]);
+    expect(parseServerMessage(message).ok).toBe(false);
+  });
+
   it('accepts the viewed resident\'s offers, contract proposals and contracts', () => {
     const message = withDeals({ offers: [offer], contractProposals: [proposal], contracts: [contract] });
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
