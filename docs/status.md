@@ -4,6 +4,7 @@
 
 ## 已具备
 
+- 游戏厅里按游戏数摆机台（[变更 0088](../changes/0088-arcade-machines.md)，[设计](design/venues.md)，协议不变）：照 `demos/arcade_hall_machines_mecha.html` 把街机、抓娃娃机、全息台、赛车、跳舞机移植到 `render/arcadeMachineModels.ts`，厅里每多一份游戏摆一台，5 份摆满；已在无头 Chrome 截图核对，真实对局里没看过。
 - 自带算力排队与份额持有人放内容（[变更 0087](../changes/0087-self-queue-and-shared-content.md)，[设计](design/compute-and-nodes.md)，协议未变，页面不显示）：自带算力减速为每秒 0.5，同一居民的自带工作依次排队，最多排 2 件；地块份额持有人也能把内容放进设施，地主仍然可以；AI 观察多 `recent_payments`（过去 5 分钟居民之间的笔数与金额），持有份额的别人的地列入 `land.mine`。排队上限与减速数值是 Claude 选的首版估计，未经真实模型试玩；定价参考与现货市场只写了设计，未实现。
 - Agent 居民的机器人形象（[变更 0085](../changes/0085-agent-robot.md)，[设计](design/agent-robot.md)，协议版本不变）：由 Agent 驱动的居民画成 `demos/floating_ai_agent_movement.html` 的悬浮机器人，比方块人略大，普通游客和手动居民仍是方块人；有待机、思考（等大模型）、说话（说话、报价）、开心（报价被同意、设施建成）四个状态，服务端在 `agent` 里加可选的 `thinking` 和 `cue`。已在无头 Chrome 里核对待机、思考、说话；开心没有截图，也没在真实大模型对局里看过。
 - 设施收到金币的特效（[变更 0084](../changes/0084-income-coin-effect.md)，[设计](design/income-effect.md)，协议 28）：服务端在设施视图里加 `income`（上个付款日付给它的整数金币和那个付款日的游戏时间），页面发现某座设施的付款日变新，就在它屋顶上方弹出像素金币（按金额 1～5 枚）并上浮显示 `+金额`，照 `demos/arcade_owner_income_fx.html`；每座设施每 30 秒至多一次，页面刚打开或重连时已有的收入不重播，传送门过路费没有特效。已用注入的付款数据在无头 Chrome 里截图核对，真实对局里的付款日还没看过。

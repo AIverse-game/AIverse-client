@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createMachine, machinesFor } from './arcadeMachineModels';
 import { canvasTex, glassMaterial, glow, lam, ModelBuilder, PALETTE as P, type ModelHandle } from './sceneKit';
 
 /** Width of the arcade plinth and the height of its glass shell, in model units. */
@@ -6,13 +7,13 @@ export const ARCADE_SPAN = 60;
 export const ARCADE_TOP = 39;
 export const ARCADE_SLAB = 6.6;
 
-/** Games the hall shows at most, and where each cabinet stands. */
-const CABINET = { width: 10.8, height: 17.7 };
+/** Model units per demo unit for the machines, which were drawn for a 52 × 40 floor. */
+export const MACHINE_SCALE = 1.3;
 
 /**
  * The game hall: a layered plinth with a tiled floor and two glowing tracks, a lit pillar in each
- * corner, a glass shell with a lit entrance, and one cabinet for every game on show. There is no
- * demo for it; the look follows the hall of change 0076.
+ * corner, a glass shell with a lit entrance, and one machine of `arcadeMachineModels.ts` for every
+ * game on show (at most five). The hall itself has no demo; its look follows change 0076.
  */
 export function createArcade(contents: number): ModelHandle {
   const b = new ModelBuilder();
@@ -65,20 +66,22 @@ export function createArcade(contents: number): ModelHandle {
   b.box(0.6, 20, 0.6, glow(P.violet), 9.6, 10, 30);
   b.box(19.8, 0.7, 0.6, edge, 0, 20, 30);
 
-  const rows = Array.from({ length: contents }, (_, i) => i);
-  for (const i of rows) {
-    const col = i % 3, row = Math.floor(i / 3);
-    const x = -30 + 60 * (0.14 + col * 0.28) + CABINET.width / 2;
-    const z = -30 + 60 * (0.2 + row * 0.37) + CABINET.width / 2;
-    const accent = i % 2 ? P.violet : P.cyan;
-    b.box(CABINET.width, CABINET.height, CABINET.width, lam(0x35375f), x, CABINET.height / 2, z);
-    b.box(7.8, 1.8, 0.2, glow(accent), x, CABINET.height * 0.75, z + CABINET.width / 2 + 0.1);
-    b.box(7.8, 4, 0.2, glow(0x120f26), x, CABINET.height * 0.5, z + CABINET.width / 2 + 0.1);
-  }
+  const machines = machinesFor(contents).map((spec) => {
+    const machine = createMachine(spec);
+    machine.root.rotation.y = spec.ry;
+    machine.root.scale.setScalar(MACHINE_SCALE);
+    b.add(machine.root, spec.position.x * MACHINE_SCALE, 0, spec.position.z * MACHINE_SCALE);
+    b.own({ dispose: machine.dispose });
+    return machine;
+  });
   const shell = glassMaterial(0x50cbeb, 0.04);
   b.own(shell);
   b.add(new THREE.Mesh(new THREE.BoxGeometry(ARCADE_SPAN, ARCADE_TOP, ARCADE_SPAN), shell), 0, ARCADE_TOP / 2, 0);
   const root = b.finish();
 
-  return { root, update() {}, dispose: () => b.disposeAll() };
+  return {
+    root,
+    update: (time, dt) => machines.forEach((machine) => machine.update(time, dt)),
+    dispose: () => b.disposeAll(),
+  };
 }

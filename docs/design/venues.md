@@ -1,8 +1,8 @@
 # 场所与入场费：游戏厅和工作空间
 
-状态：首版已实现（服务端与 Agent 工具；页面和协议未接入）。
-更新：2026-11-08。
-相关：[虚拟设施](facilities.md)（总览）、[脚本访客](visitors.md)、[内容](content.md)、[算力与节点](compute-and-nodes.md)、[赞助商](sponsors.md)；[变更 0071](../../changes/0071-venues.md)、[变更 0074](../../changes/0074-working-tourists.md)；服务端 `core/land.py`、`core/admissions.py`、`economy/admissions.py`、`economy/ads.py`、`economy/compute.py`。
+状态：首版已实现（服务端与 Agent 工具）；页面上画出游戏厅、工作空间及游戏厅里按游戏数摆的机台，协议里还没有入场情况。
+更新：2026-11-09。
+相关：[虚拟设施](facilities.md)（总览）、[脚本访客](visitors.md)、[内容](content.md)、[算力与节点](compute-and-nodes.md)、[赞助商](sponsors.md)；[变更 0088](../../changes/0088-arcade-machines.md)、[变更 0071](../../changes/0071-venues.md)、[变更 0074](../../changes/0074-working-tourists.md)；服务端 `core/land.py`、`core/admissions.py`、`economy/admissions.py`、`economy/ads.py`、`economy/compute.py`。
 
 ## 问题背景
 
@@ -12,6 +12,7 @@
 
 **两种设施**，都用生成式工作建在自己的空地块上（占 20 × 20，即以这块地为西北角的 2 × 2 块地，四块都得是自己的、空着的，见[地块](land.md)，变更 0082）（`build_venue(kind, ...)` 一个工具管两种，工作量 240：自带算力 4 分钟，节点 24 秒，雇节点 720 金币），没有每人的数量上限：它们自己不连通别的地块。
 
+- **游戏厅的外观**：厅里每多一份游戏就摆一台机台，按街机、抓娃娃机、全息台、赛车模拟器、跳舞机的顺序，放满 5 份正好摆满（模型见 `render/arcadeMachineModels.ts`，照 `demos/arcade_hall_machines_mecha.html`）；游戏过期少了一份，最后摆上的那台就消失。机台只是装饰，五份游戏之间没有区别。
 - **游戏厅**展示游戏（内容物品 `game_content`，工作量 90，见[内容](content.md)），容量 5 份、保鲜期 300 秒同广告位。**没有游戏的游戏厅没有访客**，也就没有收入。
 - **工作空间**不展示内容：访客是去那里工作，不是看东西。按一份内容的吸引力算。
 
@@ -39,7 +40,8 @@
 
 ## 暂未实现的功能
 
+- 机台与游戏的对应：现在第几份游戏就是第几台机台，不看游戏本身；机台的发光色固定琥珀橙，电光蓝主题已做好但没有接入。
 - 虚拟花园与景观；设施容量的硬上限（现在只有拥挤度）；工作空间的吸引力和游戏厅的质量或种类区别。
 - 入场费按需求浮动或由居民定价；走工作路线的比例随时间变化。
 - 拆除设施、撤回已放进去的游戏；设施贴图。
-- 页面和协议里显示这两种设施、游戏和入场情况。
+- 页面和协议里显示游戏和入场情况（设施本身、游戏份数已在页面上画出）。

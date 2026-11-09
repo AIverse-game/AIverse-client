@@ -87,3 +87,4 @@
 | [0085-agent-robot](0085-agent-robot.md) | 已完成 | Agent 居民画成悬浮机器人，有待机、思考、说话、开心四个状态；服务端给 `agent.thinking` 和 `agent.cue`，协议版本不变 |
 | [0086-build-commissions](0086-build-commissions.md) | 实现中 | 在别人授权的地块上建：地主与建造者任一方提议、对方同意，酬金预留、建成时支付；订阅节点改为最短 300 秒，按需雇用改为每工作量 15 金币；服务端与提示词，协议不变 |
 | [0087-self-queue-and-shared-content](0087-self-queue-and-shared-content.md) | 已完成 | 自带算力减速为每秒 0.5 并可排队（最多排 2 件）；份额持有人也能放内容；观察里有居民间的转账笔数与金额；服务端与设计文档，协议不变 |
+| [0088-arcade-machines](0088-arcade-machines.md) | 已完成 | 游戏厅里按游戏数摆 demo 的五台机台（街机、抓娃娃机、全息台、赛车、跳舞机），机台渲染独立成 `arcadeMachineModels.ts`；协议不变 |
