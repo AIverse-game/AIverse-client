@@ -93,3 +93,4 @@
 | [0091-pixel-hud-and-world-log](0091-pixel-hud-and-world-log.md) | 已完成 | 地图铺满屏幕、面板浮在上面的科幻像素风界面与像素字体；服务端记录全镇的世界日志，页面以终端窗口逐行显示；协议 31 |
 | [0092-games-never-expire](0092-games-never-expire.md) | 已完成（服务端） | 游戏放进游戏厅后不过期，广告仍 300 秒；游戏制作成本与广告内容的比较 |
 | [0093-small-garden](0093-small-garden.md) | 已完成 | 小花园：一块地的最便宜设施，建成时镇上一次性奖励地主，同街区所有设施的收入加成 10%，吸引少量访客；渲染层有季节与昼夜；协议 32 |
+| [0094-visitor-distance-and-garden-fee](0094-visitor-distance-and-garden-fee.md) | 已完成 | 访客选目的地时走路成本从 0.05 提到 0.15（近的更有吸引力，线路更值得建），花园入场费改回 1；服务端，协议与页面不变 |
