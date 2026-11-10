@@ -4,15 +4,28 @@ import { useSecondTick } from './useSecondTick';
 
 const STATUS_TEXT = { connecting: '连接中…', ready: '已连接', failed: '无法连接' } as const;
 
-export function TopBar() {
+interface TopBarProps {
+  logOpen: boolean;
+  onToggleLog: () => void;
+  panelsOpen: boolean;
+  onTogglePanels: () => void;
+}
+
+/** The heads-up strip over the map: connection, time left, and the switches for the floating panels. */
+export function TopBar({ logOpen, onToggleLog, panelsOpen, onTogglePanels }: TopBarProps) {
   const { connection, error } = useGameState();
 
   return (
     <header className="top-bar">
-      <h1>AIverse</h1>
+      <h1 title="地图与居民由 Python 服务端计算，页面只负责渲染；未接入 AI 时可手动操作居民">AIVERSE</h1>
       <span className={`status status-${connection}`}>{STATUS_TEXT[connection]}</span>
       <GameClock />
-      <p className="mode">地图与居民由 Python 服务端计算，页面只负责渲染；未接入 AI 时可手动操作居民</p>
+      <button type="button" className="hud-button" aria-pressed={logOpen} onClick={onToggleLog}>
+        世界日志
+      </button>
+      <button type="button" className="hud-button" aria-pressed={panelsOpen} onClick={onTogglePanels}>
+        操作面板
+      </button>
       {error && <p className="error" role="alert">{error}</p>}
     </header>
   );

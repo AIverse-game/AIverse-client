@@ -17,7 +17,7 @@ const game = { ended: false, remainingSeconds: 1200 };
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   type: 'state',
-  world: { map: { size, parcelSize: 10, blockCells: 1, venueCells: 1, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size, parcelSize: 10, blockCells: 1, venueCells: 1, lobby: false, parcelPrices: Array.from({ length: Math.max(1, Math.floor(Number(size) / 10)) }, () => Array(Math.max(1, Math.floor(Number(size) / 10))).fill(1000)) }, parcels: [], jobs: [], residents, game: clock, speech: [], offers: [], contractProposals: [], contracts: [], worldLog: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 });
 
 describe('visitors message', () => {
@@ -140,7 +140,15 @@ const contract = {
 
 const line = { seq: 1, time: 3.5, speakerId: 'a', text: '有人吗？', listeners: ['b'] };
 
+const whisperEntry = { seq: 1, time: 3.5, kind: 'said', actorId: 'a', otherId: 'b', text: '卖你算力' };
+
 describe('parseServerMessage', () => {
+  it('accepts a world log of whispers and deals between anyone', () => {
+    const offer = { seq: 2, time: 4, kind: 'offered', actorId: 'b', otherId: 'a', deal: 'purchase', item: 'bread', quantity: 2, coins: 30 };
+    const message = withDeals({ worldLog: [whisperEntry, offer] });
+    expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
+  });
+
   it('accepts a map whose residents sit anywhere inside it, edges included', () => {
     const message = state(100, [resident('a', 0, 0), resident('b', 100, 100), resident('c', 12.5, 99.9)]);
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
@@ -263,6 +271,9 @@ describe('parseServerMessage', () => {
     ['a contract holding the wrong escrow', withDeals({ contracts: [{ ...contract, escrow: 300 }] })],
     ['a contract holding the wrong deposit', withDeals({ contracts: [{ ...contract, depositHeld: 20 }] })],
     ['a proposal with a negative deposit', withDeals({ contractProposals: [{ ...proposal, deposit: -1 }] })],
+    ['a world log entry by an unknown resident', withDeals({ worldLog: [{ ...whisperEntry, actorId: 'z' }] })],
+    ['a world log entry about an unknown resident', withDeals({ worldLog: [{ ...whisperEntry, otherId: 'z' }] })],
+    ['a world log entry of an unknown kind', withDeals({ worldLog: [{ ...whisperEntry, kind: 'danced' }] })],
     ['a contract with negative time left', withDeals({ contracts: [{ ...contract, remainingSeconds: -1 }] })],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);

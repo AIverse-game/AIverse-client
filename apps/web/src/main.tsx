@@ -4,6 +4,8 @@ import { createWebSocketConnection, defaultServerUrl } from './net/websocket';
 import { StoreProvider } from './state/storeContext';
 import { GameStore } from './state/store';
 import { App } from './ui/App';
+import '@fontsource/fusion-pixel-12px-proportional-sc/400.css';
+import '@fontsource/silkscreen/400.css';
 import './styles.css';
 
 // The only place that picks a transport and server address.

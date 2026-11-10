@@ -3,7 +3,10 @@ import type { PricePointView } from './priceChart';
 
 // What the exchange panel shows about one item, from the fills the server sent.
 
-const ITEM_NAMES: ReadonlyMap<string, string> = new Map();
+const ITEM_NAMES: ReadonlyMap<string, string> = new Map([
+  ['ad_content', '广告内容'],
+  ['game_content', '游戏内容'],
+]);
 
 /** The item as the page names it; an item with no name here keeps its own. */
 export function itemName(item: string): string {

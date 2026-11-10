@@ -279,6 +279,44 @@ export const agentTurnSchema = z.object({
 
 export type AgentTurnView = z.infer<typeof agentTurnSchema>;
 
+/**
+ * One thing a resident did, or that finished for them, mirroring the server's game/world_log.py.
+ * Only the fields its kind needs are sent; the page puts it into words. Open-ended kinds and deals
+ * would hide a newer server's entries, so both are fixed lists and a protocol bump adds to them.
+ */
+export const worldLogEntrySchema = z.object({
+  seq: z.number().int().positive(),
+  /** Game seconds since the start when it happened. */
+  time: z.number().nonnegative(),
+  kind: z.enum([
+    'said', 'walked', 'teleported', 'left_game', 'bought_parcel', 'bought_node', 'started_building',
+    'started_making', 'built', 'made', 'placed_content', 'offered', 'accepted', 'declined', 'withdrew',
+    'delivered', 'cancelled_contract', 'placed_order', 'cancelled_order', 'linked_portals',
+  ]),
+  /** Who did it, or whose job finished. */
+  actorId: z.string(),
+  /** The other resident involved: who was spoken to, offered or answered, or whose parcel. */
+  otherId: z.string().optional(),
+  /** What was said, or an information offer's summary. */
+  text: z.string().optional(),
+  parcelId: z.string().optional(),
+  otherParcelId: z.string().optional(),
+  /** A facility or permit kind, such as `game_hall`. */
+  facility: z.string().optional(),
+  /** An item, content (`ad` or `game`) or node kind. */
+  item: z.string().optional(),
+  /** Items, shares, parcels, node seconds or listeners, as the kind says. */
+  quantity: z.number().int().nonnegative().optional(),
+  coins: z.number().int().nonnegative().optional(),
+  deliveries: z.number().int().positive().optional(),
+  position: positionSchema.optional(),
+  /** Which kind of request an offer or its answer was about. */
+  deal: z.enum(['purchase', 'sale', 'information', 'shares', 'contract', 'joint_purchase', 'commission', 'link']).optional(),
+  side: z.enum(['buy', 'sell']).optional(),
+});
+
+export type WorldLogEntryView = z.infer<typeof worldLogEntrySchema>;
+
 export const worldViewSchema = z
   .object({
     map: mapSchema,
@@ -301,6 +339,8 @@ export const worldViewSchema = z
       residentId: z.string(),
       turns: z.array(agentTurnSchema).max(30),
     }).optional(),
+    /** Everything residents did lately, oldest first, the same for every page: whispers and offers between anyone included. */
+    worldLog: z.array(worldLogEntrySchema),
   })
   .superRefine((world, context) => {
     const gridSize = gridCount(world.map);
@@ -344,6 +384,11 @@ export const worldViewSchema = z
       }
       if (line.to === line.speakerId || line.listeners.includes(line.speakerId)) {
         context.addIssue({ code: 'custom', path: ['speech', index], message: 'speaker hears themselves' });
+      }
+    });
+    world.worldLog.forEach((entry, index) => {
+      if (!seen.has(entry.actorId) || (entry.otherId !== undefined && !seen.has(entry.otherId))) {
+        context.addIssue({ code: 'custom', path: ['worldLog', index], message: 'unknown resident' });
       }
     });
     const checkParties = (path: (string | number)[], ...pairs: [ResidentId, ResidentId][]) => {

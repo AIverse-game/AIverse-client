@@ -13,5 +13,6 @@
 | [0005-shared-agent-rules-in-each-repo](0005-shared-agent-rules-in-each-repo.md) | 已替代 | 两个仓库各存一份 Agent 规则，放在 `.agents/rules/`，由客户端检查比较 |
 | [0006-independent-agent-rules-per-repo](0006-independent-agent-rules-per-repo.md) | 采用 | 每个仓库有自己的 Agent 规则，通用内容可以一致但不强制同步 |
 | [0007-three-js-map-renderer](0007-three-js-map-renderer.md) | 采用 | 地图渲染由 Phaser 改为 Three.js，用于还原 demo 的立体设施与动画 |
+| [0008-pixel-fonts](0008-pixel-fonts.md) | 采用 | 界面使用打包进构建的像素字体：Fusion Pixel 12px 简体中文版与 Silkscreen |
 
 仓库检查脚本使用 Python，与服务端使用 Python 无关，两者各自独立。

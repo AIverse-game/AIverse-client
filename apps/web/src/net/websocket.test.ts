@@ -40,7 +40,7 @@ function setup() {
 
 const STATE = {
   type: 'state',
-  world: { map: { size: 10, parcelSize: 10, blockCells: 1, venueCells: 1, lobby: false, parcelPrices: [[1000]] }, parcels: [], jobs: [], residents: [], game: { ended: false, remainingSeconds: 60 }, speech: [], offers: [], contractProposals: [], contracts: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
+  world: { map: { size: 10, parcelSize: 10, blockCells: 1, venueCells: 1, lobby: false, parcelPrices: [[1000]] }, parcels: [], jobs: [], residents: [], game: { ended: false, remainingSeconds: 60 }, speech: [], offers: [], contractProposals: [], contracts: [], worldLog: [], exchange: { books: [], fills: [], orders: [], maxOrders: 8 } },
 };
 
 describe('createWebSocketConnection', () => {

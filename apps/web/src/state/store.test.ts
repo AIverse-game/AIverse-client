@@ -41,6 +41,7 @@ const world: WorldView = {
   offers: [],
   contractProposals: [],
   contracts: [],
+  worldLog: [],
   exchange: { books: [], fills: [], orders: [], maxOrders: 8 },
 };
 
