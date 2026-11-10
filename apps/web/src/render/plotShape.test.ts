@@ -78,4 +78,29 @@ describe('plotShape', () => {
       expect(shape.centre.y + shape.side / 2).toBeLessThanOrEqual(island.z1);
     }
   });
+
+  it('draws the garden 7.2 wide, the same wherever it stands in its block, and inside its island', () => {
+    const island = { x0: 2, z0: 2, x1: 28, z1: 28 };
+    const parcels = [at(0, 0), at(1, 1), at(2, 2), at(2, 0)];
+
+    const shapes = parcels.map((parcel) => plotShape('garden', parcel, island));
+
+    for (const shape of shapes) {
+      expect(shape.side).toBeCloseTo(7.2);
+      expect(shape.centre.x - shape.side / 2).toBeGreaterThanOrEqual(island.x0);
+      expect(shape.centre.x + shape.side / 2).toBeLessThanOrEqual(island.x1);
+      expect(shape.centre.y - shape.side / 2).toBeGreaterThanOrEqual(island.z0);
+      expect(shape.centre.y + shape.side / 2).toBeLessThanOrEqual(island.z1);
+    }
+    expect(shapes[1]!.centre).toEqual({ x: 15, y: 15 });
+  });
+
+  it('keeps the garden inside its parcel when there is no island to fit', () => {
+    const shape = plotShape('garden', at(3, 4));
+
+    expect(shape.centre).toEqual({ x: 35, y: 45 });
+    expect(shape.extent.x).toBeLessThan(10);
+    expect(shape.floor).toBeGreaterThan(0);
+    expect(shape.height).toBeGreaterThan(shape.floor);
+  });
 });

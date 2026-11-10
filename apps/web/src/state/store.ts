@@ -153,6 +153,16 @@ export class GameStore {
   }
 
   /**
+   * Seconds of game time that have passed by the local clock, from the latest snapshot's
+   * `elapsedSeconds`; null before the first snapshot. It stands still once the game is over.
+   * Only for display, such as the garden's seasons and daylight: the server keeps the real time.
+   */
+  gameSeconds(): number | null {
+    const { world } = this.state;
+    return world ? world.game.elapsedSeconds + this.sinceSnapshot() : null;
+  }
+
+  /**
    * Seconds left by the local clock on a timer the latest snapshot gave as `remainingSeconds`,
    * such as a contract's; only for display, the server decides when it runs out.
    */

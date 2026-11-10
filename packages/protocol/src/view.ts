@@ -213,7 +213,7 @@ export const orientationSchema = z.enum(['north_south', 'east_west']);
 export type Orientation = z.infer<typeof orientationSchema>;
 
 export const facilitySchema = z.object({
-  kind: z.enum(['ad', 'portal', 'game_hall', 'workspace', 'mall']),
+  kind: z.enum(['ad', 'portal', 'game_hall', 'workspace', 'mall', 'garden']),
   contents: z.number().int().min(0).max(5),
   expiresIn: z.array(z.number().positive()).max(5),
   /** Which way a mall runs; north_south for everything else. */
@@ -251,6 +251,8 @@ export const gameSchema = z.object({
   ended: z.boolean(),
   /** Time left when the server sent this; 0 once the game has ended. */
   remainingSeconds: z.number().nonnegative(),
+  /** Game time when the server sent this, in seconds since the game began; it stops when the game ends. Seasons and daylight in the garden follow it. */
+  elapsedSeconds: z.number().nonnegative(),
 });
 
 // The server guarantees these invariants; checking them here catches protocol drift

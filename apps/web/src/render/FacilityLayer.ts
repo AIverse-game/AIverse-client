@@ -25,7 +25,10 @@ export interface FacilityAnchor {
   side: number;
 }
 
-function create(kind: FacilityView['kind'], contents: number): ModelHandle {
+/** The kinds this layer draws: the garden has a layer of its own, see `garden/GardenLayer.ts`. */
+type Drawn = Exclude<FacilityView['kind'], 'garden'>;
+
+function create(kind: Drawn, contents: number): ModelHandle {
   switch (kind) {
     case 'ad': return createBillboard(contents);
     case 'game_hall': return createArcade(contents);
@@ -55,7 +58,7 @@ export class FacilityLayer {
     const present = new Set<string>();
     for (const parcel of parcels) {
       const facility = parcel.facility;
-      if (!facility) continue;
+      if (!facility || facility.kind === 'garden') continue;
       present.add(parcel.id);
       const shown = facility.kind === 'ad' || facility.kind === 'game_hall' ? contents(facility) : 0;
       const signature = `${facility.kind}:${shown}:${facility.orientation}`;
@@ -84,7 +87,7 @@ export class FacilityLayer {
     this.clear();
   }
 
-  private place(parcel: ParcelView, kind: FacilityView['kind'], contents: number, signature: string, orientation: MallOrientation): Built {
+  private place(parcel: ParcelView, kind: Drawn, contents: number, signature: string, orientation: MallOrientation): Built {
     // A game hall, workspace or mall takes up several parcels from its own one, and is kept on the island.
     const venue = kind === 'game_hall' || kind === 'workspace' || kind === 'mall';
     const shape = venue

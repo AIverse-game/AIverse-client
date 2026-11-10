@@ -20,7 +20,7 @@ export type LeaveGameAction = { type: 'leave_game'; residentId: ResidentId };
 export type SayAction = { type: 'say'; residentId: ResidentId; text: string; to?: ResidentId };
 
 export type BuyParcelAction = { type: 'buy_parcel'; residentId: ResidentId };
-export type BuildFacilityAction = { type: 'build_facility'; residentId: ResidentId; parcelId: string; kind: 'ad' | 'portal' | 'game_hall' | 'workspace' | 'mall'; source: 'self' | 'on_demand'; /** Which way a mall runs; north_south when left out. */ orientation?: 'north_south' | 'east_west' };
+export type BuildFacilityAction = { type: 'build_facility'; residentId: ResidentId; parcelId: string; kind: 'ad' | 'portal' | 'game_hall' | 'workspace' | 'mall' | 'garden'; source: 'self' | 'on_demand'; /** Which way a mall runs; north_south when left out. */ orientation?: 'north_south' | 'east_west' };
 export type MakeContentAction = { type: 'make_content'; residentId: ResidentId; content: 'ad' | 'game'; source: 'self' | 'on_demand' };
 export type PlaceContentAction = { type: 'place_content'; residentId: ResidentId; parcelId: string };
 

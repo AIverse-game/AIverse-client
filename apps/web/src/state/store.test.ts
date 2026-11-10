@@ -36,7 +36,7 @@ const world: WorldView = {
   residents: [
     { id: 'a', name: '甲', color: '#112233', position: { x: 10, y: 20 }, coins: 10000, spendableCoins: 10000, left: false, rank: 1 },
   ],
-  game: { ended: false, remainingSeconds: 90 },
+  game: { ended: false, remainingSeconds: 90, elapsedSeconds: 30 },
   speech: [],
   offers: [],
   contractProposals: [],
@@ -115,8 +115,24 @@ describe('GameStore', () => {
     expect(store.remainingSeconds()).toBe(60);
     now += 120_000;
     expect(store.remainingSeconds()).toBe(0);
-    deliver({ type: 'state', world: { ...world, game: { ended: true, remainingSeconds: 0 } } });
+    deliver({ type: 'state', world: { ...world, game: { ended: true, remainingSeconds: 0, elapsedSeconds: 120 } } });
     expect(store.remainingSeconds()).toBe(0);
+  });
+
+  it('counts the game time up on the local clock from each snapshot and stops it when the game ends', () => {
+    const { connection, deliver } = fakeConnection();
+    let now = 5000;
+    const store = new GameStore(connection, () => now);
+    expect(store.gameSeconds()).toBeNull();
+
+    deliver({ type: 'state', world });
+    now += 12_000;
+    const running = store.gameSeconds();
+    deliver({ type: 'state', world: { ...world, game: { ended: true, remainingSeconds: 0, elapsedSeconds: 120 } } });
+    now += 60_000;
+
+    expect(running).toBe(42);
+    expect(store.gameSeconds()).toBe(120);
   });
 
   it('counts other timers, such as a contract lapsing, down from the latest snapshot', () => {
@@ -142,7 +158,7 @@ describe('GameStore', () => {
     const [resident] = world.residents;
     deliver({ type: 'state', world: { ...world, residents: [{ ...resident!, left: true }] } });
     expect(store.canAct('a')).toBe(false);
-    deliver({ type: 'state', world: { ...world, game: { ended: true, remainingSeconds: 0 } } });
+    deliver({ type: 'state', world: { ...world, game: { ended: true, remainingSeconds: 0, elapsedSeconds: 120 } } });
     expect(store.canAct('a')).toBe(false);
   });
 

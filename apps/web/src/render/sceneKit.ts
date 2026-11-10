@@ -122,6 +122,11 @@ export class ModelBuilder {
     this.geometry(new THREE.CylinderGeometry(top, bottom, h, 8), material, x, y, z);
   }
 
+  /** A geometry of any shape, such as a ring or a disc, merged with the other boxes of its material; it is moved and turned like a box. */
+  shape(geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number): void {
+    this.geometry(geometry, material, x, y, z);
+  }
+
   /** An object that is not merged, such as something that moves; its position is in the current group. */
   add<T extends THREE.Object3D>(object: T, x = object.position.x, y = object.position.y, z = object.position.z): T {
     object.position.set(x, y, z);

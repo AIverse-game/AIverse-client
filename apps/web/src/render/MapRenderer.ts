@@ -4,7 +4,9 @@ import type { GameStore } from '../state/store';
 import { activeContents } from '../state/facilityContents';
 import { wheelScrollDelta } from '../ui/mapScroll';
 import { CoinBurstLayer } from './CoinBurstLayer';
-import { FacilityLayer } from './FacilityLayer';
+import { FacilityLayer, type FacilityAnchor } from './FacilityLayer';
+import { parseEnvironmentOverride } from './garden/gardenClock';
+import { GardenLayer } from './garden/GardenLayer';
 import { GroundLayer } from './GroundLayer';
 import { LabelLayer } from './LabelLayer';
 import { axisTicks, formatCoordinate } from './layout';
@@ -42,6 +44,7 @@ export class MapRenderer {
   private readonly camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 1, 4000);
   private readonly ground: GroundLayer;
   private readonly facilities: FacilityLayer;
+  private readonly gardens: GardenLayer;
   private readonly coins: CoinBurstLayer;
   private readonly lobby: LobbyLandmark;
   private readonly residents: ResidentLayer;
@@ -81,6 +84,9 @@ export class MapRenderer {
     parent.appendChild(this.cursor);
     this.ground = new GroundLayer(this.scene);
     this.facilities = new FacilityLayer(this.scene);
+    this.gardens = new GardenLayer(this.scene);
+    // `?garden=autumn,night` shows a season and time of day in place of the game's clock, to look at them.
+    this.gardens.setOverride(parseEnvironmentOverride(window.location.search));
     this.coins = new CoinBurstLayer(this.scene);
     this.lobby = new LobbyLandmark(this.scene);
     this.residents = new ResidentLayer(this.scene, this.labels, (x, y) => this.lobby.groundHeight(x, y));
@@ -119,6 +125,7 @@ export class MapRenderer {
     this.residents.dispose();
     this.lobby.dispose();
     this.coins.dispose();
+    this.gardens.dispose();
     this.facilities.dispose();
     this.ground.dispose();
     this.labels.dispose();
@@ -169,7 +176,8 @@ export class MapRenderer {
 
   private syncFacilities(world: WorldView): void {
     this.facilities.sync(world.parcels, world.map, (facility) => activeContents(facility, (time) => this.store.countdown(time)));
-    this.coins.sync(world.parcels, (parcelId) => this.facilities.anchor(parcelId));
+    this.gardens.sync(world.parcels, world.map);
+    this.coins.sync(world.parcels, (parcelId): FacilityAnchor | null => this.facilities.anchor(parcelId) ?? this.gardens.anchor(parcelId));
     if (world.game.ended) {
       this.nextContentExpiry = null;
       return;
@@ -201,6 +209,7 @@ export class MapRenderer {
     }
     this.ground.update(now / 1000, elapsed / 1000);
     this.facilities.update(now / 1000, elapsed / 1000);
+    this.gardens.update(now / 1000, elapsed / 1000, this.store.gameSeconds());
     this.lobby.update(now / 1000, elapsed / 1000);
     this.residents.update(now, elapsed);
     this.visitors.sync(this.store.getVisitors());
@@ -292,7 +301,7 @@ export class MapRenderer {
     const world = this.store.getState().world;
     if (!world) return;
     // A Shift click is a walk order to the ground point, so tall boxes in the way must not take it.
-    const [hit] = shift ? [] : this.raycaster.intersectObjects([...this.residents.targets(), ...this.facilities.targets()], false);
+    const [hit] = shift ? [] : this.raycaster.intersectObjects([...this.residents.targets(), ...this.facilities.targets(), ...this.gardens.targets()], false);
     const point = this.groundPoint();
     const { selected } = this.store.getState();
     if (hit?.object.userData.residentId) {

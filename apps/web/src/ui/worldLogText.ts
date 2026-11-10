@@ -9,7 +9,7 @@ import { formatDuration } from './format';
 export type LogPart = string | { residentId: ResidentId };
 
 const FACILITY_NAMES: Record<string, string> = {
-  ad: '广告位', portal: '传送门', game_hall: '游戏厅', workspace: '工作空间', mall: '商场',
+  ad: '广告位', portal: '传送门', game_hall: '游戏厅', workspace: '工作空间', mall: '商场', garden: '花园',
 };
 const CONTENT_NAMES: Record<string, string> = { ad: '广告', game: '游戏' };
 const NODE_NAMES: Record<string, string> = { generative: '生成节点', render: '渲染节点' };

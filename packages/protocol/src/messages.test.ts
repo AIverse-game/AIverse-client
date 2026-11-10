@@ -13,7 +13,7 @@ const resident = (id: string, x: number, y: number) => ({
   rank: 1,
 });
 
-const game = { ended: false, remainingSeconds: 1200 };
+const game = { ended: false, remainingSeconds: 1200, elapsedSeconds: 0 };
 
 const state = (size: unknown, residents: unknown[], clock: unknown = game) => ({
   type: 'state',
@@ -89,6 +89,15 @@ it('accepts a built game hall with shares and rejects an invalid parcel owner', 
   expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, ownerId: 'missing' }] } }).ok).toBe(false);
   expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, shares: { a: 99 } }] } }).ok).toBe(false);
   expect(parseServerMessage({ ...message, world: { ...world, parcels: [{ ...parcel, facility: { ...parcel.facility, expiresIn: [30] } }] } }).ok).toBe(false);
+});
+
+it('accepts a garden, and a game that does not say how much time has passed is rejected', () => {
+  const message = state(150, [resident('a', 75, 75)]);
+  const parcel = { id: 'L7-7', col: 7, row: 7, ownerId: 'a', shares: { a: 100 }, facility: { kind: 'garden', contents: 0, expiresIn: [] } };
+  const withoutElapsed = { ended: game.ended, remainingSeconds: game.remainingSeconds };
+  expect(parseServerMessage({ ...message, world: { ...message.world, parcels: [parcel] } }).ok).toBe(true);
+  expect(parseServerMessage({ ...message, world: { ...message.world, game: withoutElapsed } }).ok).toBe(false);
+  expect(parseServerMessage({ ...message, world: { ...message.world, game: { ...game, elapsedSeconds: -1 } } }).ok).toBe(false);
 });
 
 it.each([
@@ -234,7 +243,7 @@ describe('parseServerMessage', () => {
     ['missing left flag', state(100, [{ ...resident('a', 1, 1), left: undefined }])],
     ['rank below 1', state(100, [{ ...resident('a', 1, 1), rank: 0 }])],
     ['missing game', { type: 'state', world: { map: { size: 100 }, residents: [] } }],
-    ['negative remaining time', state(100, [], { ended: false, remainingSeconds: -1 })],
+    ['negative remaining time', state(100, [], { ended: false, remainingSeconds: -1, elapsedSeconds: 0 })],
     [
       'walking off the map',
       state(100, [{ ...resident('a', 1, 1), walking: { target: { x: 100.1, y: 0 }, remainingSeconds: 1 } }]),

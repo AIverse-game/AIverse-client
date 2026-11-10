@@ -1,6 +1,7 @@
 import type { FacilityView, MallOrientation, Rect } from '@aiverse/protocol';
 import { ARCADE_SLAB, ARCADE_SPAN, ARCADE_TOP } from './arcadeModel';
 import { BILLBOARD_SLAB, BILLBOARD_SPAN, BILLBOARD_TOP } from './billboardModel';
+import { GARDEN_SLAB, GARDEN_SPAN, GARDEN_TOP, GARDEN_WIDTH_CAP } from './garden/gardenModel';
 import { MALL_SLAB, MALL_SPAN_X, MALL_SPAN_Z, MALL_TOP, MALL_WIDTH_CAP } from './mallModel';
 import { PORTAL_SLAB, PORTAL_SPAN, PORTAL_TOP } from './portalModel';
 import { WORKSPACE_SLAB, WORKSPACE_SPAN, WORKSPACE_TOP } from './workspaceModel';
@@ -18,6 +19,7 @@ const SPECS: Record<Kind, { margin: number; span: number; depth?: number; cap?: 
   mall: { margin: 0.03, span: MALL_SPAN_X, depth: MALL_SPAN_Z, cap: MALL_WIDTH_CAP, slab: MALL_SLAB, top: MALL_TOP },
   portal: { margin: 0.12, span: PORTAL_SPAN, slab: PORTAL_SLAB, top: PORTAL_TOP },
   game_hall: { margin: 0.025, span: ARCADE_SPAN, slab: ARCADE_SLAB, top: ARCADE_TOP },
+  garden: { margin: 0.05, span: GARDEN_SPAN, cap: GARDEN_WIDTH_CAP, slab: GARDEN_SLAB, top: GARDEN_TOP },
 };
 
 export interface PlotShape {
@@ -55,7 +57,7 @@ export function plotShape(kind: Kind, land: Rect, island?: Rect, orientation: Ma
   const width = across * (1 - 2 * margin);
   const length = along * (1 - 2 * margin);
   const scale = depth === undefined
-    ? Math.min(width, length) / span
+    ? Math.min(width, length, cap ?? Infinity) / span
     : Math.min(width, cap ?? Infinity, length * span / depth) / span;
   const side = span * scale;
   const long = (depth ?? span) * scale;
