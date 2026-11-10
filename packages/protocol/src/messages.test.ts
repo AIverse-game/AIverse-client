@@ -140,11 +140,11 @@ const contract = {
 
 const line = { seq: 1, time: 3.5, speakerId: 'a', text: '有人吗？', listeners: ['b'] };
 
-const whisperEntry = { seq: 1, time: 3.5, kind: 'said', actorId: 'a', otherId: 'b', text: '卖你算力' };
+const whisperEntry = { seq: 1, time: 3.5, verb: 'said', actorId: 'a', otherId: 'b', text: '卖你算力' };
 
 describe('parseServerMessage', () => {
   it('accepts a world log of whispers and deals between anyone', () => {
-    const offer = { seq: 2, time: 4, kind: 'offered', actorId: 'b', otherId: 'a', deal: 'purchase', item: 'bread', quantity: 2, coins: 30 };
+    const offer = { seq: 2, time: 4, verb: 'offered', actorId: 'b', otherId: 'a', deal: 'purchase', item: 'bread', quantity: 2, coins: 30 };
     const message = withDeals({ worldLog: [whisperEntry, offer] });
     expect(parseServerMessage(message)).toEqual({ ok: true, value: message });
   });
@@ -273,7 +273,7 @@ describe('parseServerMessage', () => {
     ['a proposal with a negative deposit', withDeals({ contractProposals: [{ ...proposal, deposit: -1 }] })],
     ['a world log entry by an unknown resident', withDeals({ worldLog: [{ ...whisperEntry, actorId: 'z' }] })],
     ['a world log entry about an unknown resident', withDeals({ worldLog: [{ ...whisperEntry, otherId: 'z' }] })],
-    ['a world log entry of an unknown kind', withDeals({ worldLog: [{ ...whisperEntry, kind: 'danced' }] })],
+    ['a world log entry of an unknown kind', withDeals({ worldLog: [{ ...whisperEntry, verb: 'danced' }] })],
     ['a contract with negative time left', withDeals({ contracts: [{ ...contract, remainingSeconds: -1 }] })],
   ])('rejects %s with a bounded error message', (_, input) => {
     const result = parseServerMessage(input);

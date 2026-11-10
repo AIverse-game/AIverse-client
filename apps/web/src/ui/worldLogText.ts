@@ -24,7 +24,7 @@ const quote = (text: string | undefined) => `「${text ?? ''}」`;
 export function describeWorldLogEntry(entry: WorldLogEntryView): LogPart[] {
   const actor = { residentId: entry.actorId };
   const other: LogPart = entry.otherId === undefined ? '某人' : { residentId: entry.otherId };
-  switch (entry.kind) {
+  switch (entry.verb) {
     case 'said':
       return entry.otherId === undefined
         ? [actor, ` 当众说（${entry.quantity ?? 0} 人听到）：${entry.text ?? ''}`]
@@ -58,9 +58,9 @@ export function describeWorldLogEntry(entry: WorldLogEntryView): LogPart[] {
     case 'accepted':
     case 'declined':
     case 'withdrew': {
-      const verb = { accepted: ' 接受了 ', declined: ' 拒绝了 ', withdrew: ' 撤回了给 ' }[entry.kind];
+      const verb = { accepted: ' 接受了 ', declined: ' 拒绝了 ', withdrew: ' 撤回了给 ' }[entry.verb];
       // The sender of the request: the one answered, or the one taking it back.
-      const [sender, recipient] = entry.kind === 'withdrew' ? [actor, other] : [other, actor];
+      const [sender, recipient] = entry.verb === 'withdrew' ? [actor, other] : [other, actor];
       return [
         actor, verb, other, ` 的${DEAL_NAMES[entry.deal ?? ''] ?? '提议'}：${dealTerms(entry)}`,
         ...supplierNote(entry, sender, recipient),

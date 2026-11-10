@@ -44,7 +44,7 @@ export function WorldLogPanel({ onClose }: { onClose: () => void }) {
         {connection === 'failed' && <li className="error">连接已断开，以下为最后收到的记录。</li>}
         {entries.length === 0 && <li className="muted">等待世界里发生第一件事…</li>}
         {entries.map((entry) => (
-          <li key={entry.seq} className={`log-${entry.kind}${entry.kind === 'said' && entry.otherId ? ' log-whisper' : ''}`}>
+          <li key={entry.seq} className={`log-${entry.verb}${entry.verb === 'said' && entry.otherId ? ' log-whisper' : ''}`}>
             <span className="time">[{formatDuration(Math.floor(entry.time))}]</span>{' '}
             {describeWorldLogEntry(entry).map((part, index) => (
               <Part key={index} part={part} residents={residents} />

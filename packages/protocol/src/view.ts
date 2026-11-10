@@ -281,14 +281,14 @@ export type AgentTurnView = z.infer<typeof agentTurnSchema>;
 
 /**
  * One thing a resident did, or that finished for them, mirroring the server's game/world_log.py.
- * Only the fields its kind needs are sent; the page puts it into words. Open-ended kinds and deals
+ * Only the fields its verb needs are sent; the page puts it into words. Open-ended verbs and deals
  * would hide a newer server's entries, so both are fixed lists and a protocol bump adds to them.
  */
 export const worldLogEntrySchema = z.object({
   seq: z.number().int().positive(),
   /** Game seconds since the start when it happened. */
   time: z.number().nonnegative(),
-  kind: z.enum([
+  verb: z.enum([
     'said', 'walked', 'teleported', 'left_game', 'bought_parcel', 'bought_node', 'started_building',
     'started_making', 'built', 'made', 'placed_content', 'offered', 'accepted', 'declined', 'withdrew',
     'delivered', 'cancelled_contract', 'placed_order', 'cancelled_order', 'linked_portals',
