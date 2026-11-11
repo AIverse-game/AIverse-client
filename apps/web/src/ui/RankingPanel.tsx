@@ -1,5 +1,5 @@
 import { useGameState } from '../state/storeContext';
-import { CoinIcon } from './CoinIcon';
+import { CoinAmount } from './CoinAmount';
 
 /** Residents by coins as the server ranks them; final once the game is over. */
 export function RankingPanel() {
@@ -19,8 +19,7 @@ export function RankingPanel() {
             <span className="name">{resident.name}</span>
             {resident.left && <span className="tag">已出局</span>}
             <span className="coins">
-              <CoinIcon />
-              {resident.coins.toLocaleString('zh-CN')} 金币
+              <CoinAmount coins={resident.coins} />
             </span>
           </li>
         ))}

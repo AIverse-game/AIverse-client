@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import {
   amountPose, burstDuration, COIN_LIFE, COIN_STAGGER, coinCount, coinPose, SPARKS_PER_COIN, sparkPose,
 } from './coinBurst';
-import { AMOUNT_PIXEL_SCALE, CoinSprites, COIN_PICTURE, COIN_PIXELS } from './coinSprites';
+import { COIN_PICTURE, COIN_PIXELS } from './coinPixels';
+import { AMOUNT_PIXEL_SCALE, CoinSprites } from './coinSprites';
 import type { FacilityAnchor } from './FacilityLayer';
 import { PayoutWatch } from './payoutWatch';
 

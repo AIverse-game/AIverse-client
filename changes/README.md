@@ -102,3 +102,4 @@
 | [0100-visitor-entry-animation](0100-visitor-entry-animation.md) | 已完成 | 新进城的访客在出生台光柱里长出、转两圈，再走向它的位置；页面，协议不变 |
 | [0101-content-practice](0101-content-practice.md) | 已完成 | 做内容的熟练度：每做成一份，同种下一份的工作量 × 0.9，最低 1/4，广告和游戏分开计数；AI 观察给出份数和下一份的百分比；服务端，协议与页面不变 |
 | [0102-portal-glitch-effect](0102-portal-glitch-effect.md) | 已完成 | 访客穿过传送门时进口和出口各有 0.6 秒的故障特效（粉青白横条、像素噪点、访客抖动闪没与残影）；页面，协议不变 |
+| [0104-panel-coin-amounts](0104-panel-coin-amounts.md) | 已完成 | 金币排名的金额改画成像素金币和金色像素数字、去掉“金币”二字，增加时数字跑动并浮出红色 +增加额；页面，协议不变 |

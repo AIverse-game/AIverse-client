@@ -366,15 +366,6 @@ textarea::placeholder {
   color: var(--accent-2);
 }
 
-.resource-icon {
-  width: 16px;
-  height: 16px;
-  margin-right: 3px;
-  vertical-align: middle;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
 /* ---------- Map overlays drawn by the renderer ---------- */
 
 .map {
@@ -470,6 +461,71 @@ textarea::placeholder {
   margin-left: auto;
   color: var(--gold);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Coin amounts drawn like the coin effect over facilities ---------- */
+
+.coin-amount {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
+.coin-amount canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.coin-amount-value {
+  transform-origin: right center;
+}
+
+.coin-amount-value.rising {
+  animation: coin-amount-pop 0.8s ease-out;
+}
+
+/* The gain floats left of the coin, out of the row's flow, so the row does not shift. */
+.coin-gain {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 6px);
+  animation: coin-gain-rise 2.4s ease-out forwards;
+}
+
+@keyframes coin-amount-pop {
+  15% {
+    transform: scale(1.3);
+    filter: brightness(1.7) drop-shadow(0 0 4px rgba(255, 210, 63, 0.9));
+  }
+
+  100% {
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+@keyframes coin-gain-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(-20%);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+
+  75% {
+    opacity: 1;
+    transform: translateY(-70%);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-110%);
+  }
 }
 
 .residents {
@@ -1001,7 +1057,13 @@ textarea::placeholder {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .world-log-cursor {
+  .world-log-cursor,
+  .coin-amount-value.rising {
     animation: none;
+  }
+
+  .coin-gain {
+    animation: none;
+    transform: translateY(-50%);
   }
 }
