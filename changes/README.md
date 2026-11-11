@@ -94,3 +94,4 @@
 | [0092-games-never-expire](0092-games-never-expire.md) | 已完成（服务端） | 游戏放进游戏厅后不过期，广告仍 300 秒；游戏制作成本与广告内容的比较 |
 | [0093-small-garden](0093-small-garden.md) | 已完成 | 小花园：一块地的最便宜设施，建成时镇上一次性奖励地主，同街区所有设施的收入加成 10%，吸引少量访客；渲染层有季节与昼夜；协议 32 |
 | [0094-visitor-distance-and-garden-fee](0094-visitor-distance-and-garden-fee.md) | 已完成 | 访客选目的地时走路成本从 0.05 提到 0.15（近的更有吸引力，线路更值得建），花园入场费改回 1；服务端，协议与页面不变 |
+| [0095-visitor-portal-toll](0095-visitor-portal-toll.md) | 已完成 | 访客走一趟线路网每人付系统定的 1 金币过路费，一半给进门、一半给出门的传送门地块，访客选路时不计；服务端，协议与页面不变 |
