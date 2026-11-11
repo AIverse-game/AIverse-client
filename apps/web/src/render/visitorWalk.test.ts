@@ -77,4 +77,10 @@ describe('catchUp', () => {
 
     expect(next).toEqual({ x: 1, y: 0 });
   });
+
+  it('walks any gap when told not to jump, as a visitor coming from the entrance does', () => {
+    const next = catchUp({ x: 0, y: 0 }, { x: SNAP_DISTANCE * 3, y: 0 }, 1, Infinity);
+
+    expect(next).toEqual({ x: 1, y: 0 });
+  });
 });

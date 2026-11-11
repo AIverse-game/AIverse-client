@@ -157,6 +157,7 @@ export class MapRenderer {
     this.drawnSize = size;
     this.drawnLayout = `${size}:${map.parcelSize}:${map.blockCells}:${map.venueCells}:${map.lobby}`;
     this.ground.build(map);
+    this.visitors.setMapSize(size);
     if (map.lobby) this.lobby.build(map);
     else this.lobby.dispose();
     this.view ??= initialView(size);
@@ -214,10 +215,10 @@ export class MapRenderer {
     this.ground.update(now / 1000, elapsed / 1000);
     this.facilities.update(now / 1000, elapsed / 1000);
     this.gardens.update(now / 1000, elapsed / 1000, this.store.gameSeconds());
-    this.lobby.update(now / 1000, elapsed / 1000);
-    this.residents.update(now, elapsed);
     this.visitors.sync(this.store.getVisitors());
     this.visitors.update(now);
+    this.lobby.update(now / 1000, elapsed / 1000, this.visitors.entranceBeam());
+    this.residents.update(now, elapsed);
     this.coins.update(elapsed / 1000, this.camera);
     if (this.view) {
       const position = cameraPosition(this.view);

@@ -59,11 +59,12 @@ export class LobbyLandmark {
     return LOBBY_LIFT + local * placement.scale;
   }
 
-  update(time: number, dt: number): void {
+  /** `beam` lights the spawn beam for visitors coming into town, from 0 to 1; the newcomers light it too. */
+  update(time: number, dt: number, beam = 0): void {
     const { handle, placement } = this;
     if (!handle || !placement) return;
     handle.update(time, dt);
-    let flash = 0;
+    let flash = beam;
     for (const newcomer of this.newcomers) {
       const at = time + newcomer.offset;
       const frame = patrolFrame(newcomer.patrol, at);

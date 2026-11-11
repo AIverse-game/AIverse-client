@@ -54,12 +54,15 @@ export class CharacterCrowd {
     this.shadowCount = 0;
   }
 
-  /** Puts a figure of the coat at index `coat` on the ground at (`x`, `y`, `z`) facing `heading`; ignored once that coat is full. */
-  add(coat: number, x: number, y: number, z: number, heading: number, pose: NpcPose): void {
+  /**
+   * Puts a figure of the coat at index `coat` on the ground at (`x`, `y`, `z`) facing `heading`, `size`
+   * times its usual size with its shadow; ignored once that coat is full.
+   */
+  add(coat: number, x: number, y: number, z: number, heading: number, pose: NpcPose, size = 1): void {
     const index = this.counts[coat];
     if (index === undefined || index >= this.capacity) return;
     this.counts[coat] = index + 1;
-    this.base.compose(this.place.set(x, y, z), this.turn.setFromAxisAngle(UP, heading), this.size.setScalar(this.scale));
+    this.base.compose(this.place.set(x, y, z), this.turn.setFromAxisAngle(UP, heading), this.size.setScalar(this.scale * size));
     CHARACTER_PARTS.forEach((part, partIndex) => {
       this.part.makeTranslation(part.joint[0], part.joint[1], 0);
       if (part.motion) {
@@ -73,7 +76,7 @@ export class CharacterCrowd {
       this.meshes[coat]![partIndex]!.setMatrixAt(index, this.part);
     });
     this.part.makeRotationX(-Math.PI / 2).setPosition(x, y + SHADOW_HEIGHT, z);
-    this.part.scale(this.size.setScalar(this.shadowRadius));
+    this.part.scale(this.size.setScalar(this.shadowRadius * size));
     this.shadows.setMatrixAt(this.shadowCount++, this.part);
   }
 
