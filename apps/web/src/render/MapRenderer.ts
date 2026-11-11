@@ -10,10 +10,11 @@ import { GardenLayer } from './garden/GardenLayer';
 import { GroundLayer } from './GroundLayer';
 import { LabelLayer } from './LabelLayer';
 import { axisTicks, formatCoordinate } from './layout';
-import { LobbyLandmark } from './LobbyLandmark';
+import { CHARACTER_HEIGHT, LobbyLandmark } from './LobbyLandmark';
 import {
   cameraPosition, clampView, dragView, FIELD_OF_VIEW, initialView, scrollView, turnView, zoomView, type CameraView,
 } from './mapCamera';
+import { PortalGlitchLayer } from './PortalGlitchLayer';
 import { ResidentLayer } from './ResidentLayer';
 import { LIGHT_SCALE } from './sceneKit';
 import { VisitorLayer } from './VisitorLayer';
@@ -49,6 +50,7 @@ export class MapRenderer {
   private readonly lobby: LobbyLandmark;
   private readonly residents: ResidentLayer;
   private readonly visitors: VisitorLayer;
+  private readonly glitches: PortalGlitchLayer;
   private readonly labels: LabelLayer;
   private readonly cursor: HTMLDivElement;
   private readonly raycaster = new THREE.Raycaster();
@@ -90,7 +92,12 @@ export class MapRenderer {
     this.coins = new CoinBurstLayer(this.scene);
     this.lobby = new LobbyLandmark(this.scene);
     this.residents = new ResidentLayer(this.scene, this.labels, this.groundHeight);
-    this.visitors = new VisitorLayer(this.scene, this.groundHeight);
+    this.glitches = new PortalGlitchLayer(this.scene, CHARACTER_HEIGHT);
+    this.visitors = new VisitorLayer(this.scene, this.groundHeight, (exit, entry, id) => {
+      // Each end its own seed, so neither repeats another visitor's.
+      this.glitches.start(new THREE.Vector3(exit.x, exit.height, exit.y), id * 2);
+      this.glitches.start(new THREE.Vector3(entry.x, entry.height, entry.y), id * 2 + 1);
+    });
 
     const canvas = this.renderer.domElement;
     canvas.addEventListener('pointerdown', this.onPointerDown);
@@ -122,6 +129,7 @@ export class MapRenderer {
     canvas.removeEventListener('contextmenu', this.onContextMenu);
     canvas.removeEventListener('wheel', this.onWheel);
     this.visitors.dispose();
+    this.glitches.dispose();
     this.residents.dispose();
     this.lobby.dispose();
     this.coins.dispose();
@@ -216,10 +224,11 @@ export class MapRenderer {
     this.facilities.update(now / 1000, elapsed / 1000);
     this.gardens.update(now / 1000, elapsed / 1000, this.store.gameSeconds());
     this.visitors.sync(this.store.getVisitors());
-    this.visitors.update(now);
+    this.visitors.update(now, this.camera);
     this.lobby.update(now / 1000, elapsed / 1000, this.visitors.entranceBeam());
     this.residents.update(now, elapsed);
     this.coins.update(elapsed / 1000, this.camera);
+    this.glitches.update(elapsed / 1000, this.camera);
     if (this.view) {
       const position = cameraPosition(this.view);
       this.camera.position.set(position.x, position.y, position.z);

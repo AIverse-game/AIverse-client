@@ -1,12 +1,14 @@
 import type { MapGridSpec } from '@aiverse/protocol';
 import * as THREE from 'three';
-import { createCharacter, type Character } from './characterModel';
+import { CHARACTER_PARTS, createCharacter, type Character } from './characterModel';
 import { createLobby, LOBBY_LIFT, lobbyGroundHeight, lobbyPlacement, type LobbyHandle, type LobbyPlacement } from './lobbyModel';
 import { buildPatrol, LOBBY_STOPS, patrolFrame, type Patrol } from './lobbyPatrol';
 import { walkPose, WALK_RATE } from './npcPose';
 
 /** Map units tall a character is drawn, a resident and a newcomer alike. */
 export const CHARACTER_SCALE = 0.065;
+/** Height of a block character from its feet to the top of its head, in map units. */
+export const CHARACTER_HEIGHT = Math.max(...CHARACTER_PARTS.map((part) => part.joint[1] + part.centre + part.size[1] / 2)) * CHARACTER_SCALE;
 
 interface Newcomer {
   character: Character;

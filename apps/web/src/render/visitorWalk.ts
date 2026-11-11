@@ -56,3 +56,66 @@ export function catchUp(
   if (gap <= step || gap > snapDistance) return { x: target.x, y: target.y };
   return { x: shown.x + (dx / gap) * step, y: shown.y + (dy / gap) * step };
 }
+
+/** How far apart, in map units, the end of one leg and the start of the next must be to be a portal and not one walk. */
+const PORTAL_GAP = 1e-6;
+
+export interface PortalCrossing {
+  /** Where the visitor went into the portal network: the end of the leg before the break. */
+  exit: { x: number; y: number };
+  /** Where it came out: the start of the leg after it. */
+  entry: { x: number; y: number };
+}
+
+/**
+ * The last portal the visitor goes through after more than `from` and up to `to` seconds since the
+ * server sent it, walking at `speed`; null when it goes through none in that time. A portal is a leg
+ * that starts elsewhere than the one before ended, as in `visitorPlace`, which puts it at the far
+ * side from the moment it reaches the break.
+ */
+export function portalCrossing(visitor: VisitorView, speed: number, from: number, to: number): PortalCrossing | null {
+  const start = Math.max(from, 0) * speed;
+  const end = Math.max(to, 0) * speed;
+  if (end <= start) return null;
+  let walked = 0;
+  let last: VisitorView['legs'][number] | null = null;
+  let crossing: PortalCrossing | null = null;
+  for (const leg of visitor.legs) {
+    if (walked > end) break;
+    const length = Math.hypot(leg.end.x - leg.start.x, leg.end.y - leg.start.y);
+    if (length === 0) continue;
+    if (last && Math.hypot(leg.start.x - last.end.x, leg.start.y - last.end.y) > PORTAL_GAP && walked > start && walked <= end) {
+      crossing = { exit: { ...last.end }, entry: { ...leg.start } };
+    }
+    last = leg;
+    walked += length;
+  }
+  return crossing;
+}
+
+/** What a visitor's last frame was drawn from: the same message, so many seconds after it came, or a message that came so many ms before this one. */
+export type LastDrawn = { sameMessage: true; seconds: number } | { sameMessage: false; messageGapMs: number };
+
+/**
+ * Whether a visitor drawn at `shown` goes through a portal this frame, `seconds` after its message
+ * came, and if so from where it is drawn to where it comes out; null when it does not. Within one
+ * message that is a leg break passed since the last frame. A new message that puts it further off
+ * than it could have walked means it went through between messages, unless the messages came too
+ * far apart to tell (`maxMessageGapMs`), when it may simply have walked there.
+ */
+export function portalHop(
+  visitor: VisitorView,
+  speed: number,
+  shown: { x: number; y: number },
+  last: LastDrawn,
+  seconds: number,
+  maxMessageGapMs: number,
+): PortalCrossing | null {
+  if (last.sameMessage) {
+    const crossing = portalCrossing(visitor, speed, last.seconds, seconds);
+    return crossing && { exit: { ...shown }, entry: crossing.entry };
+  }
+  if (last.messageGapMs > maxMessageGapMs) return null;
+  const target = visitorPlace(visitor, speed, seconds);
+  return Math.hypot(target.x - shown.x, target.y - shown.y) > SNAP_DISTANCE ? { exit: { ...shown }, entry: { x: target.x, y: target.y } } : null;
+}
