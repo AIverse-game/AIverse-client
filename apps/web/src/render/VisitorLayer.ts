@@ -10,6 +10,8 @@ const COATS = [0x5aa9e6, 0x7fc8a9, 0xf2c14e, 0xc792ea, 0xe08e79, 0x9aa5b1] as co
 const SHADOW_RADIUS = 0.7;
 /** Figures of one coat the crowd holds before it is rebuilt larger. */
 const MIN_CAPACITY = 64;
+/** A visitor climbs onto or down from a plinth in about this many milliseconds, as a resident does, instead of jumping. */
+const HEIGHT_TWEEN_MS = 70;
 
 /**
  * The scripted visitors: block characters like the residents', walking the legs the server sent
@@ -25,6 +27,8 @@ export class VisitorLayer {
   private readonly headings = new Map<number, number>();
   /** Where each visitor is drawn, which trails the server's position while it catches up after a message. */
   private readonly shown = new Map<number, { x: number; y: number }>();
+  /** How high each visitor stands now, easing toward the floor under it. */
+  private readonly heights = new Map<number, number>();
   private lastUpdate: number | null = null;
 
   constructor(
@@ -40,11 +44,13 @@ export class VisitorLayer {
     if (!snapshot) {
       this.headings.clear();
       this.shown.clear();
+      this.heights.clear();
       return;
     }
     const present = new Set(snapshot.visitors.map((visitor) => visitor.id));
     for (const id of this.headings.keys()) if (!present.has(id)) this.headings.delete(id);
     for (const id of this.shown.keys()) if (!present.has(id)) this.shown.delete(id);
+    for (const id of this.heights.keys()) if (!present.has(id)) this.heights.delete(id);
     if (snapshot.visitors.length > this.capacity) this.rebuild(snapshot.visitors.length);
   }
 
@@ -53,7 +59,8 @@ export class VisitorLayer {
     const { crowd, snapshot } = this;
     if (!crowd || !snapshot) return;
     const seconds = (now - snapshot.receivedAt) / 1000;
-    const step = snapshot.speed * CATCH_UP_FACTOR * Math.min(Math.max((now - (this.lastUpdate ?? now)) / 1000, 0), 0.1);
+    const elapsed = Math.min(Math.max(now - (this.lastUpdate ?? now), 0), 100);
+    const step = (snapshot.speed * CATCH_UP_FACTOR * elapsed) / 1000;
     this.lastUpdate = now;
     crowd.begin();
     for (const visitor of snapshot.visitors) {
@@ -68,8 +75,12 @@ export class VisitorLayer {
       if (heading !== null) this.headings.set(visitor.id, heading);
       // Visitors are told apart by their own phase of the walk cycle, so they do not march in step.
       const phase = (now / 1000) * WALK_RATE + visitor.id * 1.7;
+      const floor = this.groundHeight(place.x, place.y);
+      const heightBefore = this.heights.get(visitor.id);
+      const height = heightBefore === undefined ? floor : heightBefore + (floor - heightBefore) * Math.min(1, elapsed / HEIGHT_TWEEN_MS);
+      this.heights.set(visitor.id, height);
       crowd.add(
-        visitor.id % COATS.length, place.x, this.groundHeight(place.x, place.y), place.y,
+        visitor.id % COATS.length, place.x, height, place.y,
         this.headings.get(visitor.id) ?? 0, walkPose(phase, place.moving),
       );
     }
@@ -81,6 +92,7 @@ export class VisitorLayer {
     this.crowd = null;
     this.headings.clear();
     this.shown.clear();
+    this.heights.clear();
   }
 
   private rebuild(count: number): void {

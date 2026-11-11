@@ -72,3 +72,9 @@ export function plotShape(kind: Kind, land: Rect, island?: Rect, orientation: Ma
     height: (slab + top) * scale,
   };
 }
+
+/** Height of the plinth's top under a map position: the shape's `floor` over what the model covers, 0 anywhere else. */
+export function floorHeightAt(shape: PlotShape, x: number, y: number): number {
+  const inside = Math.abs(x - shape.centre.x) <= shape.extent.x / 2 && Math.abs(y - shape.centre.y) <= shape.extent.z / 2;
+  return inside ? shape.floor : 0;
+}

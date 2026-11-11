@@ -1,7 +1,7 @@
 import { blockRectOf, islandRect, parcelRect, type MapGridSpec, type ParcelView } from '@aiverse/protocol';
 import * as THREE from 'three';
 import type { FacilityAnchor } from '../FacilityLayer';
-import { plotShape } from '../plotShape';
+import { floorHeightAt, plotShape, type PlotShape } from '../plotShape';
 import type { ModelHandle } from '../sceneKit';
 import { environmentAt, type EnvironmentOverride, type GardenEnvironment } from './gardenClock';
 import { GardenMaterials } from './GardenMaterials';
@@ -16,6 +16,7 @@ interface Built {
   /** Invisible box that stands for the garden under the pointer. */
   target: THREE.Mesh;
   anchor: FacilityAnchor;
+  shape: PlotShape;
 }
 
 /**
@@ -58,6 +59,13 @@ export class GardenLayer {
   /** Where effects over the garden on a parcel go, or null when it has none. */
   anchor(parcelId: string): FacilityAnchor | null {
     return this.built.get(parcelId)?.anchor ?? null;
+  }
+
+  /** Height of the garden's floor under a map position, 0 where no garden stands. */
+  floorHeight(x: number, y: number): number {
+    let height = 0;
+    for (const { shape } of this.built.values()) height = Math.max(height, floorHeightAt(shape, x, y));
+    return height;
   }
 
   /** Shows a fixed season or time of day instead of the clock's; null goes back to the clock. */
@@ -104,7 +112,7 @@ export class GardenLayer {
     target.position.set(shape.centre.x, shape.height / 2, shape.centre.y);
     target.userData = { parcelId: parcel.id };
     this.root.add(target);
-    return { handle, wrapper, target, anchor: { top: new THREE.Vector3(shape.centre.x, shape.height, shape.centre.y), side: shape.side } };
+    return { handle, wrapper, target, anchor: { top: new THREE.Vector3(shape.centre.x, shape.height, shape.centre.y), side: shape.side }, shape };
   }
 
   private remove(id: string): void {

@@ -5,7 +5,8 @@ import { canvasTex, glassMaterial, glow, lam, ModelBuilder, seeded, type ModelHa
 export const MALL_SPAN_X = 32;
 export const MALL_SPAN_Z = 64;
 export const MALL_SLAB = 1.4;
-export const MALL_TOP = 46;
+/** Ten floors and the roof's furniture and mast: 9 above the roof, as the demo's 46 is above its 37. */
+export const MALL_TOP = 70;
 /** Widest the mall is drawn, in map units: its 10-wide land less the 2 an island may take from one side, so it is the same size wherever it stands. */
 export const MALL_WIDTH_CAP = 7.5;
 
@@ -27,12 +28,15 @@ const dim = (color: number) => {
 };
 const css = (color: number) => `#${color.toString(16).padStart(6, '0')}`;
 
-const FLOORS = 6;
+const FLOORS = 10;
 const FLOOR_HEIGHT = 6;
 /** The tower: 22 across and 34 deep, its front on z = 4. */
 const X0 = -11, X1 = 11, Z0 = -30, Z1 = 4;
 const BZ = (Z0 + Z1) / 2;
 const ROOF = FLOORS * FLOOR_HEIGHT + 1;
+/** The blade sign runs from the canopy up the corner, in step with the tower: 26 tall on the demo's six floors. */
+const SIGN_HEIGHT = (26 * FLOORS) / 6;
+const SIGN_BOTTOM = 4;
 
 type Icon = (fill: (x: number, y: number, w: number, h: number) => void) => void;
 const ICONS: Record<'shirt' | 'cup' | 'bag' | 'gem' | 'food', Icon> = {
@@ -74,7 +78,7 @@ function drawScreen(g: CanvasRenderingContext2D, t: number): void {
 }
 
 /**
- * The mall: a six-storey tower of the demo with a lit entrance and its sliding doors, a screen over
+ * The mall: a ten-storey tower, taller than the demo's six, with a lit entrance and its sliding doors, a screen over
  * the door, a blade sign down the corner, a glass lift on the side, a roof garden with a halo and a
  * plaza of trees, benches and lamps in front, drawn in the demo's 雾蓝珊瑚 palette at night. Its land
  * is 1 x 2 parcels, 10 x 20 map units: 32 x 64 model units.
@@ -176,16 +180,17 @@ export function createMall(): ModelHandle {
 
   // The blade sign down the front corner, one lit icon to a shop.
   const signX = X1 - 1.8, signZ = Z1 + 0.8;
-  b.box(2.6, 26, 1.2, s1, signX, 17, signZ);
-  b.box(0.15, 25, 1.25, g1, signX - 1.3, 17, signZ);
-  b.box(0.15, 25, 1.25, g1, signX + 1.3, 17, signZ);
+  const signMiddle = SIGN_BOTTOM + SIGN_HEIGHT / 2;
+  b.box(2.6, SIGN_HEIGHT, 1.2, s1, signX, signMiddle, signZ);
+  b.box(0.15, SIGN_HEIGHT - 1, 1.25, g1, signX - 1.3, signMiddle, signZ);
+  b.box(0.15, SIGN_HEIGHT - 1, 1.25, g1, signX + 1.3, signMiddle, signZ);
   (['shirt', 'cup', 'bag', 'gem', 'food'] as const).forEach((name, i) => {
     const icon = b.own(canvasTex(16, 11, (g) => {
       g.fillStyle = COLORS.scr; g.fillRect(0, 0, 16, 11);
       g.fillStyle = css(i % 2 ? COLORS.acc : COLORS.g1);
       ICONS[name]((x, y, w, h) => g.fillRect(x, y, w, h));
     }));
-    b.add(new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.45, 0.08), b.own(new THREE.MeshBasicMaterial({ map: icon }))), signX, 27 - i * 4.6, signZ + 0.64);
+    b.add(new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.45, 0.08), b.own(new THREE.MeshBasicMaterial({ map: icon }))), signX, SIGN_BOTTOM + SIGN_HEIGHT - 3 - i * ((SIGN_HEIGHT - 6) / 4), signZ + 0.64);
   });
 
   // The glass lift up the side, its car riding to the top and back.

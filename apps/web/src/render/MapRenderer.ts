@@ -89,8 +89,8 @@ export class MapRenderer {
     this.gardens.setOverride(parseEnvironmentOverride(window.location.search));
     this.coins = new CoinBurstLayer(this.scene);
     this.lobby = new LobbyLandmark(this.scene);
-    this.residents = new ResidentLayer(this.scene, this.labels, (x, y) => this.lobby.groundHeight(x, y));
-    this.visitors = new VisitorLayer(this.scene, (x, y) => this.lobby.groundHeight(x, y));
+    this.residents = new ResidentLayer(this.scene, this.labels, this.groundHeight);
+    this.visitors = new VisitorLayer(this.scene, this.groundHeight);
 
     const canvas = this.renderer.domElement;
     canvas.addEventListener('pointerdown', this.onPointerDown);
@@ -134,6 +134,10 @@ export class MapRenderer {
     this.renderer.forceContextLoss();
     canvas.remove();
   }
+
+  /** Height of the floor under a map position: the spawn pad or the plinth of a facility, where a figure walks on it. */
+  private readonly groundHeight = (x: number, y: number): number =>
+    Math.max(this.lobby.groundHeight(x, y), this.facilities.floorHeight(x, y), this.gardens.floorHeight(x, y));
 
   private sync(): void {
     const { world, selected, selectedParcel } = this.store.getState();

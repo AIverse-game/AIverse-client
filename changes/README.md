@@ -96,3 +96,4 @@
 | [0094-visitor-distance-and-garden-fee](0094-visitor-distance-and-garden-fee.md) | 已完成 | 访客选目的地时走路成本从 0.05 提到 0.15（近的更有吸引力，线路更值得建），花园入场费改回 1；服务端，协议与页面不变 |
 | [0095-visitor-portal-toll](0095-visitor-portal-toll.md) | 已完成 | 访客走一趟线路网每人付系统定的 1 金币过路费，一半给进门、一半给出门的传送门地块，访客选路时不计；服务端，协议与页面不变 |
 | [0096-visitor-per-hop-toll](0096-visitor-per-hop-toll.md) | 已完成 | 访客的过路费改成每走过一条线路收一次（1 金币，一半给线路两端的传送门地块），走过的线路取最少的；服务端，协议与页面不变 |
+| [0097-taller-mall-lower-hall-walk-on-floors](0097-taller-mall-lower-hall-walk-on-floors.md) | 已完成 | 商场加到十层、高过游戏厅；游戏厅罩子降低；居民和访客走进设施时站在它的底座上；页面，协议不变 |

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { plotShape } from './plotShape';
+import { ARCADE_SLAB } from './arcadeModel';
+import { floorHeightAt, plotShape } from './plotShape';
+
+/** The game hall's shell reached 39 model units over its slab before it was lowered. */
+const OLD_ARCADE_TOP = 39;
 
 const at = (col: number, row: number) => ({ x0: col * 10, z0: row * 10, x1: col * 10 + 10, z1: row * 10 + 10 });
 
@@ -102,5 +106,48 @@ describe('plotShape', () => {
     expect(shape.extent.x).toBeLessThan(10);
     expect(shape.floor).toBeGreaterThan(0);
     expect(shape.height).toBeGreaterThan(shape.floor);
+  });
+
+  it('draws the mall taller than the game hall, and than the hall was before its shell was lowered', () => {
+    const island = { x0: 2, z0: 2, x1: 28, z1: 28 };
+
+    const mall = plotShape('mall', { x0: 0, z0: 0, x1: 10, z1: 20 }, island);
+    const hall = plotShape('game_hall', { x0: 0, z0: 0, x1: 20, z1: 20 }, island);
+
+    const hallBefore = (ARCADE_SLAB + OLD_ARCADE_TOP) * hall.scale;
+    expect(hall.height).toBeLessThan(hallBefore);
+    expect(mall.height).toBeGreaterThan(hallBefore);
+    expect(mall.height).toBeGreaterThan(hall.height);
+  });
+});
+
+describe('floorHeightAt', () => {
+  const hall = plotShape('game_hall', { x0: 0, z0: 0, x1: 20, z1: 20 });
+
+  it('is the plinth top anywhere over what the model covers, edges included', () => {
+    const { centre, extent, floor } = hall;
+
+    const heights = [
+      floorHeightAt(hall, centre.x, centre.y),
+      floorHeightAt(hall, centre.x - extent.x / 2, centre.y + extent.z / 2),
+      floorHeightAt(hall, centre.x + extent.x / 2 - 0.01, centre.y - extent.z / 2 + 0.01),
+    ];
+
+    expect(floor).toBeGreaterThan(0);
+    expect(heights).toEqual([floor, floor, floor]);
+  });
+
+  it('is zero off the plinth', () => {
+    const { centre, extent } = hall;
+
+    expect(floorHeightAt(hall, centre.x + extent.x / 2 + 0.01, centre.y)).toBe(0);
+    expect(floorHeightAt(hall, centre.x, centre.y - extent.z / 2 - 0.01)).toBe(0);
+  });
+
+  it('follows a mall turned east to west, which covers more across than down', () => {
+    const mall = plotShape('mall', { x0: 0, z0: 0, x1: 20, z1: 10 }, undefined, 'east_west');
+
+    expect(floorHeightAt(mall, mall.centre.x + mall.extent.x / 2 - 0.1, mall.centre.y)).toBe(mall.floor);
+    expect(floorHeightAt(mall, mall.centre.x, mall.centre.y + mall.extent.z / 2 + 0.1)).toBe(0);
   });
 });

@@ -4,7 +4,7 @@ import { canvasTex, glassMaterial, glow, lam, ModelBuilder, PALETTE as P, type M
 
 /** Width of the arcade plinth and the height of its glass shell, in model units. */
 export const ARCADE_SPAN = 60;
-export const ARCADE_TOP = 39;
+export const ARCADE_TOP = 30;
 export const ARCADE_SLAB = 6.6;
 
 /** Model units per demo unit for the machines, which were drawn for a 52 × 40 floor. */

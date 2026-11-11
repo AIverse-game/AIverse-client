@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { createArcade } from './arcadeModel';
 import { createBillboard } from './billboardModel';
 import { createMall } from './mallModel';
-import { plotShape } from './plotShape';
+import { floorHeightAt, plotShape, type PlotShape } from './plotShape';
 import { createPortal } from './portalModel';
 import type { ModelHandle } from './sceneKit';
 import { createWorkspace } from './workspaceModel';
@@ -15,6 +15,7 @@ interface Built {
   /** Invisible box that stands for the facility under the pointer; portals have none. */
   target: THREE.Mesh | null;
   anchor: FacilityAnchor;
+  shape: PlotShape;
 }
 
 /** The point over a facility's roof that effects hang from. */
@@ -79,6 +80,13 @@ export class FacilityLayer {
     return this.built.get(parcelId)?.anchor ?? null;
   }
 
+  /** Height of the floor the facilities give under a map position: their plinth's top where one stands, 0 elsewhere. */
+  floorHeight(x: number, y: number): number {
+    let height = 0;
+    for (const { shape } of this.built.values()) height = Math.max(height, floorHeightAt(shape, x, y));
+    return height;
+  }
+
   update(time: number, dt: number): void {
     for (const { handle } of this.built.values()) handle.update(time, dt);
   }
@@ -108,7 +116,7 @@ export class FacilityLayer {
       this.root.add(target);
     }
     const anchor = { top: new THREE.Vector3(shape.centre.x, shape.height, shape.centre.y), side: shape.side };
-    return { signature, handle, wrapper, target, anchor };
+    return { signature, handle, wrapper, target, anchor, shape };
   }
 
   private remove(id: string): void {
