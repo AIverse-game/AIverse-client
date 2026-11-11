@@ -98,3 +98,4 @@
 | [0096-visitor-per-hop-toll](0096-visitor-per-hop-toll.md) | 已完成 | 访客的过路费改成每走过一条线路收一次（1 金币，一半给线路两端的传送门地块），走过的线路取最少的；服务端，协议与页面不变 |
 | [0097-taller-mall-lower-hall-walk-on-floors](0097-taller-mall-lower-hall-walk-on-floors.md) | 已完成 | 商场加到十层、高过游戏厅；游戏厅罩子降低；居民和访客走进设施时站在它的底座上；页面，协议不变 |
 | [0098-portal-build-and-no-resident-teleport](0098-portal-build-and-no-resident-teleport.md) | 已完成 | AI 居民不传送只走路；有可建地块和空闲生成式节点时 `build_portal` 自动出现；份额持有人也能建门（上限按地主算）；系统提示写明访客过路费规则；服务端，协议与页面不变 |
+| [0099-scarce-nodes](0099-scarce-nodes.md) | 已完成 | 全镇每种算力节点只有居民数 × 2/5 台（8 人各 3 台），订阅和按需雇用都要有空闲节点；AI 观察公开总数、空闲数和持有人；服务端，协议与页面不变 |
