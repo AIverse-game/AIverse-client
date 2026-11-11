@@ -100,3 +100,4 @@
 | [0098-portal-build-and-no-resident-teleport](0098-portal-build-and-no-resident-teleport.md) | 已完成 | AI 居民不传送只走路；有可建地块和空闲生成式节点时 `build_portal` 自动出现；份额持有人也能建门（上限按地主算）；系统提示写明访客过路费规则；服务端，协议与页面不变 |
 | [0099-scarce-nodes](0099-scarce-nodes.md) | 已完成 | 全镇每种算力节点只有居民数 × 2/5 台（8 人各 3 台），订阅和按需雇用都要有空闲节点；AI 观察公开总数、空闲数和持有人；服务端，协议与页面不变 |
 | [0100-visitor-entry-animation](0100-visitor-entry-animation.md) | 已完成 | 新进城的访客在出生台光柱里长出、转两圈，再走向它的位置；页面，协议不变 |
+| [0101-content-practice](0101-content-practice.md) | 已完成 | 做内容的熟练度：每做成一份，同种下一份的工作量 × 0.9，最低 1/4，广告和游戏分开计数；AI 观察给出份数和下一份的百分比；服务端，协议与页面不变 |
